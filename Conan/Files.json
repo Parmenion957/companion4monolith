@@ -14,7 +14,9 @@
         "studio/card_equipment/card_equipment.css",
         "studio/card_spell/card_spell.css",
         "studio/hero_sheet/hero_sheet.css",
-        "studio/tile/tile.css"
+        "studio/tile/tile.css",
+
+        "skelos/skelos.css"
     ],
     "scripts": [
         "general/default.js",
@@ -48,6 +50,12 @@
         "studio/hero_sheet/hero_sheet.js",
         "studio/hero_sheet/lang/hero_sheet.LANGUAGE.js",
         "studio/tile/tile.js",
-        "studio/tile/lang/tile.LANGUAGE.js"
+        "studio/tile/lang/tile.LANGUAGE.js",
+
+        "skelos/skelos.js",
+        "skelos/skelos_app.js",
+        "skelos/skelos_ui.js",
+        "skelos/lang/skelos.LANGUAGE.js",
+        "skelos/skelos_companion.js"
     ]
 }
