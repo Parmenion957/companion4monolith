@@ -844,7 +844,8 @@ S.toggleFirstPlayer = function() {
     var st = S.state, fp = st.scenario.firstPlayer == "overlord" ? "heroes" : "overlord";
     S.snapshot();
     st.scenario.firstPlayer = fp;
-    if (st.turn == 0 && !st.activations && st.phase != "overlord") st.phase = fp == "overlord" ? "start" : "heroes";
+    // Le bloc Phase suit, quel que soit le tour, sauf pendant des activations de l'Overlord (on ne les efface pas).
+    if (!st.activations) { st.phase = fp == "overlord" ? "start" : "heroes"; st.current = null; st.highlight = null; }
     commit();
 };
 
