@@ -180,28 +180,21 @@ var Skelos = {
 
     renderSetup: function() {
         Skelos.screen = "setup";
-        var live = !!(Skelos.live && Skelos.state), ctx = Skelos.ctx;
-        if (live) Skelos.draft = Skelos.liveDraft();
+        var ctx = Skelos.ctx;
         var d = Skelos.draft, t = Skelos.t, e = Skelos.esc;
-        var rv = live ? Skelos.state.river : d.river;
-        var h = "<div class='skelos-setup" + (live ? " live" : "") + "'>";
-        h += "<div class='sk-head'>" + (live ? "<button class='sk-btn' data-act='backgame'>← " + t("back_board") + "</button>"
-            : "<button class='sk-btn' data-act='" + (ctx ? "backcamp" : "home") + "'>← " + t(ctx ? "campaign" : "home") + "</button>")
-            + "<h1>" + t(live ? "live_title" : ctx ? "prepare_title" : "setup_title") + "</h1></div>";
-        if (live) h += "<div class='sk-livebanner'>" + t("live_banner", Skelos.state.turn) + "</div>";
-        if (ctx && !live) h += "<div class='sk-livebanner sk-ctxbanner'>" + e(t("prepare_banner", Skelos.campaignName(ctx.cid), ctx.idx + 1)) + "</div>";
+        var rv = d.river;
+        var h = "<div class='skelos-setup'>";
+        h += "<div class='sk-head'><button class='sk-btn' data-act='" + (ctx ? "backcamp" : "home") + "'>← " + t(ctx ? "campaign" : "home") + "</button>"
+            + "<h1>" + t(ctx ? "prepare_title" : "setup_title") + "</h1></div>";
+        if (ctx) h += "<div class='sk-livebanner sk-ctxbanner'>" + e(t("prepare_banner", Skelos.campaignName(ctx.cid), ctx.idx + 1)) + "</div>";
 
         h += "<div class='sk-form'>";
         h += "<label class='sk-wide'>" + t("scenario_name") + "<input name='title' value='" + e(d.title) + "' placeholder='" + e(t("scenario_name_placeholder")) + "'></label>";
-        h += "<fieldset class='sk-wide sk-mode'" + (live ? " disabled" : "") + "><legend>" + t("mode") + "</legend>"
+        h += "<fieldset class='sk-wide sk-mode'><legend>" + t("mode") + "</legend>"
             + "<label><input type='radio' name='mode' value='classic'" + (d.mode == "classic" ? " checked" : "") + "> " + t("mode_classic") + "</label>"
             + "<label><input type='radio' name='mode' value='solo'" + (d.mode == "solo" ? " checked" : "") + "> " + t("mode_solo") + "</label></fieldset>";
         h += "<label>" + t("turns") + "<input type='number' min='1' max='30' name='turns' value='" + d.turns + "'></label>";
-        if (d.mode == "classic" && live) {
-            h += Skelos.gemsEditorCode();
-            h += "<label>" + t("recovery") + "<input type='number' min='0' max='20' name='recovery' value='" + d.recovery + "'></label>";
-            h += "<label>" + t("max_activations") + "<input type='number' min='1' max='8' name='maxActivations' value='" + d.maxActivations + "'></label>";
-        } else if (d.mode == "classic") {
+        if (d.mode == "classic") {
             h += "<label>" + t("start_energy") + "<input type='number' min='0' max='40' name='energy' value='" + d.energy + "'></label>";
             h += "<label>" + t("start_fatigue") + "<input type='number' min='0' max='40' name='fatigue' value='" + d.fatigue + "'></label>";
             h += "<label>" + t("recovery") + "<input type='number' min='0' max='20' name='recovery' value='" + d.recovery + "'></label>";
@@ -228,9 +221,9 @@ var Skelos = {
                         return "<option value='" + c + "'" + (c == s.color ? " selected" : "") + ">" + (Tile._i18n && Tile._i18n['color' + c.charAt(0).toUpperCase() + c.slice(1)] || c) + "</option>";
                     }).join("") + "</select>";
                 }
-                if (!Skelos.isEvent(s)) h += "<label class='sk-lp'>" + t("life_points") + "<input type='number' min='0' max='40' data-i='" + i + "' value='" + ((live ? s.lpMax : s.lp) || "") + "' placeholder='1'></label>";
+                if (!Skelos.isEvent(s)) h += "<label class='sk-lp'>" + t("life_points") + "<input type='number' min='0' max='40' data-i='" + i + "' value='" + (s.lp || "") + "' placeholder='1'></label>";
             } else if (i == rv.length) {
-                h += "<button class='sk-add' data-act='pick'>+<span>" + t(live ? "add_tile_end" : "add_tile") + "</span></button>";
+                h += "<button class='sk-add' data-act='pick'>+<span>" + t("add_tile") + "</span></button>";
             } else {
                 h += "<div class='sk-empty'>" + t("empty_slot") + "</div>";
             }
@@ -241,18 +234,15 @@ var Skelos = {
         h += "<div class='sk-form'><label class='sk-wide'>" + t("events") + "<small>" + t("events_help") + "</small><textarea name='events' rows='3' placeholder='" + e(t("events_placeholder")) + "'>" + e(d.events) + "</textarea></label>";
         h += "<label class='sk-wide'>" + t("notes") + "<textarea name='notes' rows='3'>" + e(d.notes) + "</textarea></label></div>";
 
-        if (ctx || (live && Skelos.state.campaign)) h += Skelos.heroesSectionCode(ctx ? ctx.cid : Skelos.state.campaign.cid);
+        if (ctx) h += Skelos.heroesSectionCode(ctx.cid);
 
-        if (live) h += "<div class='sk-actions'><button class='sk-btn sk-primary' data-act='backgame'>" + t("back_board") + "</button>"
-            + "<button class='sk-btn' data-act='savelive'>" + t("save_scenario") + "</button>"
-            + "<button class='sk-btn' data-act='restart'>" + t("restart_game") + "</button></div>";
-        else if (ctx) h += "<div class='sk-actions'><button class='sk-btn sk-primary' data-act='start'>" + t("launch") + "</button>"
+        if (ctx) h += "<div class='sk-actions'><button class='sk-btn sk-primary' data-act='start'>" + t("launch") + "</button>"
             + "<button class='sk-btn' data-act='prepsave'>" + t("save_prep") + "</button>"
             + "<button class='sk-btn' data-act='savescen'>" + t("save_scenario") + "</button></div>";
         else h += "<div class='sk-actions'><button class='sk-btn sk-primary' data-act='start'>" + t("start_game") + "</button>"
             + "<button class='sk-btn' data-act='savescen'>" + t("save_scenario") + "</button></div>";
 
-        var list = live || ctx ? null : Skelos.scenarios();
+        var list = ctx ? null : Skelos.scenarios();
         if (list) h += "<h2>" + t("saved_scenarios") + "</h2>";
         if (!list) {}
         else if (!list.length) h += "<p class='sk-help'>" + t("no_saved") + "</p>";
@@ -278,16 +268,9 @@ var Skelos = {
         if (v("firstPlayer")) d.firstPlayer = v("firstPlayer");
         d.events = v("events") || "";
         d.notes = v("notes") || "";
-        var live = !!(Skelos.live && Skelos.state), rv = live ? Skelos.state.river : d.river;
+        var rv = d.river;
         r.querySelectorAll(".sk-lp input").forEach(function(el) {
-            var s = rv[+el.dataset.i]; if (!s) return;
-            var v = el.value ? parseInt(el.value, 10) : null;
-            if (!live) { s.lp = v; return; }
-            var old = s.lpMax;
-            s.lpMax = v;
-            if (v == null) s.lp = null;
-            else if (old == null || s.lp == null) s.lp = v;
-            else s.lp = Math.max(0, Math.min(v, s.lp + (v - old)));
+            var s = rv[+el.dataset.i]; if (s) s.lp = el.value ? parseInt(el.value, 10) : null;
         });
         r.querySelectorAll(".sk-color").forEach(function(el) {
             var s = rv[+el.dataset.i]; if (s) s.color = el.value;
@@ -301,14 +284,13 @@ var Skelos = {
         });
         r.querySelector(".skelos-setup").addEventListener("click", function(ev) {
             var b = ev.target.closest("[data-act]"); if (!b) return;
-            var i = +b.dataset.i, d = Skelos.draft, live = !!(Skelos.live && Skelos.state);
+            var i = +b.dataset.i, d = Skelos.draft;
             if (Skelos.setupAction && Skelos.setupAction(b, ev)) return;
             Skelos.readForm();
-            var rv = live ? Skelos.state.river : d.river;
-            if (live && ["remove", "left", "right"].indexOf(b.dataset.act) >= 0) Skelos.snapshot();
+            var rv = d.river;
             switch (b.dataset.act) {
                 case "pick": Skelos.openPicker(); return;
-                case "remove": var gone = rv.splice(i, 1)[0]; if (live) Skelos.forgetSlot(gone); break;
+                case "remove": rv.splice(i, 1); break;
                 case "left": rv.splice(i - 1, 0, rv.splice(i, 1)[0]); break;
                 case "right": rv.splice(i + 1, 0, rv.splice(i, 1)[0]); break;
                 case "start": Skelos.startGame(); return;
@@ -328,17 +310,8 @@ var Skelos = {
                     });
                     return;
             }
-            if (live) Skelos.applyLive(true);
             Skelos.renderSetup();
         });
-        if (Skelos.live && Skelos.state) {
-            r.querySelector(".skelos-setup").addEventListener("change", function(ev) {
-                if (!ev.target.matches("input, select, textarea")) return;
-                Skelos.readForm(); Skelos.applyLive();
-            });
-            var sl = r.querySelector("#sk-gemslider");
-            if (sl) sl.addEventListener("input", function() { Skelos.gemSliderPreview(+sl.value); });
-        }
     },
 
     allBoxes: function() {
@@ -386,7 +359,7 @@ var Skelos = {
         };
         var sel = [];
         var status = function() {
-            var n = (Skelos.live && Skelos.state ? Skelos.state.river : Skelos.draft.river).length, free = Skelos.RIVER_SIZE - n;
+            var n = (Skelos._pickToGame && Skelos.state ? Skelos.state.river : Skelos.draft.river).length, free = Skelos.RIVER_SIZE - n;
             var h = "<div><b>" + t("river") + " " + n + " / " + Skelos.RIVER_SIZE + "</b> — " + t("selection_count", sel.length, free) + "</div>";
             h += "<div class='sk-selchips'>" + sel.map(function(x, i) {
                 return "<button class='sk-chip' data-unsel='" + i + "' aria-label='" + e(t("unselect", x.name)) + "'><span class='sk-chip-n'>" + (n + i + 1) + "</span>" + e(x.name) + " <span aria-hidden='true'>✕</span></button>";
@@ -427,7 +400,7 @@ var Skelos = {
         // Ouvert depuis le mode studio du plateau : on revient au plateau.
         var close = function() {
             ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null;
-            if (Skelos._pickToGame) { Skelos._pickToGame = false; Skelos.live = false; Skelos.renderGame(); } else Skelos.renderSetup();
+            if (Skelos._pickToGame) { Skelos._pickToGame = false; Skelos.renderGame(); } else Skelos.renderSetup();
         };
 
         fillBoxes(); draw();
@@ -454,18 +427,18 @@ var Skelos = {
             var un = ev.target.closest("[data-unsel]");
             if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
             if (ev.target.closest("[data-act=addsel]")) {
-                var live = !!(Skelos.live && Skelos.state);
+                var live = !!(Skelos._pickToGame && Skelos.state);
                 if (live) Skelos.snapshot();
                 sel.forEach(function(x) {
                     var tile = Skelos.tileOf({tileId: x.id, img: x.img});
                     if (live) Skelos.addLiveSlot(tile);
                     else Skelos.draft.river.push({tileId: tile.id, img: tile.image, color: tile.colors[0], lp: null});
                 });
-                if (live && !Skelos._pickToGame) Skelos.applyLive(true); else if (live) Skelos.save();
+                if (live) Skelos.save();
                 close(); return;
             }
             var p = ev.target.closest(".sk-pick"); if (!p) return;
-            if ((Skelos.live && Skelos.state ? Skelos.state.river : Skelos.draft.river).length + sel.length >= Skelos.RIVER_SIZE) { Skelos.toast(t("river_full")); return; }
+            if ((Skelos._pickToGame && Skelos.state ? Skelos.state.river : Skelos.draft.river).length + sel.length >= Skelos.RIVER_SIZE) { Skelos.toast(t("river_full")); return; }
             var tl = Skelos.tileOf({tileId: p.dataset.id, img: p.dataset.img});
             sel.push({id: p.dataset.id, img: p.dataset.img, key: p.dataset.id + "|" + p.dataset.img, name: tl.id == "event" ? t("scenario_events") : tl.name});
             p.classList.remove("added"); void p.offsetWidth; p.classList.add("added");
@@ -533,7 +506,6 @@ var Skelos = {
         Skelos.log(Skelos.t("log_start"));
         Skelos.save();
         Skelos.selected = null;
-        Skelos.live = false;
         if (Skelos.onGameStart) Skelos.onGameStart();
         Skelos.renderGame();
     },
@@ -905,7 +877,6 @@ var Skelos = {
                 case "reinf": Skelos.reinforce(uid); break;
                 case "rmtoken": Skelos.removeToken(uid); break;
                 case "lp": Skelos.life(uid, n); break;
-                case "setup": Skelos.openGameMenu(b); break;
                 case "xfer": Skelos.transferGem(b.dataset.dir); break;
             }
         });
