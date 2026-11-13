@@ -2127,6 +2127,7 @@ const urlsToCache = [
 	"skelos/skelos.js",
 	"skelos/skelos_app.js",
 	"skelos/skelos_ui.js",
+	"skelos/skelos_anim.js",
 	"skelos/skelos_companion.js",
 	"skelos/lang/skelos.LANGUAGE.js",
 	"sw.js",
