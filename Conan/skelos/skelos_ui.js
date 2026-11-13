@@ -103,8 +103,8 @@ S.toolsBlockCode = function() {
 S.phaseBlockCode = function() {
     var st = S.state, solo = st.mode == "solo", ov = st.phase != "heroes", pre = ov ? (solo ? "solo_short_" : "ov_short_") : "he_short_", cur = -1;
     if (st.phase == "overlord") cur = solo ? (st.highlight ? 3 : 2) : 3;
-    return "<div class='sk-p sk-a-phase " + (ov ? "ov" : "he") + "' role='group' aria-label='" + e(t("phase_current") + " : " + t(ov ? "steps_overlord_title" : "steps_heroes_title")) + "'>"
-        + "<div class='sk-pphase-t'>" + e(t("phase_current")) + "</div><ol>" + [1, 2, 3, 4].map(function(i) {
+    return "<div class='sk-p sk-a-phase " + (ov ? "ov" : "he") + "' role='group' aria-label='" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "'>"
+        + "<div class='sk-pphase-t'>" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "</div><ol>" + [1, 2, 3, 4].map(function(i) {
             return "<li" + (i == cur ? " class='cur' aria-current='step'" : "") + "><span class='sk-pnum' aria-hidden='true'>" + i + "</span><span>" + e(t(pre + i)) + "</span></li>";
         }).join("") + "</ol></div>";
 };

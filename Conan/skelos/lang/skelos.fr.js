@@ -2,6 +2,8 @@
 // Code sous licence LGPL-3.0, comme le Compagnon. Textes de l'interface (français).
 Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'phase_current': "Phase en cours",
+    'phase_title_overlord': "Phase de l’Overlord",
+    'phase_title_heroes': "Phase des Héros",
     'help': "Aide",
     'coming_soon': "Bientôt disponible",
     'turn_limit': "Limite de tours",

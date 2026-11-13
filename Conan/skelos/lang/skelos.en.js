@@ -2,6 +2,8 @@
 // English texts of the Book of Skelos module.
 Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'phase_current': "Current phase",
+    'phase_title_overlord': "Overlord phase",
+    'phase_title_heroes': "Heroes phase",
     'help': "Help",
     'coming_soon': "Coming soon",
     'turn_limit': "Turn limit",
