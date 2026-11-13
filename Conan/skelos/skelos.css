@@ -1215,3 +1215,39 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 .sk-swatch.on { box-shadow: 0 0 0 3px var(--body-bg-color), 0 0 0 6px var(--highlight-color); }
 .sk-swatch:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
 .sk-itemcolors .sk-fl .sk-chip { display: inline-flex; width: auto; font-size: 16px; padding: 3px 12px; }
+
+/* Cache commune plus lisible : légende et noms d'objets en plus grand */
+.sk-campaign .sk-legend { font-size: 17px; gap: 14px; margin: 4px 0 8px; color: var(--body-color) !important; }
+.sk-campaign .sk-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sk-campaign .sk-legend i { width: 20px; height: 20px; border-radius: 6px; margin: 0; vertical-align: middle; border: 1px solid rgba(0,0,0,.35); }
+.sk-campaign .sk-cat { font-size: 17px; margin-top: 10px; margin-bottom: 4px; color: var(--main-color) !important; font-family: 'Primary', serif; }
+.sk-campaign .sk-chips { gap: 6px; }
+.sk-campaign .sk-chip[data-card] { font-size: 17px; line-height: 1.2; padding: 5px 12px; }
+.sk-campaign .sk-chip .sk-ini { width: 22px; height: 22px; font-size: 13px; }
+.sk-campaign .sk-chipadd { font-size: 16px; padding: 5px 12px; }
+.sk-btn.sk-icon.sk-cjournal { font-family: "Font Awesome 5 Free" !important; font-weight: 900 !important; font-size: 18px !important; letter-spacing: 0 !important; text-transform: none !important; }
+
+/* Cartes d'accueil cliquables (scénarios, campagnes) */
+.sk-scard.sk-cardlink { cursor: pointer; transition: box-shadow .15s, transform .15s; }
+.sk-scard.sk-cardlink:hover, .sk-scard.sk-cardlink:focus-visible { box-shadow: 0 0 0 3px var(--highlight-color); outline: none; }
+.sk-smode { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 10px; font-size: 13px; vertical-align: middle;
+    border: 1px solid var(--main-color); color: var(--main-color); font-family: inherit; white-space: nowrap; }
+.sk-cpick .sk-smode { margin: 0; align-self: flex-start; }
+/* En-tête de la campagne : titre suivi du fil, points de victoire en évidence */
+.sk-chead { display: flex !important; align-items: center; gap: 16px; flex-wrap: wrap; }
+.sk-chead-t { flex: 1; min-width: 220px; }
+.sk-chead-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sk-chead-row h2 { margin: 0; }
+.sk-chead-row .sk-cthread { margin: 0; }
+.sk-chead .sk-sinfo { margin: 6px 0 0; font-size: 17px; color: var(--body-color); }
+.sk-cvp { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 96px; padding: 6px 14px; border-radius: 14px;
+    background: var(--highlight-color); color: #fff; line-height: 1; }
+.sk-cvp b { font-family: 'Primary', serif; font-weight: normal; font-size: 46px; }
+.sk-cvp span { font-size: 13px; margin-top: 4px; text-align: center; }
+.sk-cvp.neg { background: #b3261e; }
+.sk-chead-acts { display: flex; gap: 8px; }
+.sk-btn.sk-icon.sk-cjournal.sk-danger { color: #c0392b !important; border-color: #c0392b !important; }
+.sk-tabico.sk-danger { color: #e05a4f; }
+@media (max-width: 700px) { .sk-chead .sk-cback { order: 0; } .sk-chead-t { order: 1; flex-basis: 100%; } .sk-cvp { order: 2; } .sk-chead-acts { order: 3; margin-left: auto; } }
+.sk-chead .sk-chead-row h2 { flex: none !important; width: auto !important; }
+.sk-chead .sk-sinfo { color: var(--body-color) !important; opacity: .85; }

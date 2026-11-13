@@ -206,7 +206,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'new_campaign': "New campaign",
     'name': "Name",
     'campaign_name_ph': "The Western Exiles",
-    'new_campaign_help': "Heroes, scenarios and scale are then set in the campaign.",
+    'new_campaign_help': "Heroes and scenarios are then added in the campaign; each scenario keeps its own mode (Adventure or Coop).",
     'create': "Create",
     'clog_created': "Campaign created",
     'campaign_title': "Campaign: {0}",
@@ -455,5 +455,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'start_item_of': "Starting equipment of {0}",
     'item_colors': "Item colours",
     'item_colors_help': "Each item type has its own pastel colour. A colour taken by a type is no longer offered to heroes: a hero who had it gets another one at random.",
-    'hero_colors_changed': "New colour given to {0} hero(es)."
+    'hero_colors_changed': "New colour given to {0} hero(es).",
+    'delete_scenario': "Delete the scenario"
 });

@@ -404,7 +404,7 @@ S.scenarioCardCode = function(sc, i) {
     var ico = function(act, glyph, label, cls) {
         return "<button class='sk-iconbtn sk-scact" + (cls ? " " + cls : "") + "' data-sc='" + act + "' data-i='" + i + "' title='" + e(label) + "' aria-label='" + e(label + " : " + (sc.title || "—")) + "'>" + glyph + "</button>";
     };
-    return "<article class='sk-scard' aria-label='" + e(sc.title || "—") + "'>"
+    return "<article class='sk-scard sk-cardlink' data-sc='edit' data-i='" + i + "' tabindex='0' role='button' aria-label='" + e(t("open") + " : " + (sc.title || "—")) + "'>"
         + "<div class='sk-scard-head'><h3>" + e(sc.title || t("untitled")) + "</h3>"
         // Origine : l'icône seule (le libellé reste en info-bulle) ; partie en cours : sablier et « tour / limite ».
         + (running ? "<span class='sk-sbadge running' role='img' title='" + e(t("game_running", st.turn)) + "' aria-label='" + e(t("game_running", st.turn)) + "'><img src='" + S.icon("time") + "' alt=''>" + st.turn + (st.turns ? "/" + st.turns : "") + "</span>" : "")
@@ -413,10 +413,8 @@ S.scenarioCardCode = function(sc, i) {
         + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
         + S.riverThumbCode(sc)
         + "<div class='sk-scard-acts'><button class='sk-btn sk-primary' data-sc='play' data-i='" + i + "'>" + e(t("play")) + "</button>"
-        + "<button class='sk-btn' data-sc='edit' data-i='" + i + "'>" + e(t("edit")) + "</button>"
         + "<span class='sk-scard-sp'></span>"
         + ico("dup", "&#xf0c5;", t("duplicate"))
-        + ico("del", "&#xf2ed;", t("delete"), "sk-danger")
         + "</div></article>";
 };
 // Pêle-mêle de l'écran vide : illustrations de tuiles du Compagnon en éventail, comme les autres modules.
@@ -455,7 +453,7 @@ S.renderScenarios = function() {
             : function(a, b) { return (b.sc.updated || b.sc.created || "").localeCompare(a.sc.updated || a.sc.created || "") || b.i - a.i; });
         S.root.querySelector("#sk-slist").innerHTML = rows.length ? rows.map(function(x) { return S.scenarioCardCode(x.sc, x.i); }).join("") : S.emptyScenariosCode(list.length > 0);
     };
-    draw();
+    draw(); S.bindCardKeys();
     S.root.querySelector("#sk-sq").addEventListener("input", function(ev) { pr.scenQ = ev.target.value; S.savePrefs(); draw(); });
     var pick = function(attr, key, b) {
         pr[key] = b.getAttribute(attr); S.savePrefs();
@@ -680,9 +678,10 @@ S.placeTabs = function() {
     if (S.studio) {
         g += "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
             var on = st.mode == m[0];
-            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'" + (S.editing && S.editing.cid ? " disabled title='" + e(t("mode_locked")) + "'" : "") + ">" + e(t(m[1])) + "</button>";
+            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
         }).join("") + "</div>"
-            + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>";
+            + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>"
+            + (S.editing && S.editing.sid && !S.editing.cid ? "<button class='sk-tabico sk-danger' data-studio='del' title='" + e(t("delete_scenario")) + "' aria-label='" + e(t("delete_scenario")) + "'>&#xf2ed;</button>" : "");
     }
     g += "<button class='sk-tabico" + (S.studio ? " on" : "") + "' data-studio='toggle' aria-pressed='" + S.studio + "'" + (S.editing ? " disabled" : "")
         + " title='" + e(t(S.editing ? "studio_locked" : "studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>";
@@ -695,6 +694,7 @@ S.placeTabs = function() {
         if (b.dataset.studio == "toggle") S.toggleStudio();
         else if (b.dataset.studio == "save") S.openSaveScenario();
         else if (b.dataset.studio == "mode") S.switchMode(b.dataset.mode);
+        else if (b.dataset.studio == "del") S.deleteEditedScenario();
     });
 };
 
@@ -1179,31 +1179,23 @@ S.init = function(root) {
 var campMode = function(sc) { var s = sc && sc.setup; return s ? (s.saved ? s.saved.mode : s.mode) : null; };
 S.campaignCardCode = function(c) {
     var scs = c.scenarios || [], played = S.playedCount(c), vp = S.vpTotal(c), rank = S.rank(c);
-    var info = [t(c.mode == "solo" ? "mode_solo" : "mode_classic"), t("camp_progress", played, scs.length), t("vp_n", vp)];
+    var info = [t("camp_progress", played, scs.length), t("vp_n", vp)];
     if (rank) info.push(t("rank_is", rank));
     var dates = [];
     if (c.created) dates.push(t("created_on", fmtDay(c.created)));
     if (c.last) dates.push(t("last_played", fmtDay(c.last)));
-    var playing = S.state && S.state.campaign && S.state.campaign.cid == c.id ? S.state.campaign.idx : -1;
-    var dots = scs.map(function(sc, i) {
-        var st = i == playing ? "playing" : sc.status == "win" || sc.status == "loss" ? sc.status : sc.setup ? "todo" : "empty";
-        var lab = (i + 1) + ". " + (sc.title || t("scenario_to_choose")) + " — " + t("thread_" + st);
-        return "<span class='sk-cdot " + st + "' title='" + e(lab) + "'>" + (i + 1) + "</span>";
-    }).join("");
+    var dots = S.campaignDotsCode(c, true);
     var heroes = (c.heroes || []).map(function(h) {
         return "<span class='sk-chero" + (h.dead ? " dead" : "") + "' style='--hc:" + e(h.color || "#888") + "'>" + e(h.name) + "</span>";
     }).join("");
-    return "<article class='sk-scard sk-ccard' aria-label='" + e(c.name) + "'>"
+    return "<article class='sk-scard sk-ccard sk-cardlink' data-camp='" + c.id + "' tabindex='0' role='button' aria-label='" + e(t("open") + " : " + c.name) + "'>"
         + "<div class='sk-scard-head'><h3>" + e(c.name || t("untitled")) + "</h3>"
         + (c.finished ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + "</div>"
         + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p>"
         + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
         + "<div class='sk-cheroes'>" + (heroes || "<span class='sk-sdates'>" + e(t("camp_no_hero")) + "</span>") + "</div>"
-        + "<div class='sk-cthread' role='img' aria-label='" + e(t("scenario_thread")) + "'>" + (dots || "<span class='sk-sdates'>" + e(t("camp_no_scenario")) + "</span>") + "</div>"
-        + "<div class='sk-scard-acts'><button class='sk-btn sk-primary' data-camp='" + c.id + "'>" + e(t("open")) + "</button>"
-        + "<span class='sk-scard-sp'></span>"
-        + "<button class='sk-iconbtn sk-scact sk-danger' data-cdel='" + c.id + "' title='" + e(t("delete")) + "' aria-label='" + e(t("delete") + " : " + c.name) + "'>&#xf2ed;</button>"
-        + "</div></article>";
+        + (dots || "<div class='sk-cthread'><span class='sk-sdates'>" + e(t("camp_no_scenario")) + "</span></div>")
+        + "</article>";
 };
 // Écran vide : pêle-mêle de cartes de scénario (les vôtres s'il y en a, sinon l'exemple).
 S.emptyCampaignsCode = function(filtered) {
@@ -1227,16 +1219,15 @@ S.renderCampaigns = function() {
             return "<button " + attr + "='" + m[0] + "' class='" + (cur == m[0] ? "sk-on" : "") + "' role='radio' aria-checked='" + (cur == m[0]) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>";
     };
     var h = "<div class='sk-sbar'><input type='search' class='sk-in sk-ssearch' id='sk-cq' placeholder='" + e(t("search_campaign")) + "' aria-label='" + e(t("search_campaign")) + "' value='" + e(pr.campQ || "") + "'>"
-        + seg("data-cmode", pr.campMode || "", [["", "all_modes"], ["classic", "mode_classic"], ["solo", "mode_solo"]], "filter_mode")
         + seg("data-cstate", pr.campState || "", [["", "all_campaigns"], ["cur", "in_progress"], ["done", "finished"]], "filter_state")
         + seg("data-csort", pr.campSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by") + "</div>"
         + "<div id='sk-clist' class='sk-slist'></div>" + S.floatingCode("campaign", t("new_campaign"));
     origMount.call(S, "<div class='skelos-game sk-screen sk-scen sk-camps'><div class='sk-board'>" + h + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
     S.placeTabs();
     var draw = function() {
-        var q = S.norm(pr.campQ || ""), m = pr.campMode || "", stt = pr.campState || "", sort = pr.campSort || "recent";
+        var q = S.norm(pr.campQ || ""), stt = pr.campState || "", sort = pr.campSort || "recent";
         var rows = list.filter(function(c) {
-            return (!q || S.norm(c.name || "").indexOf(q) >= 0) && (!m || c.mode == m) && (!stt || (stt == "done") == !!c.finished);
+            return (!q || S.norm(c.name || "").indexOf(q) >= 0) && (!stt || (stt == "done") == !!c.finished);
         });
         rows.sort(sort == "alpha"
             ? function(a, b) { return (a.name || "").localeCompare(b.name || "", undefined, {sensitivity: "base"}); }
@@ -1252,35 +1243,69 @@ S.renderCampaigns = function() {
     };
     S.screenClick = function(ev) {
         var b;
-        if ((b = ev.target.closest("[data-cmode]"))) { pick("data-cmode", "campMode", b); return; }
         if ((b = ev.target.closest("[data-cstate]"))) { pick("data-cstate", "campState", b); return; }
         if ((b = ev.target.closest("[data-csort]"))) { pick("data-csort", "campSort", b); return; }
         if ((b = ev.target.closest("[data-camp]"))) { S.renderCampaign(b.dataset.camp); return; }
-        if ((b = ev.target.closest("[data-cdel]"))) {
-            var cid = b.dataset.cdel, c = S.campaign(cid);
-            S.ask(t("confirm_delete_campaign_n", c ? c.name : ""), t("delete"), function() {
-                S.saveCampaigns(S.campaigns().filter(function(x) { return x.id != cid; }));
-                if (S.state && S.state.campaign && S.state.campaign.cid == cid) { S.state.campaign = null; S.save(); }
-                S.renderCampaigns();
-            });
-        }
     };
+    S.bindCardKeys();
+};
+// Cartes cliquables : Entrée ou Espace ouvrent la carte au clavier.
+S.bindCardKeys = function() {
+    var scr = S.root.querySelector(".sk-screen"); if (!scr) return;
+    scr.addEventListener("keydown", function(ev) {
+        if ((ev.key == "Enter" || ev.key == " ") && ev.target.classList && ev.target.classList.contains("sk-cardlink")) { ev.preventDefault(); ev.target.click(); }
+    });
+};
+S.deleteCampaign = function(cid) {
+    var c = S.campaign(cid); if (!c) return;
+    S.ask(t("confirm_delete_campaign_n", c.name || ""), t("delete"), function() {
+        S.saveCampaigns(S.campaigns().filter(function(x) { return x.id != cid; }));
+        if (S.state && S.state.campaign && S.state.campaign.cid == cid) { S.state.campaign = null; S.save(); }
+        S.renderCampaigns();
+    });
+};
+S.deleteEditedScenario = function() {
+    var sid = S.editing && S.editing.sid, sc = S.scenarioList().filter(function(x) { return x.sid == sid; })[0]; if (!sc) return;
+    S.ask(t(sc.source == "official" ? "confirm_delete_official" : "confirm_delete_scenario", sc.title || t("untitled")), t("delete"), function() {
+        S.saveScenarios(S.scenarioList().filter(function(x) { return x.sid != sid; }));
+        S.closeEditor(); S.renderScenarios();
+    });
+};
+// Pastilles du fil (cartes et en-tête de la campagne).
+S.campaignDotsCode = function(c, wrap) {
+    var scs = c.scenarios || [], playing = S.state && S.state.campaign && S.state.campaign.cid == c.id ? S.state.campaign.idx : -1;
+    if (!scs.length) return "";
+    return "<div class='sk-cthread' role='img' aria-label='" + e(t("scenario_thread")) + "'>" + scs.map(function(sc, i) {
+        var st = i == playing ? "playing" : sc.status == "win" || sc.status == "loss" ? sc.status : sc.setup ? "todo" : "empty";
+        var lab = (i + 1) + ". " + (sc.title || t("scenario_to_choose")) + " — " + t("thread_" + st);
+        return "<span class='sk-cdot " + st + "' title='" + e(lab) + "'>" + (i + 1) + "</span>";
+    }).join("") + "</div>";
+};
+// En-tête de la campagne : titre suivi du fil, informations comme sur la carte, points de victoire en évidence, Journal et corbeille.
+S.campaignHeadCode = function(c) {
+    var scs = c.scenarios || [], rank = S.rank(c), info = [t("camp_progress", S.playedCount(c), scs.length)];
+    if (rank) info.push(t("rank_is", rank));
+    if (c.created) info.push(t("created_on", fmtDay(c.created)));
+    if (c.last) info.push(t("last_played", fmtDay(c.last)));
+    var vp = S.vpTotal(c);
+    return "<div class='sk-blk sk-headblk sk-chead'><button class='sk-btn sk-cback' data-nav='campaigns'>← " + e(t("campaigns")) + "</button>"
+        + "<div class='sk-chead-t'><div class='sk-chead-row'><h2>" + e(c.name || t("untitled")) + "</h2>"
+        + (c.finished ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + S.campaignDotsCode(c) + "</div>"
+        + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p></div>"
+        + "<div class='sk-cvp" + (vp < 0 ? " neg" : "") + "' role='img' aria-label='" + e(t("vp_n", vp)) + "'><b>" + vp + "</b><span>" + e(t("victory_points")) + "</span></div>"
+        + "<div class='sk-chead-acts'><button class='sk-btn sk-icon sk-cjournal' data-cact='journal' title='" + e(t("log")) + "' aria-label='" + e(t("log")) + "'>&#xf02d;</button>"
+        + "<button class='sk-btn sk-icon sk-cjournal sk-danger' data-cact='cdelete' title='" + e(t("delete_campaign")) + "' aria-label='" + e(t("delete_campaign")) + "'>&#xf2ed;</button></div></div>";
 };
 // Nouvelle campagne : nom et mode, puis l'écran de la campagne.
 S.newCampaign = function() {
-    var mode = S.prefs().alwaysSolo ? "solo" : "classic";
     S.dialog("<h2>" + e(t("new_campaign")) + "</h2>"
         + "<label class='sk-fl'>" + e(t("name")) + "<input class='sk-in' id='sk-cn' placeholder='" + e(t("campaign_name_ph")) + "'></label>"
-        + "<span class='sk-fl'>" + e(t("mode")) + "</span><div class='sk-seg' role='radiogroup'>" + [["classic", "mode_classic"], ["solo", "mode_solo"]].map(function(m) {
-            return "<button data-nmode='" + m[0] + "' class='" + (m[0] == mode ? "sk-on" : "") + "' role='radio' aria-checked='" + (m[0] == mode) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>"
         + "<p>" + e(t("new_campaign_help")) + "</p>"
         + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + e(t("create")) + "</button><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
         function(ev, close) {
-            var m = ev.target.closest("[data-nmode]");
-            if (m) { mode = m.dataset.nmode; S.root.querySelectorAll("[data-nmode]").forEach(function(x) { x.classList.toggle("sk-on", x == m); x.setAttribute("aria-checked", x == m); }); return; }
             if (!ev.target.closest("[data-ok]")) return;
             var name = S.root.querySelector("#sk-cn").value.trim() || t("campaign_name_ph");
-            var c = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, mode: mode, tiers: S.defaultTiers(), scenarios: [], heroes: [], cache: [], log: [], created: nowIso()};
+            var c = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, tiers: S.defaultTiers(), scenarios: [], heroes: [], cache: [], log: [], created: nowIso()};
             S.campLog(c, t("clog_created"));
             var l = S.campaigns(); l.push(c); S.saveCampaigns(l);
             close(); S.renderCampaign(c.id);
@@ -1290,15 +1315,15 @@ S.newCampaign = function() {
 // Ajouter (ou choisir) un scénario : copie d'un de mes scénarios du même mode, nouveau dans l'éditeur, ou emplacement vide.
 S.openChooseScenario = function(cid, idx) {
     var c = S.campaign(cid); if (!c) return;
-    var list = S.scenarioList().filter(function(sc) { return (sc.saved ? sc.saved.mode : sc.mode) == c.mode; });
+    var list = S.scenarioList();
     var cards = list.map(function(sc, i) {
-        return "<button class='sk-cpick' data-pick='" + i + "'><b>" + e(sc.title || t("untitled")) + "</b>" + S.riverThumbCode(sc) + "</button>";
+        return "<button class='sk-cpick' data-pick='" + i + "'><b>" + e(sc.title || t("untitled")) + "</b><span class='sk-smode'>" + e(t((sc.saved ? sc.saved.mode : sc.mode) == "solo" ? "mode_solo" : "mode_classic")) + "</span>" + S.riverThumbCode(sc) + "</button>";
     }).join("");
     S.dialog("<h2>" + e(t(idx == null ? "add_scenario" : "choose_scenario")) + "</h2>"
         + "<div class='sk-actions sk-cpick-top'><button class='sk-btn sk-primary' data-new>" + e(t("new_scenario")) + "</button>"
         + (idx == null ? "<button class='sk-btn' data-placeholder>" + e(t("placeholder_scenario")) + "</button>" : "") + "</div>"
-        + "<div class='sk-fl'>" + e(t("from_my_scenarios", t(c.mode == "solo" ? "mode_solo" : "mode_classic"))) + "</div>"
-        + (cards ? "<div class='sk-cpicks'>" + cards + "</div>" : "<p>" + e(t("no_scenario_for_mode", t(c.mode == "solo" ? "mode_solo" : "mode_classic"))) + "</p>")
+        + "<div class='sk-fl'>" + e(t("from_my_scenarios", list.length)) + "</div>"
+        + (cards ? "<div class='sk-cpicks'>" + cards + "</div>" : "<p>" + e(t("no_scenario")) + "</p>")
         + "<div class='sk-actions'><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
         function(ev, close) {
             if (ev.target.closest("[data-new]")) { close(); S.openCampaignEditor(cid, idx); return; }
@@ -1333,10 +1358,9 @@ S.openCampaignEditor = function(cid, idx) {
     var c = S.campaign(cid); if (!c) return;
     var sc = idx != null ? c.scenarios[idx] : null, setup = sc && sc.setup ? JSON.parse(JSON.stringify(sc.setup)) : null;
     if (setup) setup.title = sc.title || setup.title;
-    if (!setup) { setup = S.blankScenario(); setup.mode = c.mode; }
+    if (!setup) setup = S.blankScenario();
     S.openEditor(setup);
     S.editing.cid = cid; S.editing.idx = idx;
-    if (S.state && S.state.mode != c.mode) { S.state.mode = c.mode; S.state.scenario.mode = c.mode; }
     S.renderGame();
 };
 var origOpenSave = S.openSaveScenario;
@@ -1375,9 +1399,6 @@ S.saveCampaignScenarioFromDialog = function() {
     S.closeEditor(); S.toast(t(also ? "saved_campaign_and_mine" : "saved_in_campaign"));
     S.renderCampaign(cid);
 };
-// Mode fixé par la campagne : pas de bascule Aventure / Coop dans son éditeur.
-var origSwitchMode = S.switchMode;
-S.switchMode = function() { if (S.editing && S.editing.cid) { S.toast(t("mode_locked")); return; } return origSwitchMode.apply(S, arguments); };
 
 // Fil des scénarios d'une campagne : réordonné par glisser-déposer de la poignée.
 S.moveCampaignScenario = function(cid, from, to) {
@@ -1529,6 +1550,20 @@ S.swatchClick = function(ev) {
     return true;
 };
 
+// ---------- Écran de campagne : objets triés, bouton Journal à droite des onglets ----------
+S.sortItems = function(list) {
+    var ord = {eq: 0, sp: 1, up: 2};
+    return list.slice().sort(function(a, b) { return (ord[a.kind] - ord[b.kind]) || String(a.name).localeCompare(String(b.name), "fr", {sensitivity: "base"}); });
+};
+S.openCampaignJournal = function(cid) {
+    var c = S.campaign(cid); if (!c) return;
+    var fmt = function(d) { var p = String(d || "").split("-"); return p.length == 3 ? p[2] + "/" + p[1] + "/" + p[0] : ""; };
+    var h = "<div class='sk-journal'><h1>" + e(c.name) + "</h1>";
+    if (!(c.log || []).length) h += "<p>" + e(t("journal_empty")) + "</p>";
+    else h += "<ol class='sk-jlist'>" + c.log.map(function(l) { return "<li>" + (l.d ? "<span class='sk-jtime'>" + e(fmt(l.d)) + "</span>" : "") + e(l.msg) + "</li>"; }).join("") + "</ol>";
+    Nav.dialog(e(t("log")), h + "</div>", null, []);
+};
+
 // ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
 // On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
 var COMPANY_SIZE = 4;
@@ -1554,7 +1589,7 @@ S.heroSheetFull = function(ref) {
 };
 S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
 S.heroSheetCode = function(c, hh) {
-    var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; }), img = S.heroImage(hh);
+    var items = S.sortItems((c.cache || []).filter(function(it) { return it.owner == hh.id; })), img = S.heroImage(hh);
     return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' data-drophero='" + hh.id + "' style='--hc:" + hh.color + "'>"
         + "<button class='sk-hsheet-p' data-cact='hero' data-hero='" + hh.id + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>"
         + (img ? "<img src='" + e(img) + "' alt='' loading='lazy'>" : "<span class='sk-hsheet-ini' aria-hidden='true'>" + e((hh.name || "?").charAt(0)) + "</span>") + "</button>"
