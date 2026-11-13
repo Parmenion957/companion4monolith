@@ -476,7 +476,11 @@ var Skelos = {
             document.getElementById("sk-picker").innerHTML = out || "<p class='sk-help'>" + t("no_tile_found") + "</p>";
             status();
         };
-        var close = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; Skelos.renderSetup(); };
+        // Ouvert depuis le mode studio du plateau : on revient au plateau.
+        var close = function() {
+            ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null;
+            if (Skelos._pickToGame) { Skelos._pickToGame = false; Skelos.live = false; Skelos.renderGame(); } else Skelos.renderSetup();
+        };
 
         fillBoxes(); draw();
         document.getElementById("sk-q").addEventListener("input", draw);
@@ -509,7 +513,7 @@ var Skelos = {
                     if (live) Skelos.addLiveSlot(tile);
                     else Skelos.draft.river.push({tileId: tile.id, img: tile.image, color: tile.colors[0], lp: null});
                 });
-                if (live) Skelos.applyLive(true);
+                if (live && !Skelos._pickToGame) Skelos.applyLive(true); else if (live) Skelos.save();
                 close(); return;
             }
             var p = ev.target.closest(".sk-pick"); if (!p) return;

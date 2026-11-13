@@ -442,5 +442,24 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
 
     'confirm_new': "Une partie est en cours. L’abandonner pour commencer la nouvelle ?",
     'confirm_new_yes': "Abandonner et commencer",
-    'confirm_delete': "Supprimer ce scénario ?"
+    'confirm_delete': "Supprimer ce scénario ?",
+    'tool_restart': "Recommencer",
+    'tool_end': "Terminer",
+    'aria_act_minus': "Une activation de moins par tour",
+    'aria_act_plus': "Une activation de plus par tour",
+    'studio': "Mode studio",
+    'studio_hint': "Mode studio : régler la partie sur le plateau",
+    'mode_switch': "Mode de jeu",
+    'mode_adventure': "Aventure",
+    'mode_coop': "Coop",
+    'confirm_mode': "Changer de mode remet l’Overlord à zéro (gemmes ou jetons). Les tuiles, les points de vie et le tour sont conservés. Continuer ?",
+    'confirm_mode_yes': "Changer de mode",
+    'log_mode': "Mode : {0}",
+    'save_title': "Enregistrer comme scénario",
+    'title_required': "Donne un nom au scénario.",
+    'socle_next': "Socle : {0} (appuyer pour changer)",
+    'drop_remove': "Retirer de la Rivière",
+    'drag_hint': "glisser pour déplacer",
+    'event_edit_hint': "appuyer pour écrire l’Événement",
+    'gems_total_title': "Total gemmes"
 });
