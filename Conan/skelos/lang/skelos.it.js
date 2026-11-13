@@ -323,7 +323,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'export_all': "Export everything",
     'import': "Import",
     'display': "Display",
-    'always_solo': "Always show the solo clarifications",
     'animations': "Animations",
     'confirm_import': "Replace the data of this device with the file's?",
     'image_error': "This image could not be read.",

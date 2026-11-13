@@ -148,7 +148,7 @@ var Skelos = {
         if (!Skelos._prefs) {
             try { Skelos._prefs = JSON.parse(localStorage.getItem(Application + "_SkelosPrefs")) || {}; } catch (e) { Skelos._prefs = {}; }
             // Anciens filtres par boîte, remplacés par la portée « Mes boîtes » / « Tout ».
-            delete Skelos._prefs.ownedBoxes; delete Skelos._prefs.pickerBox; delete Skelos._prefs.heroBox;
+            delete Skelos._prefs.ownedBoxes; delete Skelos._prefs.pickerBox; delete Skelos._prefs.heroBox; delete Skelos._prefs.alwaysSolo;
         }
         return Skelos._prefs;
     },
@@ -820,16 +820,38 @@ var Skelos = {
     showTip: function(el) {
         var sk = Skelos.skillById(el.dataset.skill); if (!sk) return;
         var tip = Skelos.root.querySelector("#sk-tip");
-        var solo = (Skelos.state && Skelos.state.mode == "solo") || Skelos.prefs().alwaysSolo;
+        // Les précisions solo / coop ne s'affichent que dans une partie en mode solo / coop.
+        var solo = !!(Skelos.state && Skelos.state.mode == "solo");
         tip.innerHTML = "<b>" + Skelos.esc(sk.title) + "</b><p>" + Skelos.esc(Skelos.fixDice(sk.text)) + "</p>"
             + (solo && sk.clarification ? "<p class='sk-solo'>" + Skelos.esc(Skelos.fixDice(sk.clarification)) + "</p>" : "");
         tip.classList.add("on");
-        var b = el.getBoundingClientRect(), w = Math.min(340, window.innerWidth - 16);
-        tip.style.width = w + "px";
-        var left = Math.max(8, Math.min(b.right + 8, window.innerWidth - w - 8));
-        if (left < b.right && b.left - w - 8 >= 8) left = b.left - w - 8;
-        var top = Math.max(8, Math.min(b.top, window.innerHeight - tip.offsetHeight - 8));
+        // Zone libre : entre la barre du haut et la barre de navigation du Compagnon, qui ne doivent pas couper le texte.
+        var area = Skelos.freeArea(), b = el.getBoundingClientRect(), W = window.innerWidth, w = Math.min(360, W - 16);
+        tip.style.width = w + "px"; tip.style.maxHeight = (area.bottom - area.top) + "px"; tip.style.overflowY = "auto";
+        var h = tip.offsetHeight, left, top;
+        if (b.right + 8 + w <= W - 8) left = b.right + 8;          // à droite de la compétence
+        else if (b.left - 8 - w >= 8) left = b.left - 8 - w;        // sinon à gauche
+        else left = null;                                         // sinon au-dessus ou en dessous
+        if (left != null) top = Math.max(area.top, Math.min(b.top, area.bottom - h));
+        else {
+            left = Math.max(8, Math.min(b.left + b.width / 2 - w / 2, W - w - 8));
+            top = b.bottom + 8 + h <= area.bottom ? b.bottom + 8 : b.top - 8 - h >= area.top ? b.top - 8 - h : Math.max(area.top, area.bottom - h);
+        }
         tip.style.left = left + "px"; tip.style.top = top + "px";
+    },
+
+    // Partie visible de l'écran, sans les barres fixes du Compagnon (en-tête en haut, navigation en bas).
+    freeArea: function() {
+        var top = 8, bottom = window.innerHeight - 8, root = Skelos.root;
+        var bar = function(y) {
+            var n = document.elementFromPoint(window.innerWidth / 2, y);
+            while (n && n != document.body && !(root && root.contains(n)) && ["fixed", "sticky"].indexOf(getComputedStyle(n).position) < 0) n = n.parentElement;
+            return n && n != document.body && !(root && root.contains(n)) ? n.getBoundingClientRect() : null;
+        };
+        var tb = bar(2), bb = bar(window.innerHeight - 2);
+        if (tb && tb.bottom < window.innerHeight / 3) top = Math.max(top, tb.bottom + 8);
+        if (bb && bb.top > window.innerHeight * 2 / 3) bottom = Math.min(bottom, bb.top - 8);
+        return {top: top, bottom: bottom};
     },
 
     hideTip: function() {
