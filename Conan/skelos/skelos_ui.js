@@ -364,12 +364,11 @@ S.scenarioList = function() {
     if (changed) S.saveScenarios(l);
     return l;
 };
-// Enregistrement depuis la disquette : même scénario (sid) remplacé ; un scénario officiel devient une copie personnelle.
+// Enregistrement depuis la disquette : même scénario (sid) remplacé ; un scénario officiel modifié devient personnel.
 S.saveScenarioCopy = function(d) {
     var list = S.scenarioList(), copy = JSON.parse(JSON.stringify(d)), now = nowIso();
     var idx = copy.sid ? list.findIndex(function(x) { return x.sid == copy.sid; }) : -1;
     if (idx < 0) idx = list.findIndex(function(x) { return x.title && x.title == copy.title && x.source != "official"; });
-    if (idx >= 0 && list[idx].source == "official") idx = -1;
     if (idx >= 0) { copy.sid = list[idx].sid; copy.created = list[idx].created || now; }
     else { copy.sid = newSid(); copy.created = now; }
     copy.source = "user"; copy.updated = now;
@@ -411,10 +410,10 @@ S.scenarioCardCode = function(sc, i) {
         + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
         + S.riverThumbCode(sc)
         + "<div class='sk-scard-acts'><button class='sk-btn sk-primary' data-sc='play' data-i='" + i + "'>" + e(t("play")) + "</button>"
-        + (official ? "" : "<button class='sk-btn' data-sc='edit' data-i='" + i + "'>" + e(t("edit")) + "</button>")
+        + "<button class='sk-btn' data-sc='edit' data-i='" + i + "'>" + e(t("edit")) + "</button>"
         + "<span class='sk-scard-sp'></span>"
         + ico("dup", "&#xf0c5;", t("duplicate"))
-        + (official ? "" : ico("del", "&#xf2ed;", t("delete"), "sk-danger"))
+        + ico("del", "&#xf2ed;", t("delete"), "sk-danger")
         + "</div></article>";
 };
 // Pêle-mêle de l'écran vide : illustrations de tuiles du Compagnon en éventail, comme les autres modules.
@@ -476,7 +475,7 @@ S.renderScenarios = function() {
                 var l = S.scenarioList(); l.push(c); S.saveScenarios(l);
                 S.toast(t("scenario_duplicated")); S.renderScenarios(); break;
             case "del":
-                S.ask(t("confirm_delete_scenario", sc.title || t("untitled")), t("delete"), function() {
+                S.ask(t(sc.source == "official" ? "confirm_delete_official" : "confirm_delete_scenario", sc.title || t("untitled")), t("delete"), function() {
                     var l2 = S.scenarioList().filter(function(x) { return x.sid != sc.sid; }); S.saveScenarios(l2); S.renderScenarios();
                 });
                 break;
@@ -844,8 +843,9 @@ S.toggleFirstPlayer = function() {
     var st = S.state, fp = st.scenario.firstPlayer == "overlord" ? "heroes" : "overlord";
     S.snapshot();
     st.scenario.firstPlayer = fp;
-    // Le bloc Phase suit, quel que soit le tour, sauf pendant des activations de l'Overlord (on ne les efface pas).
-    if (!st.activations) { st.phase = fp == "overlord" ? "start" : "heroes"; st.current = null; st.highlight = null; }
+    // Le bloc Phase suit toujours ; un tour de l'Overlord entamé repart de zéro (Annuler permet de revenir).
+    st.phase = fp == "overlord" ? "start" : "heroes";
+    st.activations = 0; st.current = null; st.highlight = null; st.lastEvent = false;
     commit();
 };
 
