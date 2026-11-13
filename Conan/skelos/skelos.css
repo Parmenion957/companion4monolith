@@ -1125,3 +1125,17 @@ html.skelos-full nav.menu { display: none !important; }
     .sk-pmarker { width: 32px; height: 32px; }
     .sk-pdraw { font-size: .8rem !important; min-height: 32px; padding: 2px 8px !important; }
 }
+
+/* ---------- Étape 2 — Onglets permanents, dessinés comme ceux des autres modules (nav-menu du Compagnon) ---------- */
+#skelos > .sk-tabs { position: sticky; top: 0; z-index: 35; display: flex; gap: 0; margin: 0; flex-wrap: nowrap;
+    padding: 0 calc(100% / (4 * var(--sk-ntabs, 3) + 2)); background-color: var(--tabs-bg-color); border-bottom: 1px solid #cfcfcf; }
+#skelos > .sk-tabs .sk-tabbtn { flex: 1 1 0; min-width: 0; height: 39px; line-height: 39px; padding: 0; margin: 0; border: 0; border-bottom: 3px solid transparent; border-radius: 0;
+    background: none; color: var(--tabs-color); font-family: 'Primary'; font-size: calc(var(--primary-size) * 1rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+#skelos > .sk-tabs .sk-tabbtn.on { border-bottom-color: var(--highlight-color); }
+#skelos > .sk-tabs .sk-tabbtn:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: -2px; }
+#skelos .sk-tabbed { padding-top: 10px !important; }
+#skelos .sk-tabbed .sk-board { padding-top: 0 !important; }
+@media (max-width: 600px) {
+    #skelos > .sk-tabs { padding: 0; }
+    #skelos > .sk-tabs .sk-tabbtn { font-size: calc(var(--primary-size) * .85rem); }
+}

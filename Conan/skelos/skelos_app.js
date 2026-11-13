@@ -206,7 +206,6 @@ S.openGameMenu = function() {
     ov.innerHTML = "<div class='sk-dialog sk-menu' role='menu'>"
         + "<button class='sk-btn' data-m='params' role='menuitem'>" + t("menu_params") + "</button>"
         + "<button class='sk-btn sk-danger' data-m='end' role='menuitem'>" + t("menu_end") + "</button>"
-        + "<button class='sk-btn' data-m='home' role='menuitem'>" + t("menu_home") + "</button>"
         + "<button class='sk-btn' data-m='close' role='menuitem'>" + t("close") + "</button></div>";
     ov.classList.add("on");
     ov.onclick = function(ev) {
@@ -215,7 +214,6 @@ S.openGameMenu = function() {
         if (!b) return;
         if (b.dataset.m == "params") { S.live = true; S.ctx = null; S.renderSetup(); }
         else if (b.dataset.m == "end") S.renderEnd();
-        else if (b.dataset.m == "home") S.renderHome();
     };
     ov.querySelector("[data-m]").focus();
 };
@@ -412,7 +410,7 @@ S.launchCampaignScenario = function(cid, i) {
     var c = S.campaign(cid), sc = c.scenarios[i];
     var go = function() { S.clearGame(); S.ctx = {cid: cid, idx: i}; S.live = false; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
     if (!sc.setup || !(sc.setup.river || []).length) { S.toast(t("river_help")); return; }
-    if (S.state) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
+    if (S.state && S.state.river.length) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
 };
 S.addItems = function(cid, sel, owner) {
     S.updateCampaign(cid, function(c) {
