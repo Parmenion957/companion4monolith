@@ -90,36 +90,6 @@ S.transferGem = function(dir) {
     else return;
     S.save(); S.renderGame();
 };
-S.gemsEditorCode = function() {
-    var st = S.state, pool = st.energy + st.fatigue, b = S.boostSum();
-    return "<label>" + t("gems_total_label") + "<div class='sk-gemtot'><button type='button' class='sk-mini' data-act='gemminus' aria-label='" + e(t("gem_remove")) + "'>−</button><b>" + S.gemTotal() + "</b>"
-        + "<button type='button' class='sk-mini' data-act='gemplus' aria-label='" + e(t("gem_add")) + "'>+</button></div><small>" + t("gem_add_help") + "</small></label>"
-        + "<label class='sk-span2'>" + t("gems_split_label")
-        + "<div class='sk-split'><span class='sk-split-e' id='sk-split-e'>" + st.energy + "</span>"
-        + "<input type='range' id='sk-gemslider' name='gemsplit' min='0' max='" + pool + "' step='1' value='" + st.energy + "' aria-label='" + e(t("gems_split_label")) + "'>"
-        + "<span class='sk-split-f' id='sk-split-f'>" + st.fatigue + "</span></div>"
-        + "<small class='sk-split-legend'><span>" + t("energy") + "</span><span>" + e(b ? t("gems_split_help_b", pool, S.gemTotal(), b) : t("gems_split_help", pool)) + "</span><span>" + t("fatigue") + "</span></small></label>";
-};
-S.gemSliderPreview = function(v) {
-    var pool = S.state.energy + S.state.fatigue;
-    var a = S.root.querySelector("#sk-split-e"), f = S.root.querySelector("#sk-split-f");
-    if (a) a.textContent = v; if (f) f.textContent = pool - v;
-};
-S.liveDraft = function() {
-    var st = S.state, d = JSON.parse(JSON.stringify(st.scenario));
-    d.turns = st.turns; d.recovery = st.recovery; d.maxActivations = st.maxActivations; d.heroes = st.heroes; d.mode = st.mode;
-    return d;
-};
-S.applyLive = function(noSnap) {
-    var st = S.state, d = S.draft;
-    if (!noSnap) S.snapshot();
-    st.turns = d.turns; st.recovery = d.recovery; st.maxActivations = Math.max(1, d.maxActivations || 1);
-    if (st.mode == "solo") st.heroes = Math.max(1, d.heroes || 1);
-    ["title", "events", "notes", "turns", "recovery", "maxActivations", "heroes", "firstPlayer"].forEach(function(k) { st.scenario[k] = d[k]; });
-    var sl = S.root && S.root.querySelector("#sk-gemslider");
-    if (sl) { var pool = st.energy + st.fatigue, v = Math.max(0, Math.min(pool, +sl.value)); st.energy = v; st.fatigue = pool - v; }
-    S.save();
-};
 S.newSlot = function(tile) {
     var st = S.state, n = 0;
     st.river.concat(st.removedSlots || []).forEach(function(s) { var k = parseInt(String(s.uid).slice(1), 10); if (k >= n) n = k + 1; });
@@ -156,29 +126,11 @@ S.clearGame = function() { S.state = null; S.undoStack = []; S.selected = null; 
 
 // Actions supplémentaires de l'écran de préparation.
 S.setupAction = function(b) {
-    var act = b.dataset.act, live = !!(S.live && S.state);
+    var act = b.dataset.act;
     switch (act) {
         case "home": S.ctx = null; S.renderHome(); return true;
         case "backcamp": var cid = S.ctx.cid; S.readForm(); S.savePrep(); S.ctx = null; S.renderCampaign(cid); return true;
-        case "backgame": S.readForm(); if (live) S.applyLive(true); S.live = false; S.renderGame(); return true;
-        case "savelive": S.readForm(); S.applyLive(true); S.saveScenarioCopy(S.scenarioFromState()); return true;
-        case "restart":
-            S.readForm(); S.applyLive(true);
-            S.ask(t("confirm_restart"), t("restart_game"), function() {
-                var camp = S.state.campaign; S.draft = S.scenarioFromState(); S.live = false;
-                S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null; S.clearGame(); S.startGame(true);
-            });
-            return true;
         case "prepsave": S.readForm(); S.savePrep(); S.toast(t("prep_saved")); return true;
-        case "gemplus": case "gemminus":
-            S.readForm(); S.applyLive();
-            var st = S.state;
-            if (act == "gemplus") st.fatigue++;
-            else if (st.fatigue > 0) st.fatigue--;
-            else if (st.energy > 0) st.energy--;
-            else { S.toast(t("gem_none_left")); return true; }
-            S.log(t(act == "gemplus" ? "log_gem_added" : "log_gem_removed", S.gemTotal()));
-            S.save(); S.renderSetup(); return true;
         case "heroassign": S.openAssign(b.dataset.cid, b.dataset.hero); return true;
         case "itemmenu": S.openItemMenu(b.dataset.cid, b.dataset.item); return true;
     }
@@ -200,27 +152,9 @@ S.onGameStart = function() {
     S.ctx = null;
 };
 
-// ---------- Menu du plateau ----------
-S.openGameMenu = function() {
-    var ov = S.root.querySelector("#sk-overlay");
-    ov.innerHTML = "<div class='sk-dialog sk-menu' role='menu'>"
-        + "<button class='sk-btn' data-m='params' role='menuitem'>" + t("menu_params") + "</button>"
-        + "<button class='sk-btn sk-danger' data-m='end' role='menuitem'>" + t("menu_end") + "</button>"
-        + "<button class='sk-btn' data-m='close' role='menuitem'>" + t("close") + "</button></div>";
-    ov.classList.add("on");
-    ov.onclick = function(ev) {
-        var b = ev.target.closest("[data-m]"); if (!b && ev.target !== ov) return;
-        ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null;
-        if (!b) return;
-        if (b.dataset.m == "params") { S.live = true; S.ctx = null; S.renderSetup(); }
-        else if (b.dataset.m == "end") S.renderEnd();
-    };
-    ov.querySelector("[data-m]").focus();
-};
-
 // ---------- Accueil ----------
 S.renderHome = function() {
-    S.screen = "home"; S.live = false; S.ctx = null;
+    S.screen = "home"; S.ctx = null;
     var st = S.state, camps = S.campaigns(), h = "";
     h += "<div class='sk-blk sk-title'><h1>" + t("tab") + "</h1></div>";
     if (st) {
@@ -272,7 +206,7 @@ S.navClick = function(ev) {
 
 // ---------- Partie libre ----------
 S.renderFree = function() {
-    S.screen = "free"; S.ctx = null; S.live = false;
+    S.screen = "free"; S.ctx = null;
     var list = S.scenarios(), h = head("home", t("free_game"));
     h += "<div class='sk-blk sk-c4'><h3>" + t("new_scenario") + "</h3><p>" + t("new_scenario_help") + "</p>"
         + "<div class='sk-seg' role='radiogroup'><button class='sk-on' data-mode='classic' aria-pressed='true'>" + t("mode_classic") + "</button><button data-mode='solo' aria-pressed='false'>" + t("mode_solo") + "</button></div>"
@@ -395,7 +329,7 @@ S.renderCampaign = function(cid) {
             case "settings": S.openCampaignSettings(c.id); break;
             case "addsc": case "choose": S.openChooseScenario(c.id, b.dataset.cact == "choose" ? i : null); break;
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
-            case "prepare": S.ctx = {cid: c.id, idx: i}; S.live = false; S.draft = JSON.parse(JSON.stringify(c.scenarios[i].setup)); S.renderSetup(); break;
+            case "prepare": S.ctx = {cid: c.id, idx: i}; S.draft = JSON.parse(JSON.stringify(c.scenarios[i].setup)); S.renderSetup(); break;
             case "launch": S.launchCampaignScenario(c.id, i); break;
             case "date": S.editField(t("edit_date"), "date", c.scenarios[i].date || today(), function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].date = v; }); S.renderCampaign(c.id); }); break;
             case "vp": S.editField(t("edit_vp"), "number", c.scenarios[i].vp || 0, function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].vp = parseInt(v, 10) || 0; }); S.renderCampaign(c.id); }); break;
@@ -408,7 +342,7 @@ S.renderCampaign = function(cid) {
 
 S.launchCampaignScenario = function(cid, i) {
     var c = S.campaign(cid), sc = c.scenarios[i];
-    var go = function() { S.clearGame(); S.ctx = {cid: cid, idx: i}; S.live = false; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
+    var go = function() { S.clearGame(); S.ctx = {cid: cid, idx: i}; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
     if (!sc.setup || !(sc.setup.river || []).length) { S.toast(t("river_help")); return; }
     if (S.state && S.state.river.length) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
 };
@@ -480,7 +414,7 @@ S.openChooseScenario = function(cid, idx) {
             var c = S.campaign(cid);
             if (ev.target.closest("[data-new]")) {
                 close(); var d = S.blankScenario(); d.mode = c.mode; var at = put(d, "");
-                S.ctx = {cid: cid, idx: at}; S.live = false; S.draft = d; S.renderSetup();
+                S.ctx = {cid: cid, idx: at}; S.draft = d; S.renderSetup();
             } else if (ev.target.closest("[data-placeholder]")) { close(); put(null, ""); S.renderCampaign(cid); }
             else { var p = ev.target.closest("[data-pick]"); if (p) { close(); var s = JSON.parse(JSON.stringify(list[+p.dataset.pick])); put(s, s.title); S.renderCampaign(cid); } }
         });

@@ -128,7 +128,8 @@ S.phaseBlockCode = function() {
 S.overlordBlockCode = function() {
     var st = S.state, ov = st.phase == "overlord", max = st.mode == "solo" ? st.heroes : st.maxActivations;
     return "<div class='sk-p sk-a-ov'>" + title("steps_overlord_title")
-        + "<button class='sk-turnbtn' data-act='" + (ov ? "oend" : "oturn") + "' title='" + e(t(ov ? "end_overlord_turn" : "start_overlord_turn")) + "'>" + e(t(ov ? "btn_end" : "btn_start")) + "</button>"
+        // En mode studio, le tour ne se joue pas : il faut d'abord sortir du mode.
+        + "<button class='sk-turnbtn' data-act='" + (ov ? "oend" : "oturn") + "'" + (S.studio ? " disabled" : "") + " title='" + e(t(S.studio ? "studio_exit_first" : ov ? "end_overlord_turn" : "start_overlord_turn")) + "'>" + e(t(ov ? "btn_end" : "btn_start")) + "</button>"
         + (S.studio && st.mode != "solo" ? "<div class='sk-pctr sk-pmaxact'><button class='sk-pstep' data-act='studiomaxact' data-n='-1' aria-label='" + e(t("aria_act_minus")) + "'>−</button>" : "")
         + "<div class='sk-pacts' role='img' aria-label='" + e(t("activations") + " " + st.activations + " / " + max) + "'>" + S.activationSlots(st.activations, max) + "</div>"
         + (S.studio && st.mode != "solo" ? "<button class='sk-pstep' data-act='studiomaxact' data-n='1' aria-label='" + e(t("aria_act_plus")) + "'>+</button></div>" : "") + "</div>";
@@ -244,20 +245,16 @@ S.bindEventTips = function(root) {
     ["pointerup", "pointercancel"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); timer = null; }); });
 };
 
-// L'Overlord a fait la récupération et le compte-tour : on garde l'état pour l'affichage des étapes.
-var origEnd = S.endOverlordTurn;
-S.endOverlordTurn = function() { origEnd.apply(S, arguments); };
-
-// ---------- Préparation et paramètres : dialogue plein écran, boutons − et +, tuiles Événement ----------
+// ---------- Préparation : dialogue plein écran, boutons − et +, tuiles Événement ----------
 var origRenderSetup = S.renderSetup;
 S.renderSetup = function() {
     origRenderSetup.apply(S, arguments);
     S.enhanceSetup();
 };
-var ACT_ICONS = {start: "&#xf04b;", savescen: "&#xf0c7;", savelive: "&#xf0c7;", prepsave: "&#xf0c7;", restart: "&#xf2f9;"};
+var ACT_ICONS = {start: "&#xf04b;", savescen: "&#xf0c7;", prepsave: "&#xf0c7;"};
 S.enhanceSetup = function() {
     var r = S.root, s = r.querySelector(".skelos-setup"); if (!s) return;
-    var live = !!(S.live && S.state), rv = live ? S.state.river : S.draft.river;
+    var rv = S.draft.river;
     // En-tête de dialogue : retour, titre, actions en icônes.
     var head = s.querySelector(".sk-head"), back = head.querySelector("[data-act]"), title = head.querySelector("h1").textContent;
     var acts = s.querySelector(".sk-actions"), icons = "";
@@ -273,7 +270,7 @@ S.enhanceSetup = function() {
     // Une description par tuile Événement, à la place du champ d'événements général.
     var evLabel = s.querySelector("textarea[name=events]");
     if (evLabel) {
-        var lab = evLabel.closest("label"), general = (live ? S.state.scenario.events : S.draft.events) || "", first = true;
+        var lab = evLabel.closest("label"), general = S.draft.events || "", first = true;
         var h = "<div class='sk-wide sk-evsection'><h2>" + t("event_tiles") + "</h2><p class='sk-help'>" + t("event_tiles_help") + "</p>";
         var any = false;
         rv.forEach(function(sl, i) {
@@ -304,7 +301,7 @@ S.addSteppers = function(scope) {
 var origReadForm = S.readForm;
 S.readForm = function() {
     origReadForm.apply(S, arguments);
-    var live = !!(S.live && S.state), rv = live ? S.state.river : S.draft.river;
+    var rv = S.draft.river;
     S.root.querySelectorAll("textarea[data-evi]").forEach(function(ta) { var sl = rv[+ta.dataset.evi]; if (sl) sl.eventText = ta.value; });
 };
 
@@ -342,12 +339,12 @@ S.navClick = function(ev) {
     if (n && n.dataset.nav == "home") { S.renderHome(); return; }
     if (n && n.dataset.nav == "scenarios") { S.renderScenarios(); return; }
     var f = ev.target.closest("[data-fab]");
-    if (f) { if (f.dataset.fab == "scenario") { S.ctx = null; S.live = false; S.draft = S.blankScenario(); S.renderSetup(); } else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
+    if (f) { if (f.dataset.fab == "scenario") { S.ctx = null; S.draft = S.blankScenario(); S.renderSetup(); } else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
     origNav.call(S, ev);
 };
 // Onglet Partie : directement le plateau ; sans partie en cours, une partie vide aux valeurs par défaut.
 S.renderHome = function() {
-    S.live = false; S.ctx = null;
+    S.ctx = null;
     if (S.state) { S.renderGame(); return; }
     S.draft = S.blankScenario();
     S.startGame("blank");
@@ -355,7 +352,7 @@ S.renderHome = function() {
 
 // Onglet Scénarios.
 S.renderScenarios = function() {
-    S.screen = "scenarios"; S.ctx = null; S.live = false;
+    S.screen = "scenarios"; S.ctx = null;
     var list = S.scenarios(), pr = S.prefs();
     var h = "<div class='sk-blk sk-c8'><div class='sk-row'><input type='search' class='sk-in' id='sk-sq' placeholder='" + e(t("search_scenario")) + "' value='" + e(pr.scenQ || "") + "' style='flex:1'>"
         + "<div class='sk-seg' role='radiogroup'>" + [["", "all_modes"], ["classic", "mode_classic"], ["solo", "mode_solo"]].map(function(m) {
@@ -382,7 +379,7 @@ S.renderScenarios = function() {
         var i = +b.dataset.i;
         if (b.dataset.sc == "edit") { S.draft = JSON.parse(JSON.stringify(list[i])); S.renderSetup(); }
         else if (b.dataset.sc == "play") {
-            var go = function() { S.clearGame(); S.ctx = null; S.live = false; S.draft = JSON.parse(JSON.stringify(list[i])); S.startGame(true); };
+            var go = function() { S.clearGame(); S.ctx = null; S.draft = JSON.parse(JSON.stringify(list[i])); S.startGame(true); };
             if (S.state && S.state.river.length) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
         }
         else if (b.dataset.sc == "del") S.ask(t("confirm_delete"), t("delete"), function() { var l = S.scenarios(); l.splice(i, 1); S.saveScenarios(l); S.renderScenarios(); });
@@ -651,7 +648,7 @@ S.restartGame = function() {
         } else {
             // Partie commencée avant cette version : on repart du scénario d'origine connu.
             var camp = st.campaign;
-            S.draft = JSON.parse(JSON.stringify(st.scenario)); S.live = false;
+            S.draft = JSON.parse(JSON.stringify(st.scenario));
             S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
             S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
             if (S.state) S.state.log = [];
@@ -730,7 +727,7 @@ S.switchMode = function(mode) {
 
 // + d'un emplacement vide : le sélecteur de tuiles, qui ajoute au bout de la Rivière.
 S.studioPick = function() {
-    S.live = true; S._pickToGame = true;
+    S._pickToGame = true;
     S.openPicker();
     document.documentElement.classList.add("skelos-dlgopen");
 };
@@ -971,7 +968,7 @@ S.startGame = function(force) {
         if (d.notes != null) st.scenario.notes = d.notes;
         st.campaign = S.ctx ? {cid: S.ctx.cid, idx: S.ctx.idx} : null;
         st.origin = S.stateCopy(st);
-        S.undoStack = []; S._hpOpen = null; S.selected = null; S.live = false;
+        S.undoStack = []; S._hpOpen = null; S.selected = null;
         S.state = st;
         S.log(t("log_resume", st.turn));
         S.save();
