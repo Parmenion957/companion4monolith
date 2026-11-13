@@ -577,10 +577,6 @@
 .sk-evfield textarea { width: 100%; }
 
 /* Réglages : icônes personnalisées */
-.sk-iconrows { display: flex; flex-direction: column; gap: 8px; }
-.sk-iconrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.sk-iconrow img { height: 40px; width: auto; }
-.sk-iconrow span { flex: 1; min-width: 120px; }
 
 /* Plein écran : le Livre de Skelos occupe tout l'écran */
 html.skelos-full .header, html.skelos-full nav.nav { display: none !important; }

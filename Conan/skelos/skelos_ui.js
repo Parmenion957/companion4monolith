@@ -6,24 +6,23 @@
 // onglets, boîtes de dialogue plein écran, boutons − et +, descriptions des tuiles Événement, icônes personnalisées.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
-var KEY_ICONS = Application + "_SkelosIcons";
 
 // ---------- Icônes et jetons ----------
 // Images du Compagnon par défaut ; l'utilisateur peut charger les siennes, gardées sur son appareil.
 S.ICON_DEFAULTS = {
-    move: "studio/tile/img/movement.webp",
-    defense: "studio/hero_sheet/img/d_defense.webp",
-    reroll: "resources/img/dice_red_reroll.webp",
+    // Mouvement, relance et défense active : icônes originales du module (créées par l'utilisateur).
+    move: "skelos/img/icone_mouvement.webp",
+    defense: "skelos/img/icone_defense.webp",
+    reroll: "skelos/img/icone_relance.webp",
     spell: "data/skills/img/magic/spell_caster.webp",
     gem: "resources/img/gem_red.webp",
     time: "data/tokens/img/time.webp",
     alarm: "data/tokens/img/alarm.webp",
     tokenback: "data/tokens/img/marker.webp"
 };
-S.CUSTOMIZABLE = ["move", "defense", "reroll"];
-S.customIcons = function() { try { return JSON.parse(localStorage.getItem(KEY_ICONS)) || {}; } catch (x) { return {}; } };
-S.saveCustomIcons = function(o) { try { localStorage.setItem(KEY_ICONS, JSON.stringify(o)); return true; } catch (x) { S.toast(t("storage_full")); return false; } };
-S.icon = function(k) { var c = S.customIcons(); return c[k] || S.asset(S.ICON_DEFAULTS[k]); };
+S.icon = function(k) { return S.asset(S.ICON_DEFAULTS[k]); };
+// Les anciennes icônes personnalisées (mouvement, relance, défense active) sont remplacées par celles du module.
+try { localStorage.removeItem(Application + "_SkelosIcons"); } catch (x) {}
 S.marker = function(n) { return S.asset("data/tokens/img/marker-" + Math.max(1, Math.min(13, n)) + ".webp"); };
 
 S.gems = function(n, cls) {
@@ -581,35 +580,6 @@ S.renderSettings = function() {
     scr.classList.add("sk-dialogscreen");
     var hb = scr.querySelector(".sk-headblk");
     if (hb) hb.outerHTML = "<div class='sk-dlghead'><button class='sk-dlgback' data-nav='home' title='" + e(t("close")) + "' aria-label='" + e(t("close")) + "'>&#xf060;</button><h1>" + t("settings") + "</h1></div>";
-    var c = S.customIcons();
-    var h = "<div class='sk-blk sk-c8 sk-iconset'><h3>" + t("custom_icons") + "</h3><p>" + t("custom_icons_help") + "</p><div class='sk-iconrows'>"
-        + S.CUSTOMIZABLE.map(function(k) {
-            return "<div class='sk-iconrow'><img src='" + S.icon(k) + "' alt=''><span>" + t("icon_" + k) + (c[k] ? " <small>" + t("icon_custom") + "</small>" : "") + "</span>"
-                + "<label class='sk-btn sk-filebtn'>" + t("choose_image") + "<input type='file' accept='image/*' data-iconfile='" + k + "' hidden></label>"
-                + (c[k] ? "<button class='sk-btn' data-iconreset='" + k + "'>" + t("reset_icon") + "</button>" : "") + "</div>";
-        }).join("") + "</div></div>";
-    scr.querySelector(".sk-g8").insertAdjacentHTML("beforeend", h);
-    scr.addEventListener("change", function(ev) {
-        var x = ev.target; if (!x.dataset.iconfile || !x.files || !x.files[0]) return;
-        var k = x.dataset.iconfile, rd = new FileReader();
-        rd.onload = function() {
-            var img = new Image();
-            img.onload = function() {
-                var max = 128, sc = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement("canvas");
-                cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
-                cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-                var o = S.customIcons(); o[k] = cv.toDataURL("image/png");
-                if (S.saveCustomIcons(o)) S.renderSettings();
-            };
-            img.onerror = function() { S.toast(t("image_error")); };
-            img.src = rd.result;
-        };
-        rd.readAsDataURL(x.files[0]);
-    });
-    scr.addEventListener("click", function(ev) {
-        var b = ev.target.closest("[data-iconreset]"); if (!b) return;
-        var o = S.customIcons(); delete o[b.dataset.iconreset]; S.saveCustomIcons(o); S.renderSettings();
-    });
     S.syncDialogMode();
 };
 // La fin de scénario prend aussi l'allure d'un dialogue du Compagnon.
