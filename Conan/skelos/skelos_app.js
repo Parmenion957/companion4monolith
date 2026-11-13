@@ -116,12 +116,6 @@ S.scenarioFromState = function() {
     if (st.mode == "classic") { d.energy = st.energy; d.fatigue = st.fatigue + S.boostSum(); }
     return d;
 };
-S.saveScenarioCopy = function(d) {
-    var list = S.scenarios(), copy = JSON.parse(JSON.stringify(d));
-    var idx = list.findIndex(function(x) { return x.title && x.title == copy.title; });
-    if (idx >= 0) list[idx] = copy; else list.push(copy);
-    S.saveScenarios(list); S.toast(t("scenario_saved"));
-};
 S.clearGame = function() { S.state = null; S.undoStack = []; S.selected = null; try { localStorage.removeItem(S.storageGame); } catch (x) {} };
 
 // Actions supplémentaires de l'écran de préparation.
@@ -153,29 +147,6 @@ S.onGameStart = function() {
 };
 
 // ---------- Accueil ----------
-S.renderHome = function() {
-    S.screen = "home"; S.ctx = null;
-    var st = S.state, camps = S.campaigns(), h = "";
-    h += "<div class='sk-blk sk-title'><h1>" + t("tab") + "</h1></div>";
-    if (st) {
-        var cn = st.campaign ? S.campaignName(st.campaign.cid) : "";
-        h += "<div class='sk-blk sk-resume sk-c4'><h3>" + t("resume_game") + "</h3><p>" + e(st.scenario.title || t("tab"))
-            + (cn ? " · " + e(t("in_campaign", cn)) : "") + " · " + t("turn") + " " + st.turn + " · " + t(st.phase == "overlord" ? "phase_overlord" : st.phase == "start" ? "phase_start" : "phase_heroes") + "</p>"
-            + "<button class='sk-btn sk-primary sk-go' data-nav='game'>" + t("resume_short") + "</button></div>";
-    } else {
-        h += "<div class='sk-blk sk-c4'><h3>" + t("no_game") + "</h3><p>" + t("no_game_help") + "</p><button class='sk-btn sk-primary sk-go' data-nav='free'>" + t("new_game") + "</button></div>";
-    }
-    h += "<div class='sk-blk sk-c2'><h3>" + t("free_game") + "</h3><p>" + t("free_game_help") + "</p><button class='sk-btn sk-go' data-nav='free'>" + t("new_game") + "</button></div>";
-    h += "<div class='sk-blk sk-c2'><h3>" + t("scenarios") + "</h3><p>" + t("scenarios_count", S.scenarios().length) + "</p><button class='sk-btn sk-go' data-nav='free'>" + t("open") + "</button></div>";
-    h += "<div class='sk-blk sk-c4'><h3>" + t("campaigns") + "</h3>"
-        + (camps.length ? "<ul class='sk-mini-list'>" + camps.slice(0, 3).map(function(c) {
-            return "<li><button class='sk-linkbtn' data-camp='" + c.id + "'>" + e(c.name) + "</button> — " + t("camp_progress", S.playedCount(c), (c.scenarios || []).length) + " · " + S.vpTotal(c) + " PV</li>";
-        }).join("") + "</ul>" : "<p>" + t("no_campaign") + "</p>")
-        + "<button class='sk-btn sk-go' data-nav='campaigns'>" + t("open") + "</button></div>";
-    h += "<div class='sk-blk sk-c2'><h3>" + t("encyclopedia") + "</h3><p>" + t("encyclopedia_help") + "</p><button class='sk-btn sk-go' data-nav='encyclopedia'>" + t("browse") + "</button></div>";
-    h += "<div class='sk-blk sk-c2'><h3>" + t("settings") + "</h3><p>" + t("settings_help") + "</p><button class='sk-btn sk-go' data-nav='settings'>" + t("adjust_btn") + "</button></div>";
-    S.mount(shell("sk-home", h));
-};
 S.playedCount = function(c) { return (c.scenarios || []).filter(function(x) { return x.status == "win" || x.status == "loss"; }).length; };
 
 S.mount = function(html) {
@@ -192,7 +163,6 @@ S.navClick = function(ev) {
         var v = n.dataset.nav;
         if (v == "home") S.renderHome();
         else if (v == "game") { if (S.state) S.renderGame(); }
-        else if (v == "free") S.renderFree();
         else if (v == "campaigns") S.renderCampaigns();
         else if (v == "encyclopedia") S.renderEncyclopedia();
         else if (v == "settings") S.renderSettings();
@@ -202,40 +172,6 @@ S.navClick = function(ev) {
     var c = ev.target.closest("[data-camp]");
     if (c) { S.renderCampaign(c.dataset.camp); return; }
     if (S.screenClick) S.screenClick(ev);
-};
-
-// ---------- Partie libre ----------
-S.renderFree = function() {
-    S.screen = "free"; S.ctx = null;
-    var list = S.scenarios(), h = head("home", t("free_game"));
-    h += "<div class='sk-blk sk-c4'><h3>" + t("new_scenario") + "</h3><p>" + t("new_scenario_help") + "</p>"
-        + "<div class='sk-seg' role='radiogroup'><button class='sk-on' data-mode='classic' aria-pressed='true'>" + t("mode_classic") + "</button><button data-mode='solo' aria-pressed='false'>" + t("mode_solo") + "</button></div>"
-        + "<div class='sk-row'><button class='sk-btn sk-primary' data-free='blank'>" + t("prepare_game") + "</button><button class='sk-btn' data-free='example'>" + t("example") + "</button></div></div>";
-    h += "<div class='sk-blk sk-c4'><h3>" + t("from_saved") + "</h3>"
-        + (list.length ? "<input type='search' class='sk-in' id='sk-fq' placeholder='" + e(t("search_scenario")) + "'><div id='sk-flist'></div>" : "<p>" + t("no_saved") + "</p>") + "</div>";
-    S.mount(shell("sk-free", h));
-    var mode = "classic";
-    var draw = function() {
-        var q = S.norm((S.root.querySelector("#sk-fq") || {}).value || "");
-        var box = S.root.querySelector("#sk-flist"); if (!box) return;
-        box.innerHTML = list.map(function(sc, i) {
-            if (q && S.norm(sc.title).indexOf(q) < 0) return "";
-            return "<div class='sk-li'><span class='sk-li-t'>" + e(sc.title || "—") + "<small>" + t(sc.mode == "solo" ? "mode_solo" : "mode_classic") + " · " + t("tiles_n", (sc.river || []).length) + " · " + t("turns_n", sc.turns) + "</small></span>"
-                + "<button class='sk-btn sk-primary' data-free='play' data-i='" + i + "'>" + t("play") + "</button><button class='sk-btn sk-icon' data-free='del' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button></div>";
-        }).join("");
-    };
-    draw();
-    var fq = S.root.querySelector("#sk-fq"); if (fq) fq.addEventListener("input", draw);
-    S.screenClick = function(ev) {
-        var m = ev.target.closest("[data-mode]");
-        if (m) { mode = m.dataset.mode; S.root.querySelectorAll("[data-mode]").forEach(function(x) { x.classList.toggle("sk-on", x == m); x.setAttribute("aria-pressed", x == m); }); return; }
-        var b = ev.target.closest("[data-free]"); if (!b) return;
-        var a = b.dataset.free;
-        if (a == "blank") { S.draft = S.blankScenario(); S.draft.mode = mode; S.renderSetup(); }
-        else if (a == "example") { S.draft = S.exampleScenario(); S.draft.mode = mode; S.renderSetup(); }
-        else if (a == "play") { S.draft = JSON.parse(JSON.stringify(list[+b.dataset.i])); S.renderSetup(); }
-        else if (a == "del") S.ask(t("confirm_delete"), t("delete"), function() { var l = S.scenarios(); l.splice(+b.dataset.i, 1); S.saveScenarios(l); S.renderFree(); });
-    };
 };
 
 // ---------- Campagnes ----------

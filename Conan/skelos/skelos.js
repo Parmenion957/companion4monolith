@@ -242,15 +242,6 @@ var Skelos = {
         else h += "<div class='sk-actions'><button class='sk-btn sk-primary' data-act='start'>" + t("start_game") + "</button>"
             + "<button class='sk-btn' data-act='savescen'>" + t("save_scenario") + "</button></div>";
 
-        var list = ctx ? null : Skelos.scenarios();
-        if (list) h += "<h2>" + t("saved_scenarios") + "</h2>";
-        if (!list) {}
-        else if (!list.length) h += "<p class='sk-help'>" + t("no_saved") + "</p>";
-        else h += "<ul class='sk-scenlist'>" + list.map(function(s, i) {
-            return "<li><span>" + e(s.title || "—") + " <small>" + (s.mode == "solo" ? t("mode_solo") : t("mode_classic")) + "</small></span>"
-                + "<button class='sk-btn' data-act='loadscen' data-i='" + i + "'>" + t("load") + "</button>"
-                + "<button class='sk-btn' data-act='delscen' data-i='" + i + "'>" + t("delete") + "</button></li>";
-        }).join("") + "</ul>";
         h += "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
         Skelos.root.innerHTML = h;
         if (!Skelos._pressBound) { Skelos.bindPress(Skelos.root); Skelos._pressBound = true; }
@@ -295,20 +286,7 @@ var Skelos = {
                 case "right": rv.splice(i + 1, 0, rv.splice(i, 1)[0]); break;
                 case "start": Skelos.startGame(); return;
                 case "resume": Skelos.state = Skelos.migrate(Skelos.loadSaved()); Skelos.renderGame(); return;
-                case "savescen":
-                    var list = Skelos.scenarios();
-                    var copy = JSON.parse(JSON.stringify(d));
-                    var idx = list.findIndex(function(s) { return s.title && s.title == copy.title; });
-                    if (idx >= 0) list[idx] = copy; else list.push(copy);
-                    Skelos.saveScenarios(list);
-                    Skelos.toast(Skelos.t("scenario_saved"));
-                    break;
-                case "loadscen": Skelos.draft = JSON.parse(JSON.stringify(Skelos.scenarios()[i])); break;
-                case "delscen":
-                    Skelos.ask(Skelos.t("confirm_delete"), Skelos.t("delete"), function() {
-                        var l = Skelos.scenarios(); l.splice(i, 1); Skelos.saveScenarios(l); Skelos.renderSetup();
-                    });
-                    return;
+                case "savescen": Skelos.saveScenarioCopy(d); break;
             }
             Skelos.renderSetup();
         });
