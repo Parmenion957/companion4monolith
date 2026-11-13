@@ -1060,3 +1060,17 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 /* PV partagés : un maillon de chaîne sous le cœur, en mode studio seulement */
 .sk-studio .sk-hpwrap.shared .sk-hp::after { content: "\f0c1"; font-family: "Font Awesome 5 Free"; font-weight: 900; position: absolute; left: 50%; bottom: -5.5cqw; transform: translateX(-50%);
     font-size: 7cqw; line-height: 1; color: #fff; background: #b3161b; border: 1px solid #f5e8d8; border-radius: 50%; width: 10cqw; height: 10cqw; display: grid; place-items: center; }
+/* Améliorations : icône agrandie, collée sous le titre ; le compteur de gemmes reste aligné en bas */
+.sk-pboost { gap: 3px; padding: 4px 6px 4px; }
+.sk-pboost .sk-ptitle { min-height: 0; }
+.sk-pboostimg { height: 56px; max-width: 92%; }
+.sk-pboost .sk-pgems { margin-top: auto; }
+@media (max-width: 420px) { .sk-pboostimg { height: 42px; } }
+@media (max-height: 520px) and (orientation: landscape) { .sk-pboostimg { height: 34px; } }
+/* Bloc Phase : étapes dans la police du jeu ; la taille est calculée pour remplir chaque case (S.fitPhase) */
+.sk-a-phase ol { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; }
+.sk-a-phase li { font-family: 'Primary', serif; line-height: 1.05; min-height: 0; min-width: 0; overflow: hidden; letter-spacing: .02em; }
+.sk-a-phase li > span:last-child { min-width: 0; flex: 1; overflow-wrap: normal; word-break: normal; hyphens: none; }
+.sk-a-phase li.cur { font-weight: normal; }
+.skelos-game .sk-a-phase li { padding: 4px 6px; gap: 5px; }
+.skelos-game .sk-a-phase .sk-pnum { width: 20px; height: 20px; font-size: .8rem; }

@@ -3,12 +3,12 @@
 // il utilise celles déjà chargées par le Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell).
 //
 // Interface à la charte du Compagnon : jetons du jeu, commandes au-dessus des tuiles 6 à 8, étapes du tour,
-// onglets, boîtes de dialogue plein écran, boutons − et +, descriptions des tuiles Événement, icônes personnalisées.
+// onglets, boîtes de dialogue plein écran, boutons − et +, descriptions des tuiles Événement, icônes du module.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 
 // ---------- Icônes et jetons ----------
-// Images du Compagnon par défaut ; l'utilisateur peut charger les siennes, gardées sur son appareil.
+// Images du Compagnon, sauf mouvement, relance et défense active : créations originales du module (img/).
 S.ICON_DEFAULTS = {
     // Mouvement, relance et défense active : icônes originales du module (créées par l'utilisateur).
     move: "skelos/img/icone_mouvement.webp",
@@ -1149,4 +1149,22 @@ S.init = function(root) {
         inp.dispatchEvent(new Event("change", {bubbles: true}));
     }, true);
 };
+
+// ---------- Bloc Phase : chaque étape écrite aussi grand que sa case le permet ----------
+// Taille calculée case par case, à chaque rendu, au changement de taille de l'écran et quand la police du jeu a chargé.
+S.fitPhase = function() {
+    var r = S.root; if (!r) return;
+    r.querySelectorAll(".sk-a-phase li").forEach(function(li) {
+        var sp = li.lastElementChild;
+        var fits = function(px) { sp.style.fontSize = px + "px"; return li.scrollHeight <= li.clientHeight + 1 && sp.scrollWidth <= sp.clientWidth + 1; };
+        var lo = 8, hi = 44;
+        while (hi - lo > 0.5) { var mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
+        fits(Math.floor(lo * 2) / 2);
+    });
+};
+var fitRenderGame = S.renderGame;
+S.renderGame = function() { fitRenderGame.apply(S, arguments); S.fitPhase(); };
+var fitTimer = null;
+window.addEventListener("resize", function() { clearTimeout(fitTimer); fitTimer = setTimeout(S.fitPhase, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { S.fitPhase(); });
 })();
