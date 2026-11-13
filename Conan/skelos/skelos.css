@@ -5,10 +5,11 @@
     --sk-panel: var(--header-bg-color, #312420);
     --sk-accent: var(--highlight-color, #ff7900);
     --sk-gem: #c8221c;
-    --sk-line: rgba(255, 255, 255, 0.14);
-    --sk-muted: rgba(255, 255, 255, 0.62);
-    --sk-soft: rgba(255, 255, 255, 0.06);
-    --sk-field: rgba(0, 0, 0, 0.35);
+    /* Couleurs secondaires calculées sur le thème du Compagnon (l'ancien blanc translucide disparaissait en thème clair). */
+    --sk-line: color-mix(in srgb, var(--body-bg-color, #151515) 80%, var(--body-color, #FEFFFF) 20%);
+    --sk-muted: color-mix(in srgb, var(--body-color, #FEFFFF) 62%, var(--body-bg-color, #151515) 38%);
+    --sk-soft: color-mix(in srgb, var(--body-color, #FEFFFF) 6%, transparent);
+    --sk-field: color-mix(in srgb, var(--body-bg-color, #151515) 82%, #000 18%);
     color: var(--sk-fg);
     font-family: 'Secondary', Georgia, serif;
     font-size: 18px;
@@ -230,7 +231,7 @@
 .sk-pickstatus b { color: #e2c48a; }
 .sk-filters select, .sk-filters input { color: #efe3d2; background: rgba(0,0,0,.35); border: 1px solid rgba(226,196,138,.35); }
 .sk-pick.added { animation: sk-added .5s ease; }
-@keyframes sk-added { 0% { transform: scale(1); } 40% { transform: scale(.9); box-shadow: 0 0 0 4px #e2c48a; } 100% { transform: scale(1); } }
+@keyframes sk-added { 0% { transform: scale(1); } 40% { transform: scale(.9); box-shadow: 0 0 0 4px var(--highlight-color, #ff7900); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .sk-pick.added { animation: none; outline: 3px solid #e2c48a; } }
 
 .sk-pickactions { margin-top: 0; }
@@ -1309,11 +1310,6 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
 .sk-noanim .sk-ghost.sk-lifted { animation: sk-lift .15s ease-out both !important; }
 .sk-noanim .sk-ghost.sk-settling { animation: none !important; transition: left .25s ease-out, top .25s ease-out, width .25s ease-out, transform .25s ease-out, box-shadow .25s ease-out !important; }
 .sk-river > .sk-slot.sk-dropend { outline: 3px dashed var(--highlight-color); outline-offset: 3px; border-radius: 6px; }
-
-/* Dialogues plein écran (Réglages, fin de scénario…) : texte secondaire lisible dans les deux thèmes,
-   l'ancienne valeur « grimoire » (blanc à 62 %) restait illisible en thème clair. */
-.sk-dialogscreen { --sk-muted: color-mix(in srgb, var(--body-color, #000) 62%, var(--body-bg-color, #f8f6f6) 38%); }
-
 /* Récupération : flèche vers la gauche (Fatigue → Énergie disponible) et chiffre en gros, plus lisible que l'ancien cercle.
    Le total de gemmes est agrandi et descend en bas du cadre. */
 .sk-recovarrow { position: relative; display: block; width: 118px; max-width: 100%; aspect-ratio: 100 / 56; color: var(--main-color); }
@@ -1327,3 +1323,12 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
 @media (max-height: 520px) and (orientation: landscape) {
     .sk-a-rec .sk-recovarrow { width: 70px; } .sk-a-rec .sk-recovarrow b { font-size: 1.5rem; }
 }
+
+/* Restes de l'habillage « grimoire » encore visibles : contours de sélection beige doré remplacés par la couleur de surbrillance du Compagnon. */
+.sk-chip.sk-sel { outline-color: var(--highlight-color); }
+.sk-pick.picked, .sk-icard.picked, .sk-icard.sk-real.picked .sk-cardscale { outline-color: var(--highlight-color); }
+@media (prefers-reduced-motion: reduce) { .sk-pick.added { outline-color: var(--highlight-color); } }
+/* Héros déjà dans la compagnie : seule la fiche est grisée, le libellé reste net. */
+.sk-hpick.sk-inco { opacity: 1; }
+.sk-hpick.sk-inco .sk-hsheetscale, .sk-hpick.sk-inco .sk-hpick-i { opacity: .4; }
+.sk-hpick-full .sk-inco-t { font-size: 17px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
