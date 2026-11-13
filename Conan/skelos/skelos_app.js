@@ -314,7 +314,7 @@ S.renderCampaign = function(cid) {
         var items = S.sortItems((c.cache || []).filter(function(it) { return it.kind == k[0]; }));
         h += "<div class='sk-cat'>" + t(k[1]) + "</div><div class='sk-chips'>" + (items.length ? items.map(function(it) { return S.chipCode(c, it, {menu: true}); }).join("") : "<span class='sk-empty-t'>—</span>") + "</div>";
     });
-    h += "<button class='sk-btn sk-addrow' data-cact='addcache'>+ " + t("add_to_cache") + "</button></div>";
+    h += "<button class='sk-btn sk-addrow' data-cact='addcache'>" + t("edit_cache") + "</button></div>";
     S.mount(shell("sk-campaign", h));
     if (S.bindThreadDrag) S.bindThreadDrag(c.id);
     if (S.bindItemDrag) S.bindItemDrag(c.id);
@@ -335,7 +335,7 @@ S.renderCampaign = function(cid) {
             case "play": S.openPlay(c.id, i, +b.dataset.p); break;
             case "addhero": S.openHeroPicker(c.id); break;
             case "hero": S.openHeroEditor(c.id, b.dataset.hero); break;
-            case "addcache": S.openItemPicker({title: t("add_to_cache"), onAdd: function(sel) { S.addItems(c.id, sel, null); S.renderCampaign(c.id); }}); break;
+            case "addcache": S.openCacheEditor(c.id); break;
         }
     };
 };
@@ -374,8 +374,11 @@ S.openCampaignSettings = function(cid) {
     var c = S.campaign(cid); if (!c) return;
     S.dialog("<h2>" + t("campaign_settings") + "</h2>"
         + "<label class='sk-fl'>" + t("name") + "<input class='sk-in' id='sk-cs-n' value='" + e(c.name) + "'></label>"
+        + "<div class='sk-fl'>" + t("replay_campaign") + "</div><p class='sk-help'>" + t("duplicate_campaign_help") + "</p>"
+        + "<button class='sk-btn' data-cdup>" + t("duplicate_campaign") + "</button>"
         + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button></div>",
         function(ev, close) {
+            if (ev.target.closest("[data-cdup]")) { close(); S.duplicateCampaign(cid); return; }
             if (!ev.target.closest("[data-ok]")) return;
             var name = S.root.querySelector("#sk-cs-n").value.trim() || c.name;
             S.updateCampaign(cid, function(x) { x.name = name; });
@@ -383,6 +386,42 @@ S.openCampaignSettings = function(cid) {
         });
     var inp = S.root.querySelector("#sk-cs-n"); if (inp) { inp.focus(); inp.select(); }
 };
+// Rejouer une campagne : copie avec la même compagnie (tous vivants), les mêmes scénarios à rejouer et la même cache ;
+// les parties jouées, le journal et les morts ne sont pas repris.
+S.duplicateCampaign = function(cid) {
+    var src = S.campaign(cid); if (!src) return;
+    var c = JSON.parse(JSON.stringify(src));
+    c.id = uid("c"); c.name = t("campaign_copy_name", src.name || t("untitled")); c.created = new Date().toISOString(); c.last = null; c.log = [];
+    (c.scenarios || []).forEach(function(sc) { sc.plays = []; sc.notes = ""; sc.status = "todo"; S.syncScenario(sc); });
+    (c.heroes || []).forEach(function(hh) { hh.dead = false; hh.deadAt = null; });
+    (c.cache || []).forEach(function(it) { it.uid = uid("i"); });
+    S.campLog(c, t("clog_duplicated", src.name || t("untitled")));
+    var l = S.campaigns(); l.push(c); S.saveCampaigns(l);
+    S.toast(t("campaign_duplicated")); S.renderCampaign(c.id);
+};
+
+// Modifier la cache : le sélecteur s'ouvre avec les objets de la cache déjà sélectionnés.
+// Retirer une puce ou « Vider » enlève des objets ; l'équipement de départ reste ; la validation confirme les retraits.
+S.openCacheEditor = function(cid) {
+    var c = S.campaign(cid); if (!c) return;
+    var color = {}; (c.heroes || []).forEach(function(hh) { color[hh.id] = hh.color; });
+    var init = S.sortItems((c.cache || []).slice()).map(function(it) { return {kind: it.kind, ref: it.ref, name: it.name, uid: it.uid, start: !!it.start, color: it.owner ? color[it.owner] : null}; });
+    S.openItemPicker({title: t("edit_cache"), initial: init, onAdd: function(sel) {
+        var keep = {}, added = sel.filter(function(x) { if (x.uid) keep[x.uid] = true; return !x.uid; });
+        var gone = (S.campaign(cid).cache || []).filter(function(it) { return !keep[it.uid] && !it.start; });
+        var apply = function() {
+            S.updateCampaign(cid, function(x) {
+                x.cache = (x.cache || []).filter(function(it) { return keep[it.uid] || it.start; });
+                added.forEach(function(it) { x.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: null, start: false}); });
+                if (added.length) S.campLog(x, t("clog_items", added.length));
+                if (gone.length) S.campLog(x, t("clog_items_removed", gone.length));
+            });
+            S.renderCampaign(cid);
+        };
+        if (gone.length) S.ask(t("confirm_cache_remove", gone.length), t("validate"), apply); else apply();
+    }});
+};
+
 S.openChooseScenario = function(cid, idx) {
     var list = S.scenarios();
     S.dialog("<h2>" + t(idx == null ? "add_scenario" : "choose_scenario") + "</h2>"
@@ -518,12 +557,12 @@ S.itemCardCode = function(it, badge) {
         + "<span class='sk-icard-tags'><span>" + t(it.kind == "eq" ? "kind_eq" : "kind_sp") + "</span></span></button>";
 };
 S.openItemPicker = function(opts) {
-    var pr = S.prefs(), kind = opts.kind || pr.itemKind || "eq", sel = [], browse = !!opts.browse;
+    var pr = S.prefs(), kind = opts.kind || pr.itemKind || "eq", sel = (opts.initial || []).slice(), browse = !!opts.browse, editing = !!opts.initial;
     var ov = S.root.querySelector("#sk-overlay");
     var tabs = (opts.tiles ? [["tile", "tab_tiles"]] : []).concat([["eq", "tab_eq"], ["sp", "tab_sp"], ["up", "tab_up"]]);
     if (opts.tiles && !pr.itemKind) kind = "tile";
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(opts.title) + "</h2><div class='sk-actions sk-pickactions'>"
-        + (browse ? "" : "<button class='sk-btn sk-primary' data-addsel disabled>" + t("add_selection", 0) + "</button>") + "<button class='sk-btn' data-pclose>" + t("close") + "</button></div></div>"
+        + (browse ? "" : "<button class='sk-btn sk-primary' data-addsel" + (editing ? "" : " disabled") + ">" + t("add_selection", 0) + "</button>") + "<button class='sk-btn' data-pclose>" + t("close") + "</button></div></div>"
         + "<div class='sk-tabs' role='tablist'>" + tabs.map(function(x) { return "<button class='sk-tab' role='tab' data-tab='" + x[0] + "'>" + t(x[1]) + "</button>"; }).join("") + "</div>"
         + "<div class='sk-filters'><input type='search' id='sk-iq' placeholder='" + e(t("search")) + "'>" + S.scopeCode() + "</div>"
         + (browse ? "" : "<div class='sk-pickstatus' id='sk-ist'></div>") + "<div class='sk-picker sk-ipicker' id='sk-ig'></div></div>";
@@ -538,10 +577,15 @@ S.openItemPicker = function(opts) {
     };
     var status = function() {
         if (browse) return;
-        ov.querySelector("#sk-ist").innerHTML = "<div><b>" + t("items_selected", sel.length) + "</b></div><div class='sk-selchips'>" + sel.map(function(x, i) {
-            return "<button class='sk-chip sk-k-" + x.kind + "' data-unsel='" + i + "'><span class='sk-chip-n'>" + (i + 1) + "</span>" + e(x.name) + " <span aria-hidden='true'>✕</span></button>";
+        var free = sel.some(function(x) { return !x.start; });
+        ov.querySelector("#sk-ist").innerHTML = "<div class='sk-selhead'><b>" + t("items_selected", sel.length) + "</b>"
+            + (editing ? "<button type='button' class='sk-btn sk-danger sk-clear' data-clear" + (free ? "" : " disabled") + ">" + t("clear_cache") + "</button>" : "") + "</div><div class='sk-selchips'>" + sel.map(function(x, i) {
+            var dot = x.color ? "<span class='sk-chip-own' style='background:" + e(x.color) + "' aria-hidden='true'></span>" : "";
+            // L'équipement de départ ne se retire pas : puce grisée, sans croix.
+            if (x.start) return "<span class='sk-chip sk-k-" + x.kind + " sk-locked' title='" + e(t("start_item_locked")) + "'><span class='sk-chip-n'>" + (i + 1) + "</span>" + dot + e(x.name) + " <span class='fas fa-lock' aria-hidden='true'></span></span>";
+            return "<button class='sk-chip sk-k-" + x.kind + "' data-unsel='" + i + "'><span class='sk-chip-n'>" + (i + 1) + "</span>" + dot + e(x.name) + " <span aria-hidden='true'>✕</span></button>";
         }).join("") + "</div>";
-        var a = ov.querySelector("[data-addsel]"); a.disabled = !sel.length; a.textContent = t("add_selection", sel.length);
+        var a = ov.querySelector("[data-addsel]"); a.disabled = !editing && !sel.length; a.textContent = editing ? t("validate") : t("add_selection", sel.length);
         ov.querySelectorAll(".sk-icard[data-ref]").forEach(function(c) {
             var k = []; sel.forEach(function(x, i) { if (x.kind == c.dataset.kind && x.ref == c.dataset.ref) k.push(i + 1); });
             var bd = c.querySelector(".sk-pickbadge");
@@ -578,6 +622,7 @@ S.openItemPicker = function(opts) {
         if (tb) { kind = tb.dataset.tab; pr.itemKind = kind; S.savePrefs(); q.value = (pr.itemQ || {})[kind] || ""; draw(); return; }
         if (ev.target.closest("[data-newup]")) { S.openUpgradeEditor(null, function() { kind = "up"; draw(); }); return; }
         var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
+        if (ev.target.closest("[data-clear]")) { sel = sel.filter(function(x) { return x.start; }); status(); return; }
         if (ev.target.closest("[data-addsel]")) { var s2 = sel.slice(); close(); opts.onAdd(s2); return; }
         var c = ev.target.closest(".sk-icard[data-ref]"); if (!c) return;
         if (browse) { S.showCard(c.dataset.kind + ":" + c.dataset.ref); return; }

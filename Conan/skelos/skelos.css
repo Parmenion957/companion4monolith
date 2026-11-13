@@ -1279,3 +1279,10 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 /* Sélecteurs plein écran (tuiles, héros, objets) : la barre du Compagnon ne recouvre plus la dernière ligne */
 html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdlg) nav.menu { display: none !important; }
 .sk-overlay .sk-pickdlg { padding-bottom: calc(var(--sk-bottom, 0px) + 32px) !important; }
+
+/* Modifier la cache : en-tête de la sélection avec « Vider », puces verrouillées de l'équipement de départ, pastille du porteur. */
+.sk-selhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sk-selhead .sk-clear { min-height: 32px; padding: 2px 12px; }
+.sk-selchips .sk-chip.sk-locked { opacity: .6; cursor: default; }
+.sk-selchips .sk-chip.sk-locked .fa-lock { font-size: 11px; }
+.sk-chip-own { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
