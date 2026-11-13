@@ -240,7 +240,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'log_gem_removed': "Settings: one gem removed (total {0})",
     'log_tile_added': "Settings: {0} added at the end of the River",
     'log_tile_removed': "Settings: {0} removed from the River",
-    'confirm_restart': "Restart the game at turn 0, with the current settings?",
+    'confirm_restart': "Restart the game at turn 0, with the starting tiles and counters? The log will be cleared.",
     'menu_params': "Game settings",
     'menu_end': "End the scenario",
     'menu_home': "Back to tabs",
@@ -457,5 +457,10 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'log_end': "End of game",
     'log_saved': "Saved as scenario: {0}",
     'log_title': "Title changed: {0} → {1}",
-    'log_title_new': "Title: {0}"
+    'log_title_new': "Title: {0}",
+    'reinforce_cost': "{0} ({1} gems)",
+    'log_reinforce_cost': "{0}: reinforcement ({1} gems)",
+    'log_resume': "Saved game resumed (turn {0})",
+    'reinforce_cost_1': "{0} (1 gem)",
+    'log_reinforce_cost_1': "{0}: reinforcement (1 gem)"
 });

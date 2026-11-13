@@ -640,11 +640,23 @@ S.renderEnd = function(keep) {
 };
 S.restartGame = function() {
     S.ask(t("confirm_restart"), t("restart_game"), function() {
-        var camp = S.state.campaign, oldLog = S.state.log.slice();
-        S.draft = S.scenarioFromState(); S.live = false;
-        S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
-        S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
-        if (S.state) { S.state.log = S.state.log.concat(oldLog).slice(0, 500); S.log(t("log_restart")); S.save(); S.renderGame(); }
+        var st = S.state;
+        if (st.origin) {
+            S.snapshot();
+            var o = JSON.parse(JSON.stringify(st.origin));
+            o.origin = st.origin; o.campaign = st.campaign;
+            o.scenario.title = st.scenario.title; o.scenario.notes = st.scenario.notes;
+            o.log = [];
+            S.state = o; S.selected = null; S._hpOpen = null;
+        } else {
+            // Partie commencée avant cette version : on repart du scénario d'origine connu.
+            var camp = st.campaign;
+            S.draft = JSON.parse(JSON.stringify(st.scenario)); S.live = false;
+            S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
+            S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
+            if (S.state) S.state.log = [];
+        }
+        if (S.state) { S.log(t("log_restart")); S.save(); S.renderGame(); }
     });
 };
 S.studioLife = function(uid, d) {
@@ -763,7 +775,9 @@ S.saveScenarioFromDialog = function() {
     if (before != title) S.log(before ? t("log_title", before, title) : t("log_title_new", title));
     S.log(t("log_saved", title));
     S.save();
-    S.saveScenarioCopy(S.scenarioFromState());
+    var d = S.scenarioFromState();
+    d.saved = S.stateCopy(st, true);
+    S.saveScenarioCopy(d);
     Nav.closeDialog();
 };
 
@@ -858,21 +872,23 @@ S.studioRemove = function(uid) {
 S.openTileMenu = function(uid) {
     var st = S.state, s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
     var solo = st.mode == "solo", items = [];
-    if (!s.dead) items.push(["dead", "mark_dead"]);
+    if (!s.dead) items.push(["dead", t("mark_dead")]);
     else {
-        items.push(["reinf", "reinforce"]);
-        if (!solo) items.push(["purge", "purge"]);
-        if (solo && st.removed.indexOf(uid) < 0) items.push(["rmtoken", "remove_token"]);
+        var rc = S.reinforceCost(s);
+        items.push(["reinf", rc ? t(rc == 1 ? "reinforce_cost_1" : "reinforce_cost", t("reinforce"), rc) : t("reinforce")]);
+        if (!solo) items.push(["purge", t("purge")]);
+        if (solo && st.removed.indexOf(uid) < 0) items.push(["rmtoken", t("remove_token")]);
     }
     S.hideTip(); S.closeHp();
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-dialog sk-menu sk-tilemenu' role='menu' aria-label='" + e(S.tileName(s)) + "'><h2>" + e(S.tileName(s)) + "</h2>"
-        + items.map(function(x) { return "<button class='sk-btn" + (x[0] == "purge" || x[0] == "rmtoken" ? " sk-danger" : "") + "' data-m='" + x[0] + "' role='menuitem'>" + e(t(x[1])) + "</button>"; }).join("")
-        + "<button class='sk-btn' data-m='close' role='menuitem'>" + e(t("close")) + "</button></div>";
+        + items.map(function(x) { return "<button class='sk-btn" + (x[0] == "purge" || x[0] == "rmtoken" ? " sk-danger" : "") + "' data-m='" + x[0] + "' role='menuitem'>" + e(x[1]) + "</button>"; }).join("") + "</div>";
     ov.classList.add("on");
+    var shut = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; };
+    ov.onkeydown = function(ev) { if (ev.key == "Escape") shut(); };
     ov.onclick = function(ev) {
         var b = ev.target.closest("[data-m]"); if (!b && ev.target !== ov) return;
-        ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null;
+        shut();
         if (!b) return;
         switch (b.dataset.m) {
             case "dead": S.markDead(uid); break;
@@ -934,6 +950,63 @@ S.openJournal = function() {
         return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + "<b>" + e(t("journal_turn", l.turn)) + "</b> " + e(l.msg) + "</li>";
     }).join("") + "</ol>";
     Nav.dialog(e(t("log")), h + "</div>", null, []);
+};
+
+// ---------- Sauvegarde complète, reprise et état de départ ----------
+// Copie de l'état de la partie, sans l'état de départ (et sans le Journal si keepLog est faux).
+S.stateCopy = function(st, keepLog) {
+    var c = JSON.parse(JSON.stringify(st)); delete c.origin;
+    if (!keepLog) c.log = [];
+    return c;
+};
+// Charger un scénario sauvegardé en cours de partie reprend la partie là où elle était, Journal compris.
+var origStartGame = S.startGame;
+S.startGame = function(force) {
+    var d = S.draft;
+    if (d && d.saved) {
+        var cur = S.loadSaved();
+        if (!force && cur && cur.river && cur.river.length) { S.ask(t("confirm_new"), t("confirm_new_yes"), function() { S.startGame(true); }); return; }
+        var st = JSON.parse(JSON.stringify(d.saved));
+        st.scenario.title = d.title || st.scenario.title;
+        if (d.notes != null) st.scenario.notes = d.notes;
+        st.campaign = S.ctx ? {cid: S.ctx.cid, idx: S.ctx.idx} : null;
+        st.origin = S.stateCopy(st);
+        S.undoStack = []; S._hpOpen = null; S.selected = null; S.live = false;
+        S.state = st;
+        S.log(t("log_resume", st.turn));
+        S.save();
+        if (S.onGameStart) S.onGameStart();
+        S.renderGame();
+        return;
+    }
+    origStartGame.apply(S, arguments);
+    if (S.state && !S.state.origin) { S.state.origin = S.stateCopy(S.state); S.save(); }
+};
+// Préparation en mode studio (tour 0, aucune activation) : l'état de départ suit les modifications.
+var origSave = S.save;
+S.save = function() {
+    var st = S.state;
+    if (st && S.studio && !st.turn && !st.activations && S.screen == "game") st.origin = S.stateCopy(st);
+    return origSave.apply(S, arguments);
+};
+
+// ---------- Renfort : la tuile coûte sa valeur de renfort en gemmes (Énergie → Fatigue), en mode Aventure ----------
+S.reinforceCost = function(s) {
+    if (!S.state || S.state.mode != "classic") return 0;
+    var tile = S.tileOf(s), n = tile ? parseInt(tile.reinforcement, 10) : 0;
+    return isNaN(n) ? 0 : n;
+};
+var origReinforce = S.reinforce;
+S.reinforce = function(uid) {
+    var st = S.state, s = S.slotByUid(uid); if (!s) return;
+    var cost = S.reinforceCost(s);
+    if (!cost) return origReinforce.apply(S, arguments);
+    if (st.energy < cost) { S.toast(t("not_enough", cost, st.energy)); return; }
+    S.snapshot();
+    st.energy -= cost; st.fatigue += cost;
+    s.dead = false; if (s.lpMax) s.lp = s.lpMax;
+    S.log(t(cost == 1 ? "log_reinforce_cost_1" : "log_reinforce_cost", S.tileName(s), cost));
+    S.save(); S.renderGame();
 };
 
 // ---------- Initialisation ----------

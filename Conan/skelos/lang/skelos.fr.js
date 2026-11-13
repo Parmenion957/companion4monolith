@@ -252,7 +252,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'log_gem_removed': "Paramètres : une gemme retirée (total {0})",
     'log_tile_added': "Paramètres : {0} ajoutée au bout de la Rivière",
     'log_tile_removed': "Paramètres : {0} retirée de la Rivière",
-    'confirm_restart': "Recommencer la partie au tour 0, avec les paramètres actuels ?",
+    'confirm_restart': "Recommencer la partie au tour 0, avec les tuiles et les compteurs du départ ? Le Journal sera vidé.",
     'menu_params': "Paramètres de la partie",
     'menu_end': "Terminer le scénario",
     'menu_home': "Retour aux onglets",
@@ -470,5 +470,10 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'log_end': "Fin de partie",
     'log_saved': "Enregistré comme scénario : {0}",
     'log_title': "Titre modifié : {0} → {1}",
-    'log_title_new': "Titre : {0}"
+    'log_title_new': "Titre : {0}",
+    'reinforce_cost': "{0} ({1} gemmes)",
+    'log_reinforce_cost': "{0} : renfort ({1} gemmes)",
+    'log_resume': "Reprise de la partie sauvegardée (tour {0})",
+    'reinforce_cost_1': "{0} (1 gemme)",
+    'log_reinforce_cost_1': "{0} : renfort (1 gemme)"
 });
