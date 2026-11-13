@@ -17,6 +17,7 @@ S.ICON_DEFAULTS = {
     spell: "data/skills/img/magic/spell_caster.webp",
     gem: "resources/img/gem_red.webp",
     time: "data/tokens/img/time.webp",
+    alarm: "data/tokens/img/alarm.webp",
     tokenback: "data/tokens/img/marker.webp"
 };
 S.CUSTOMIZABLE = ["move", "defense", "reroll"];
@@ -35,6 +36,7 @@ S.token = function(kind, value, extra, cls) {
     if (kind == "gem") return "<span class='sk-tokimg" + (cls == "dim" ? " dim" : "") + "'><img src='" + S.icon("gem") + "' alt=''><b>" + value + "</b></span>";
     if (kind == "hourglass") return "<span class='sk-tokimg sk-tokround'><img src='" + S.icon("time") + "' alt=''><b>" + value + "</b>" + (extra ? "<small>" + e(extra.replace(/\s/g, "")) + "</small>" : "") + "</span>";
     if (kind == "bag") return "<span class='sk-tokimg sk-tokround'><img src='" + S.icon("tokenback") + "' alt=''><b>" + value + "</b></span>";
+    if (kind == "heroes") return "<span class='sk-recovtok'><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2.5 19.5 5v6.2c0 4.6-3.2 8.6-7.5 10.3C7.7 19.8 4.5 15.8 4.5 11.2V5z' fill='currentColor'/></svg><b>" + value + "</b></span>";
     if (kind == "recover") return "<span class='sk-recovtok'><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M19 12a7 7 0 1 1-2.05-4.95' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/><path d='M18.5 3.5v4.5H14' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg><b>" + value + "</b></span>";
     return "<span class='sk-recovtok'><b>" + value + "</b></span>";
 };
@@ -54,54 +56,157 @@ S.costToken = function(slot, i) {
         + img + (armed ? "<img class='sk-costgemimg' src='" + S.icon("gem") + "' alt=''>" : "") + "</span>";
 };
 
-// Améliorations ponctuelles avec leurs icônes.
-S.boostsCode = function() {
-    var st = S.state, cur = st.current && S.slotByUid(st.current), tile = cur && S.tileOf(cur);
-    var ico = {move: "move", reroll: "reroll", defense: "defense", spell: "spell"};
-    var h = "<div class='sk-boosts' role='group' aria-label='" + e(t("boosts")) + "' title='" + e(t("boosts_help")) + "'><div class='sk-boost-row'>";
-    S.BOOSTS.forEach(function(k) {
-        var n = st.boosts[k] || 0, tip = t("boost_cost_" + k);
-        if (k == "move" && cur && tile && !S.isEvent(cur) && st.phase == "overlord") tip = t("boost_ctx_short", parseInt(tile.movement, 10) || 0);
-        h += "<div class='sk-boost'><button class='sk-btn' data-act='boost' data-k='" + k + "' title='" + e(tip) + "'><img class='sk-boosticon' src='" + S.icon(ico[k]) + "' alt=''><span>" + t("boost_" + k) + "</span></button>"
-            + "<div class='sk-boost-gems' aria-label='" + n + " " + e(t("gems_word")) + "'>" + (n ? "<img class='sk-actgem' src='" + S.icon("gem") + "' alt=''><b>" + n + "</b>" : "") + "</div></div>";
+// ---------- Panneau du plateau : grille de 8 colonnes calée sur la Rivière ----------
+// Classique : Tour (1-2) · Mouvement, Relance, Défense active, Sort (3 à 6) · boutons (7-8)
+//             Énergie (1-2) · Récupération (3) · Fatigue (4-5) · Phase en cours (6-7) · Tour de l'Overlord (8)
+// Solo / coop : Tour (1-2) · Jetons joués (3 à 6) · boutons (7-8)
+//             Jetons disponibles (1 à 3) · Héros en jeu (4-5) · Phase en cours (6-7) · Tour de l'Overlord (8)
+var title = function(k) { return "<div class='sk-ptitle'>" + e(t(k)) + "</div>"; };
+
+// Jeton du cadre Tour (sablier ou alarme) : appui long pour faire apparaître − et + de part et d'autre.
+S.turnTokenCode = function(kind) {
+    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = S._turnEdit == kind;
+    var minus = turn ? "turnminus" : "turnsminus", plus = turn ? "turnplus" : "turnsplus", tab = open ? 0 : -1;
+    var label = turn ? t("turn") + " " + st.turn : (st.turns ? t("turn_limit") + " " + st.turns : t("turn_limit_none"));
+    return "<span class='sk-ptok" + (open ? " editing" : "") + "' data-turnwrap='" + kind + "'>"
+        + "<button class='sk-pstep' data-act='" + minus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_prev" : "aria_limit_minus")) + "'>−</button>"
+        + "<span class='sk-tokimg sk-tokround' data-turnpress='" + kind + "' role='button' tabindex='0' aria-label='" + e(label) + "' title='" + e(t(turn ? "turn_hint" : "turn_limit_hint")) + "'>"
+        + "<img src='" + S.icon(turn ? "time" : "alarm") + "' alt=''><b>" + val + "</b></span>"
+        + "<button class='sk-pstep' data-act='" + plus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_next" : "aria_limit_plus")) + "'>+</button></span>";
+};
+S.turnBlockCode = function() {
+    var st = S.state, last = st.turns && st.turn >= st.turns;
+    var flag = !st.turns ? "" : st.turn > st.turns ? t("game_over_short") : st.turn == st.turns ? t("last_turn") : "";
+    return "<div class='sk-p sk-a-tour" + (last ? " last" : "") + "'" + (flag ? " title='" + e(flag) + "'" : "") + ">" + title("turn")
+        + "<div class='sk-ppair'>" + S.turnTokenCode("turn") + S.turnTokenCode("turns") + "</div>"
+        + (flag ? "<span class='sk-vh'>" + e(flag) + "</span>" : "") + "</div>";
+};
+
+// Améliorations ponctuelles : un appui dépense une gemme ; compteur de gemmes sous l'icône.
+S.boostBlockCode = function(k, n) {
+    var st = S.state, cur = st.current && S.slotByUid(st.current), tile = cur && S.tileOf(cur), tip = t("boost_cost_" + k), cnt = st.boosts[k] || 0;
+    if (k == "move" && cur && tile && !S.isEvent(cur) && st.phase == "overlord") tip = t("boost_ctx_short", parseInt(tile.movement, 10) || 0);
+    return "<button class='sk-p sk-pboost sk-a-b" + n + "' data-act='boost' data-k='" + k + "' title='" + e(tip) + "' aria-label='" + e(t("boost_" + k) + " · " + cnt + " " + t("gems_word")) + "'>"
+        + "<span class='sk-ptitle'>" + e(t("boost_" + k)) + "</span><img class='sk-pboostimg' src='" + S.icon(k) + "' alt=''>"
+        + "<span class='sk-pgems" + (cnt ? "" : " zero") + "'><img src='" + S.icon("gem") + "' alt=''><b>" + cnt + "</b></span></button>";
+};
+
+// Bloc des quatre boutons : Annuler, Réglages, Journal, Aide.
+S.toolsBlockCode = function() {
+    return "<div class='sk-p sk-a-tools'>" + [["undo", "&#xf0e2;", "undo"], ["setup", "&#xf013;", "settings"], ["journal", "&#xf02d;", "log"], ["help", "&#xf128;", "help"]].map(function(x) {
+        var off = x[0] == "undo" && !S.undoStack.length;
+        return "<button class='sk-ptool' data-act='" + x[0] + "'" + (off ? " disabled" : "") + " aria-label='" + e(t(x[0] == "setup" ? "menu_params" : x[2])) + "'><i aria-hidden='true'>" + x[1] + "</i><span>" + e(t(x[2])) + "</span></button>";
+    }).join("") + "</div>";
+};
+
+// Phase en cours : quatre étapes en grille 2×2 ; seule l'étape en cours est en gras.
+S.phaseBlockCode = function() {
+    var st = S.state, solo = st.mode == "solo", ov = st.phase != "heroes", pre = ov ? (solo ? "solo_short_" : "ov_short_") : "he_short_", cur = -1;
+    if (st.phase == "overlord") cur = solo ? (st.highlight ? 3 : 2) : 3;
+    return "<div class='sk-p sk-a-phase " + (ov ? "ov" : "he") + "' role='group' aria-label='" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "'>"
+        + "<div class='sk-pphase-t'>" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "</div><ol>" + [1, 2, 3, 4].map(function(i) {
+            return "<li" + (i == cur ? " class='cur' aria-current='step'" : "") + "><span class='sk-pnum' aria-hidden='true'>" + i + "</span><span>" + e(t(pre + i)) + "</span></li>";
+        }).join("") + "</ol></div>";
+};
+
+// Tour de l'Overlord : Commencer / Terminer et emplacements d'activation.
+S.overlordBlockCode = function() {
+    var st = S.state, ov = st.phase == "overlord", max = st.mode == "solo" ? st.heroes : st.maxActivations;
+    return "<div class='sk-p sk-a-ov'>" + title("steps_overlord_title")
+        + "<button class='sk-turnbtn' data-act='" + (ov ? "oend" : "oturn") + "' title='" + e(t(ov ? "end_overlord_turn" : "start_overlord_turn")) + "'>" + e(t(ov ? "btn_end" : "btn_start")) + "</button>"
+        + "<div class='sk-pacts' role='img' aria-label='" + e(t("activations") + " " + st.activations + " / " + max) + "'>" + S.activationSlots(st.activations, max) + "</div></div>";
+};
+
+S.panelCode = function() {
+    var st = S.state, solo = st.mode == "solo", h = "<div class='sk-panel" + (solo ? " solo" : "") + "'>";
+    h += S.turnBlockCode();
+    if (!solo) {
+        h += S.BOOSTS.map(function(k, i) { return S.boostBlockCode(k, i + 1); }).join("");
+        h += S.toolsBlockCode();
+        h += "<div class='sk-p sk-a-en'>" + title("energy") + "<div class='sk-pmain'>" + S.token("gem", st.energy) + "</div><div class='sk-gems'>" + S.gems(st.energy, "on") + "</div>"
+            + "<button class='sk-pbtn' data-act='xfer' data-dir='tofatigue'" + (st.energy ? "" : " disabled") + ">" + e(t("to_fatigue")) + "</button></div>";
+        h += "<div class='sk-p sk-a-rec'>" + title("recovery") + "<div class='sk-pmain'>" + S.token("recover", st.recovery) + "</div>"
+            + "<div class='sk-prow'><button class='sk-pstep' data-act='adj' data-f='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
+            + "<button class='sk-pstep' data-act='adj' data-f='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div>"
+            + "<div class='sk-ptotal'>" + e(t("gem_total", S.gemTotal())) + "</div></div>";
+        h += "<div class='sk-p sk-a-fa'>" + title("fatigue") + "<div class='sk-pmain'>" + S.token("gem", st.fatigue, "", "dim") + "</div><div class='sk-gems'>" + S.gems(st.fatigue, "off") + "</div>"
+            + "<button class='sk-pbtn' data-act='xfer' data-dir='toenergy'" + (st.fatigue ? "" : " disabled") + ">" + e(t("to_energy")) + "</button></div>";
+    } else {
+        var slots = st.used.length + st.pool.length;
+        h += "<div class='sk-p sk-a-played'>" + title("tokens_used") + "<div class='sk-pmarkers'>"
+            + st.used.map(function(u) { var s = S.slotByUid(u); return "<img class='sk-pmarker' src='" + S.marker(s.token) + "' alt='" + s.token + "'>"; }).join("")
+            + new Array(Math.max(0, slots - st.used.length) + 1).join("<span class='sk-pmarker empty'></span>") + "</div></div>";
+        h += S.toolsBlockCode();
+        h += "<div class='sk-p sk-a-pool'>" + title("tokens_pool") + "<div class='sk-prow'>" + S.token("bag", st.pool.length)
+            + (st.phase == "overlord" ? "<button class='sk-btn sk-primary sk-pdraw' data-act='draw'>" + e(t("draw_token")) + "</button>" : "<span class='sk-phint'>" + e(t("draw_only_overlord")) + "</span>") + "</div></div>";
+        h += "<div class='sk-p sk-a-heroes'>" + title("heroes") + "<div class='sk-prow'>"
+            + "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='-1' aria-label='" + e(t("aria_heroes_minus")) + "'>−</button>" + S.token("heroes", st.heroes)
+            + "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='1' aria-label='" + e(t("aria_heroes_plus")) + "'>+</button></div></div>";
+    }
+    h += S.phaseBlockCode() + S.overlordBlockCode();
+    return h + "</div>";
+};
+
+// Limite de tours réglée depuis le plateau : même effet que dans les paramètres.
+S.adjustTurns = function(d) {
+    var st = S.state, v = Math.max(0, (st.turns || 0) + d);
+    if (v == (st.turns || 0)) return;
+    S.snapshot();
+    st.turns = v; st.scenario.turns = v;
+    S.save(); S.renderGame();
+};
+S.openTurnEdit = function(kind) {
+    S.closeTurnEdit();
+    S._turnEdit = kind;
+    var w = S.root.querySelector("[data-turnwrap='" + kind + "']");
+    if (w) { w.classList.add("editing"); w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = 0; }); }
+    if (navigator.vibrate) navigator.vibrate(20);
+};
+S.closeTurnEdit = function() {
+    S._turnEdit = null;
+    if (!S.root) return;
+    S.root.querySelectorAll(".sk-ptok.editing").forEach(function(w) { w.classList.remove("editing"); w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = -1; }); });
+};
+S.bindTurnPress = function(root) {
+    var timer = null, sx = 0, sy = 0;
+    root.addEventListener("pointerdown", function(ev) {
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        var el = ev.target.closest("[data-turnpress]"); if (!el) return;
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
+        timer = setTimeout(function() { timer = null; S._suppressClick = true; S.openTurnEdit(el.dataset.turnpress); }, 450);
     });
-    return h + "</div></div>";
+    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; } });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); timer = null; }); });
+    root.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-turnpress]")) ev.preventDefault(); });
+    // Un appui ailleurs referme les boutons − et +.
+    root.addEventListener("click", function(ev) { if (S._turnEdit && !ev.target.closest(".sk-ptok.editing")) S.closeTurnEdit(); }, true);
+    root.addEventListener("keydown", function(ev) {
+        if (ev.key == "Escape" && S._turnEdit) { S.closeTurnEdit(); return; }
+        var el = ev.target.closest && ev.target.closest("[data-turnpress]");
+        if (el && (ev.key == "Enter" || ev.key == " ")) { ev.preventDefault(); S.openTurnEdit(el.dataset.turnpress); var b = S.root.querySelector("[data-turnwrap='" + el.dataset.turnpress + "'] .sk-pstep"); if (b) b.focus(); }
+    });
 };
 
-// Étapes du tour : automatiques pour l'Overlord (l'app les réalise), simple rappel pour les Héros.
-S.stepsCode = function() {
-    var st = S.state, ov = st.phase != "heroes", steps = ov ? [1, 2, 3, 4].map(function(n) { return t("ov_step_" + n); }) : [1, 2, 3, 4].map(function(n) { return t("he_step_" + n); });
-    var cur = st.phase == "overlord" ? 2 : -1;
-    return "<div class='sk-zone sk-c8 " + (ov ? "ov" : "he") + "'><h4>" + t(ov ? "steps_overlord_title" : "steps_heroes_title") + "</h4><ol>"
-        + steps.map(function(s, i) { return "<li class='" + (st.phase == "overlord" && i < cur ? "done" : "") + (i == cur ? " cur" : "") + "'>" + e(s) + "</li>"; }).join("") + "</ol></div>";
-};
-
-// Commandes au-dessus des tuiles 6, 7 et 8.
-S.controlsCode = function() {
-    var st = S.state, solo = st.mode == "solo", max = solo ? st.heroes : st.maxActivations;
-    var h = "<div class='sk-zone sk-c6'><div class='sk-zone-label'>" + t("turn") + "</div><div class='sk-turnrow'>"
-        + "<button class='sk-mini' data-act='turnminus' aria-label='" + e(t("aria_turn_prev")) + "'>−</button>"
-        + "<span title='" + e(t("turn")) + "' aria-label='" + e(t("turn") + " " + st.turn + (st.turns ? " / " + st.turns : "")) + "'>" + S.token("hourglass", st.turn, st.turns ? "/" + st.turns : "") + "</span>"
-        + "<button class='sk-mini' data-act='turnplus' aria-label='" + e(t("aria_turn_next")) + "'>+</button></div>"
-        + "<div class='sk-zone-label'>" + t("activations") + "</div><div class='sk-acts' aria-label='" + e(t("activations") + " " + st.activations + " / " + max) + "'>" + S.activationSlots(st.activations, max) + "</div></div>";
-    var ov = st.phase == "overlord";
-    h += "<div class='sk-zone sk-c7'><span class='sk-phasepill " + (st.phase == "heroes" ? "he" : "ov") + "'>" + t(st.phase == "heroes" ? "phase_short_heroes" : st.phase == "start" ? "phase_start" : "phase_short_overlord") + "</span>"
-        + "<button class='sk-turnbtn' data-act='" + (ov ? "oend" : "oturn") + "' title='" + e(t(ov ? "end_overlord_turn" : "start_overlord_turn")) + "'>" + t(ov ? "btn_end" : "btn_start") + "</button>"
-        + "<div class='sk-tools'><button class='sk-iconbtn' data-act='undo' title='" + e(t("undo")) + "' aria-label='" + e(t("undo")) + "'" + (S.undoStack.length ? "" : " disabled") + ">&#xf0e2;</button>"
-        + "<button class='sk-iconbtn' data-act='setup' title='" + e(t("menu_params")) + "' aria-label='" + e(t("menu_params")) + "'>&#xf013;</button></div>";
-    if (st.turns && st.turn == st.turns) h += "<span class='sk-flag'>" + t("last_turn") + "</span>";
-    if (st.turns && st.turn > st.turns) h += "<span class='sk-flag sk-danger'>" + t("game_over_short") + "</span>";
-    h += "</div>";
-    return h + S.stepsCode();
+// Boutons propres au nouveau panneau.
+var origBindGame = S.bindGame;
+S.bindGame = function() {
+    origBindGame.apply(S, arguments);
+    S.root.querySelector(".skelos-game").addEventListener("click", function(ev) {
+        var b = ev.target.closest("[data-act]"); if (!b) return;
+        switch (b.dataset.act) {
+            case "turnsplus": S.adjustTurns(1); break;
+            case "turnsminus": S.adjustTurns(-1); break;
+            case "journal": case "help": S.toast(t("coming_soon")); break;
+        }
+    });
 };
 
 // Après le rendu du plateau : fonds des zones, jetons du mode solo, tuiles Événement, carte des événements.
 var origRenderGame = S.renderGame;
 S.renderGame = function() {
     origRenderGame.apply(S, arguments);
-    var st = S.state, r = S.root, solo = st.mode == "solo";
-    var zs = r.querySelectorAll(".sk-zones > .sk-zone");
-    if (!solo && zs.length >= 3) { zs[0].classList.add("sk-zen"); zs[1].classList.add("sk-zrec"); zs[2].classList.add("sk-zfa"); }
+    var st = S.state, r = S.root;
+    if (S._turnEdit) S.openTurnEdit(S._turnEdit);
     r.querySelectorAll(".sk-token").forEach(function(tk) {
         var n = parseInt(tk.textContent, 10); if (!n) return;
         tk.innerHTML = "<img src='" + S.marker(n) + "' alt='" + n + "'>"; tk.classList.add("sk-tokenimg");
@@ -438,6 +543,7 @@ var origInit = S.init;
 S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
+    S.bindTurnPress(root);
     // Boutons − et + : modifient le champ et préviennent le formulaire.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest("[data-step]"); if (!b) return;
