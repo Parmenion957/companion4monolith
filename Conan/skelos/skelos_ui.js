@@ -317,7 +317,7 @@ S.tabsCode = function(active) {
 S.placeTabs = function() {
     if (!S.root) return;
     var old = S.root.querySelector(":scope > .sk-tabs"); if (old) old.remove();
-    var tab = S.screen == "game" && S.editing ? "scenarios" : TAB_OF[S.screen]; if (!tab) return;
+    var tab = S.screen == "game" && S.editing ? (S.editing.cid ? "campaigns" : "scenarios") : TAB_OF[S.screen]; if (!tab) return;
     S.root.insertAdjacentHTML("afterbegin", S.tabsCode(tab));
     var scr = S.root.querySelector(".sk-screen, .skelos-game"); if (scr) scr.classList.add("sk-tabbed");
 };
@@ -335,11 +335,15 @@ S.mount = function(html) {
 var origNav = S.navClick;
 S.navClick = function(ev) {
     var n = ev.target.closest("[data-nav]");
-    if (n && S.editing) { S.leaveEditor(function() { S.navClick(ev); }); return; }
+    if (n && S.editing) {
+        var ecid = S.editing.cid;
+        S.leaveEditor(function() { if (ecid && n.dataset.nav == "campaigns") S.renderCampaign(ecid); else S.navClick(ev); });
+        return;
+    }
     if (n && n.dataset.nav == "home") { S.renderHome(); return; }
     if (n && n.dataset.nav == "scenarios") { S.renderScenarios(); return; }
     var f = ev.target.closest("[data-fab]");
-    if (f) { if (f.dataset.fab == "scenario") S.newScenario(); else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
+    if (f) { if (f.dataset.fab == "scenario") S.newScenario(); else if (f.dataset.fab == "campaign") S.newCampaign(); else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
     origNav.call(S, ev);
 };
 // Onglet Partie : directement le plateau ; sans partie en cours, une partie vide aux valeurs par défaut.
@@ -580,6 +584,24 @@ S.renderSettings = function() {
     scr.classList.add("sk-dialogscreen");
     var hb = scr.querySelector(".sk-headblk");
     if (hb) hb.outerHTML = "<div class='sk-dlghead'><button class='sk-dlgback' data-nav='home' title='" + e(t("close")) + "' aria-label='" + e(t("close")) + "'>&#xf060;</button><h1>" + t("settings") + "</h1></div>";
+    var g = scr.querySelector(".sk-g8"), ic = S.itemColors();
+    if (g) {
+        g.insertAdjacentHTML("beforeend", "<div class='sk-blk sk-c3 sk-itemcolors'><h3>" + e(t("item_colors")) + "</h3><p>" + e(t("item_colors_help")) + "</p>"
+            + ["eq", "sp", "up"].map(function(k) {
+                var others = ["eq", "sp", "up"].filter(function(o) { return o != k; }).map(function(o) { return ic[o]; });
+                return "<div class='sk-fl'><span class='sk-chip sk-k-" + k + "'>" + e(t("kind_" + k)) + "</span></div>"
+                    + S.swatchesCode(S.PASTELS.filter(function(x) { return others.indexOf(x) < 0; }), ic[k], "sk-ic-" + k, k);
+            }).join("") + "</div>");
+        g.querySelector(".sk-itemcolors").addEventListener("click", function(ev) {
+            var sw = ev.target.closest("[data-col]"); if (!sw) return;
+            var k = sw.closest("[data-kind]").dataset.kind, pr = S.prefs();
+            pr.itemColors = S.itemColors(); pr.itemColors[k] = sw.dataset.col; S.savePrefs();
+            S.applyItemColors();
+            var n = S.fixAllHeroColors();
+            S.renderSettings();
+            if (n) S.toast(t("hero_colors_changed", n));
+        });
+    }
     S.syncDialogMode();
 };
 // La fin de scénario prend aussi l'allure d'un dialogue du Compagnon.
@@ -658,7 +680,7 @@ S.placeTabs = function() {
     if (S.studio) {
         g += "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
             var on = st.mode == m[0];
-            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
+            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'" + (S.editing && S.editing.cid ? " disabled title='" + e(t("mode_locked")) + "'" : "") + ">" + e(t(m[1])) + "</button>";
         }).join("") + "</div>"
             + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>";
     }
@@ -1132,6 +1154,8 @@ var origInit = S.init;
 S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
+    S.bindCardTips(root);
+    S.applyItemColors(); S.fixAllHeroColors();
     S.bindStudioDrag(root);
     S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
@@ -1148,6 +1172,519 @@ S.init = function(root) {
         inp.value = Math.max(min, Math.min(max, v));
         inp.dispatchEvent(new Event("change", {bubbles: true}));
     }, true);
+};
+
+// ---------- Onglet Campagnes ----------
+// Même logique que l'onglet Scénarios : cartes, filtres, écran vide en pêle-mêle, bouton flottant.
+var campMode = function(sc) { var s = sc && sc.setup; return s ? (s.saved ? s.saved.mode : s.mode) : null; };
+S.campaignCardCode = function(c) {
+    var scs = c.scenarios || [], played = S.playedCount(c), vp = S.vpTotal(c), rank = S.rank(c);
+    var info = [t(c.mode == "solo" ? "mode_solo" : "mode_classic"), t("camp_progress", played, scs.length), t("vp_n", vp)];
+    if (rank) info.push(t("rank_is", rank));
+    var dates = [];
+    if (c.created) dates.push(t("created_on", fmtDay(c.created)));
+    if (c.last) dates.push(t("last_played", fmtDay(c.last)));
+    var playing = S.state && S.state.campaign && S.state.campaign.cid == c.id ? S.state.campaign.idx : -1;
+    var dots = scs.map(function(sc, i) {
+        var st = i == playing ? "playing" : sc.status == "win" || sc.status == "loss" ? sc.status : sc.setup ? "todo" : "empty";
+        var lab = (i + 1) + ". " + (sc.title || t("scenario_to_choose")) + " — " + t("thread_" + st);
+        return "<span class='sk-cdot " + st + "' title='" + e(lab) + "'>" + (i + 1) + "</span>";
+    }).join("");
+    var heroes = (c.heroes || []).map(function(h) {
+        return "<span class='sk-chero" + (h.dead ? " dead" : "") + "' style='--hc:" + e(h.color || "#888") + "'>" + e(h.name) + "</span>";
+    }).join("");
+    return "<article class='sk-scard sk-ccard' aria-label='" + e(c.name) + "'>"
+        + "<div class='sk-scard-head'><h3>" + e(c.name || t("untitled")) + "</h3>"
+        + (c.finished ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + "</div>"
+        + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p>"
+        + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
+        + "<div class='sk-cheroes'>" + (heroes || "<span class='sk-sdates'>" + e(t("camp_no_hero")) + "</span>") + "</div>"
+        + "<div class='sk-cthread' role='img' aria-label='" + e(t("scenario_thread")) + "'>" + (dots || "<span class='sk-sdates'>" + e(t("camp_no_scenario")) + "</span>") + "</div>"
+        + "<div class='sk-scard-acts'><button class='sk-btn sk-primary' data-camp='" + c.id + "'>" + e(t("open")) + "</button>"
+        + "<span class='sk-scard-sp'></span>"
+        + "<button class='sk-iconbtn sk-scact sk-danger' data-cdel='" + c.id + "' title='" + e(t("delete")) + "' aria-label='" + e(t("delete") + " : " + c.name) + "'>&#xf2ed;</button>"
+        + "</div></article>";
+};
+// Écran vide : pêle-mêle de cartes de scénario (les vôtres s'il y en a, sinon l'exemple).
+S.emptyCampaignsCode = function(filtered) {
+    if (filtered) return "<p class='sk-snone'>" + e(t("no_campaign_match")) + "</p>";
+    var src = S.scenarioList().slice(-4);
+    while (src.length < 4) {
+        var x = S.exampleScenario(), k = src.length;
+        x.river = x.river.slice(k).concat(x.river.slice(0, k));
+        src.push(x);
+    }
+    var cards = src.map(function(sc, k) {
+        return "<div class='sk-cmini p" + k + "'><b>" + e(sc.title || t("untitled")) + "</b>" + S.riverThumbCode(sc) + "</div>";
+    }).join("");
+    return "<div class='sk-sempty'><div class='sk-cpelemele' aria-hidden='true'>" + cards + "</div><p>" + e(t("no_campaign")) + "<br>" + e(t("no_campaign_hint")) + "</p></div>";
+};
+S.renderCampaigns = function() {
+    S.screen = "campaigns"; S.ctx = null;
+    var list = S.campaigns(), pr = S.prefs();
+    var seg = function(attr, cur, opts, label) {
+        return "<div class='sk-seg sk-sseg' role='radiogroup' aria-label='" + e(t(label)) + "'>" + opts.map(function(m) {
+            return "<button " + attr + "='" + m[0] + "' class='" + (cur == m[0] ? "sk-on" : "") + "' role='radio' aria-checked='" + (cur == m[0]) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>";
+    };
+    var h = "<div class='sk-sbar'><input type='search' class='sk-in sk-ssearch' id='sk-cq' placeholder='" + e(t("search_campaign")) + "' aria-label='" + e(t("search_campaign")) + "' value='" + e(pr.campQ || "") + "'>"
+        + seg("data-cmode", pr.campMode || "", [["", "all_modes"], ["classic", "mode_classic"], ["solo", "mode_solo"]], "filter_mode")
+        + seg("data-cstate", pr.campState || "", [["", "all_campaigns"], ["cur", "in_progress"], ["done", "finished"]], "filter_state")
+        + seg("data-csort", pr.campSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by") + "</div>"
+        + "<div id='sk-clist' class='sk-slist'></div>" + S.floatingCode("campaign", t("new_campaign"));
+    origMount.call(S, "<div class='skelos-game sk-screen sk-scen sk-camps'><div class='sk-board'>" + h + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
+    S.placeTabs();
+    var draw = function() {
+        var q = S.norm(pr.campQ || ""), m = pr.campMode || "", stt = pr.campState || "", sort = pr.campSort || "recent";
+        var rows = list.filter(function(c) {
+            return (!q || S.norm(c.name || "").indexOf(q) >= 0) && (!m || c.mode == m) && (!stt || (stt == "done") == !!c.finished);
+        });
+        rows.sort(sort == "alpha"
+            ? function(a, b) { return (a.name || "").localeCompare(b.name || "", undefined, {sensitivity: "base"}); }
+            : function(a, b) { return (b.last || b.created || "").localeCompare(a.last || a.created || ""); });
+        S.root.querySelector("#sk-clist").innerHTML = rows.length ? rows.map(S.campaignCardCode).join("") : S.emptyCampaignsCode(list.length > 0);
+    };
+    draw();
+    S.root.querySelector("#sk-cq").addEventListener("input", function(ev) { pr.campQ = ev.target.value; S.savePrefs(); draw(); });
+    var pick = function(attr, key, b) {
+        pr[key] = b.getAttribute(attr); S.savePrefs();
+        S.root.querySelectorAll("[" + attr + "]").forEach(function(x) { x.classList.toggle("sk-on", x == b); x.setAttribute("aria-checked", x == b); });
+        draw();
+    };
+    S.screenClick = function(ev) {
+        var b;
+        if ((b = ev.target.closest("[data-cmode]"))) { pick("data-cmode", "campMode", b); return; }
+        if ((b = ev.target.closest("[data-cstate]"))) { pick("data-cstate", "campState", b); return; }
+        if ((b = ev.target.closest("[data-csort]"))) { pick("data-csort", "campSort", b); return; }
+        if ((b = ev.target.closest("[data-camp]"))) { S.renderCampaign(b.dataset.camp); return; }
+        if ((b = ev.target.closest("[data-cdel]"))) {
+            var cid = b.dataset.cdel, c = S.campaign(cid);
+            S.ask(t("confirm_delete_campaign_n", c ? c.name : ""), t("delete"), function() {
+                S.saveCampaigns(S.campaigns().filter(function(x) { return x.id != cid; }));
+                if (S.state && S.state.campaign && S.state.campaign.cid == cid) { S.state.campaign = null; S.save(); }
+                S.renderCampaigns();
+            });
+        }
+    };
+};
+// Nouvelle campagne : nom et mode, puis l'écran de la campagne.
+S.newCampaign = function() {
+    var mode = S.prefs().alwaysSolo ? "solo" : "classic";
+    S.dialog("<h2>" + e(t("new_campaign")) + "</h2>"
+        + "<label class='sk-fl'>" + e(t("name")) + "<input class='sk-in' id='sk-cn' placeholder='" + e(t("campaign_name_ph")) + "'></label>"
+        + "<span class='sk-fl'>" + e(t("mode")) + "</span><div class='sk-seg' role='radiogroup'>" + [["classic", "mode_classic"], ["solo", "mode_solo"]].map(function(m) {
+            return "<button data-nmode='" + m[0] + "' class='" + (m[0] == mode ? "sk-on" : "") + "' role='radio' aria-checked='" + (m[0] == mode) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>"
+        + "<p>" + e(t("new_campaign_help")) + "</p>"
+        + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + e(t("create")) + "</button><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
+        function(ev, close) {
+            var m = ev.target.closest("[data-nmode]");
+            if (m) { mode = m.dataset.nmode; S.root.querySelectorAll("[data-nmode]").forEach(function(x) { x.classList.toggle("sk-on", x == m); x.setAttribute("aria-checked", x == m); }); return; }
+            if (!ev.target.closest("[data-ok]")) return;
+            var name = S.root.querySelector("#sk-cn").value.trim() || t("campaign_name_ph");
+            var c = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, mode: mode, tiers: S.defaultTiers(), scenarios: [], heroes: [], cache: [], log: [], created: nowIso()};
+            S.campLog(c, t("clog_created"));
+            var l = S.campaigns(); l.push(c); S.saveCampaigns(l);
+            close(); S.renderCampaign(c.id);
+        });
+};
+
+// Ajouter (ou choisir) un scénario : copie d'un de mes scénarios du même mode, nouveau dans l'éditeur, ou emplacement vide.
+S.openChooseScenario = function(cid, idx) {
+    var c = S.campaign(cid); if (!c) return;
+    var list = S.scenarioList().filter(function(sc) { return (sc.saved ? sc.saved.mode : sc.mode) == c.mode; });
+    var cards = list.map(function(sc, i) {
+        return "<button class='sk-cpick' data-pick='" + i + "'><b>" + e(sc.title || t("untitled")) + "</b>" + S.riverThumbCode(sc) + "</button>";
+    }).join("");
+    S.dialog("<h2>" + e(t(idx == null ? "add_scenario" : "choose_scenario")) + "</h2>"
+        + "<div class='sk-actions sk-cpick-top'><button class='sk-btn sk-primary' data-new>" + e(t("new_scenario")) + "</button>"
+        + (idx == null ? "<button class='sk-btn' data-placeholder>" + e(t("placeholder_scenario")) + "</button>" : "") + "</div>"
+        + "<div class='sk-fl'>" + e(t("from_my_scenarios", t(c.mode == "solo" ? "mode_solo" : "mode_classic"))) + "</div>"
+        + (cards ? "<div class='sk-cpicks'>" + cards + "</div>" : "<p>" + e(t("no_scenario_for_mode", t(c.mode == "solo" ? "mode_solo" : "mode_classic"))) + "</p>")
+        + "<div class='sk-actions'><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
+        function(ev, close) {
+            if (ev.target.closest("[data-new]")) { close(); S.openCampaignEditor(cid, idx); return; }
+            if (ev.target.closest("[data-placeholder]")) {
+                close();
+                S.updateCampaign(cid, function(x) { x.scenarios.push({id: "s" + Date.now().toString(36), title: "", status: "todo", setup: null, vp: 0, date: null}); });
+                S.renderCampaign(cid); return;
+            }
+            var p = ev.target.closest("[data-pick]"); if (!p) return;
+            close();
+            // Copie : modifier plus tard le scénario d'origine ne change pas la campagne.
+            var src = list[+p.dataset.pick], setup = JSON.parse(JSON.stringify(src));
+            setup.fromSid = src.sid; delete setup.sid;
+            S.putCampaignScenario(cid, idx, setup, src.title || "");
+            S.renderCampaign(cid);
+        });
+    var dlg = S.root.querySelector("#sk-overlay .sk-dialog"); if (dlg) dlg.classList.add("sk-cpickdlg");
+};
+S.putCampaignScenario = function(cid, idx, setup, title) {
+    var at = idx;
+    S.updateCampaign(cid, function(c) {
+        var old = at != null ? c.scenarios[at] : null;
+        var sc = {id: old ? old.id : "s" + Date.now().toString(36), title: title, status: old ? old.status : "todo", setup: setup, vp: old ? old.vp : 0, date: old ? old.date : null};
+        if (old) { sc.turnReached = old.turnReached; if (old.plays) sc.plays = old.plays; c.scenarios[at] = sc; } else { c.scenarios.push(sc); at = c.scenarios.length - 1; }
+        S.campLog(c, t("clog_scenario", title || t("untitled")));
+    });
+    return at;
+};
+
+// Éditeur dans l'onglet Campagnes : même plateau que l'onglet Scénarios, mode fixé par la campagne.
+S.openCampaignEditor = function(cid, idx) {
+    var c = S.campaign(cid); if (!c) return;
+    var sc = idx != null ? c.scenarios[idx] : null, setup = sc && sc.setup ? JSON.parse(JSON.stringify(sc.setup)) : null;
+    if (setup) setup.title = sc.title || setup.title;
+    if (!setup) { setup = S.blankScenario(); setup.mode = c.mode; }
+    S.openEditor(setup);
+    S.editing.cid = cid; S.editing.idx = idx;
+    if (S.state && S.state.mode != c.mode) { S.state.mode = c.mode; S.state.scenario.mode = c.mode; }
+    S.renderGame();
+};
+var origOpenSave = S.openSaveScenario;
+S.openSaveScenario = function() {
+    if (!S.editing || !S.editing.cid) return origOpenSave.apply(S, arguments);
+    var sc = S.state.scenario;
+    Nav.dialog(e(t("save_in_campaign")),
+        "<div class='sk-savedlg'><label for='sk-savetitle'>" + e(t("scenario_name")) + "</label>"
+        + "<input id='sk-savetitle' type='text' value='" + e(sc.title || "") + "' placeholder='" + e(t("scenario_name_placeholder")) + "'>"
+        + "<p class='sk-savemsg' id='sk-savemsg' role='alert'></p>"
+        + "<label for='sk-savenotes'>" + e(t("notes")) + "</label><textarea id='sk-savenotes' rows='5'>" + e(sc.notes || "") + "</textarea>"
+        + "<label class='sk-check sk-savealso'><input type='checkbox' id='sk-savealso'> " + e(t("also_my_scenarios")) + "</label>"
+        + "<button type='button' class='sk-savebtn' onclick='Skelos.saveCampaignScenarioFromDialog()'>" + e(t("save_in_campaign")) + "</button></div>",
+        null, [{fn: "Skelos.saveCampaignScenarioFromDialog()", icon: "skelos-save-icon", label: e(t("save_in_campaign"))}]);
+    var inp = document.getElementById("sk-savetitle"); if (inp) { inp.focus(); inp.select(); }
+};
+S.saveCampaignScenarioFromDialog = function() {
+    var title = (document.getElementById("sk-savetitle").value || "").trim();
+    if (!title) { document.getElementById("sk-savemsg").textContent = t("title_required"); document.getElementById("sk-savetitle").focus(); return; }
+    var st = S.state, ed = S.editing, also = document.getElementById("sk-savealso").checked;
+    st.scenario.title = title; st.scenario.notes = document.getElementById("sk-savenotes").value;
+    st.log = [];
+    var d = S.scenarioFromState(); d.saved = S.stateCopy(st, true); d.title = title; d.notes = st.scenario.notes;
+    var old = ed.idx != null ? (S.campaign(ed.cid).scenarios[ed.idx] || {}).setup : null;
+    if (old && old.fromSid) d.fromSid = old.fromSid;
+    delete d.sid; if (d.saved.scenario) delete d.saved.scenario.sid;
+    S.putCampaignScenario(ed.cid, ed.idx, d, title);
+    if (also) {
+        var copy = JSON.parse(JSON.stringify(d)), now = nowIso();
+        delete copy.fromSid; copy.sid = newSid(); copy.source = "user"; copy.created = now; copy.updated = now;
+        if (copy.saved.scenario) copy.saved.scenario.sid = copy.sid;
+        var l = S.scenarioList(); l.push(copy); S.saveScenarios(l);
+    }
+    Nav.closeDialog();
+    var cid = ed.cid;
+    S.closeEditor(); S.toast(t(also ? "saved_campaign_and_mine" : "saved_in_campaign"));
+    S.renderCampaign(cid);
+};
+// Mode fixé par la campagne : pas de bascule Aventure / Coop dans son éditeur.
+var origSwitchMode = S.switchMode;
+S.switchMode = function() { if (S.editing && S.editing.cid) { S.toast(t("mode_locked")); return; } return origSwitchMode.apply(S, arguments); };
+
+// Fil des scénarios d'une campagne : réordonné par glisser-déposer de la poignée.
+S.moveCampaignScenario = function(cid, from, to) {
+    if (from == to) return;
+    var order = null;
+    S.updateCampaign(cid, function(c) {
+        order = c.scenarios.map(function(x, i) { return i; });
+        c.scenarios.splice(to, 0, c.scenarios.splice(from, 1)[0]);
+        order.splice(to, 0, order.splice(from, 1)[0]);
+    });
+    var st = S.state;
+    if (st && st.campaign && st.campaign.cid == cid && order) { st.campaign.idx = order.indexOf(st.campaign.idx); S.save(); }
+    S.renderCampaign(cid);
+};
+S.bindThreadDrag = function(cid) {
+    var box = S.root.querySelector(".sk-thread"); if (!box) return;
+    var drag = null;
+    var rows = function() { return Array.prototype.slice.call(box.querySelectorAll(".sk-sc")); };
+    var clean = function() { if (!drag) return; drag.row.classList.remove("sk-dragging"); rows().forEach(function(r) { r.classList.remove("sk-dropbefore", "sk-dropafter"); }); drag = null; };
+    var targetAt = function(y) {
+        var rs = rows(), to = rs.length - 1;
+        for (var i = 0; i < rs.length; i++) { var rc = rs[i].getBoundingClientRect(); if (y < rc.top + rc.height / 2) { to = i; break; } }
+        return to;
+    };
+    box.addEventListener("pointerdown", function(ev) {
+        var g = ev.target.closest("[data-grip]"); if (!g || drag) return;
+        ev.preventDefault();
+        drag = {row: g.closest(".sk-sc"), from: +g.dataset.grip, id: ev.pointerId, y: ev.clientY, on: false};
+        try { g.setPointerCapture(ev.pointerId); } catch (x) {}
+    });
+    box.addEventListener("pointermove", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) { if (Math.abs(ev.clientY - drag.y) < 6) return; drag.on = true; drag.row.classList.add("sk-dragging"); }
+        ev.preventDefault();
+        var to = targetAt(ev.clientY), rs = rows();
+        rs.forEach(function(r, i) { r.classList.toggle("sk-dropbefore", i == to && to < drag.from); r.classList.toggle("sk-dropafter", i == to && to > drag.from); });
+        drag.to = to;
+    });
+    box.addEventListener("pointerup", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        var from = drag.from, to = drag.on ? drag.to : null; clean();
+        if (to != null) S.moveCampaignScenario(cid, from, to);
+    });
+    box.addEventListener("pointercancel", clean);
+};
+
+// ---------- Glisser-déposer des objets : cache → héros, héros → héros, héros → cache ----------
+S.bindItemDrag = function(cid) {
+    var box = S.root.querySelector(".sk-campaign"); if (!box) return;
+    var drag = null;
+    var targetAt = function(x, y) { var el = document.elementFromPoint(x, y); return el ? el.closest("[data-drophero], [data-drop='cache']") : null; };
+    var clean = function() {
+        if (!drag) return;
+        if (drag.ghost) drag.ghost.remove();
+        drag.chip.classList.remove("sk-dragging");
+        box.querySelectorAll(".sk-dropon").forEach(function(x) { x.classList.remove("sk-dropon"); });
+        document.documentElement.classList.remove("sk-itemdrag");
+        drag = null;
+    };
+    box.addEventListener("pointerdown", function(ev) {
+        if (drag || (ev.pointerType == "mouse" && ev.button != 0)) return;
+        var chip = ev.target.closest(".sk-chip[data-item]"); if (!chip) return;
+        drag = {chip: chip, item: chip.dataset.item, id: ev.pointerId, x: ev.clientX, y: ev.clientY, on: false};
+    });
+    box.addEventListener("pointermove", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) {
+            if (Math.abs(ev.clientX - drag.x) < 6 && Math.abs(ev.clientY - drag.y) < 6) return;
+            drag.on = true; S.hideCardTip();
+            try { drag.chip.setPointerCapture(ev.pointerId); } catch (x) {}
+            var r = drag.chip.getBoundingClientRect();
+            drag.dx = drag.x - r.left; drag.dy = drag.y - r.top;
+            drag.ghost = drag.chip.cloneNode(true); drag.ghost.classList.add("sk-dragghost"); drag.ghost.style.width = r.width + "px";
+            box.appendChild(drag.ghost);
+            drag.chip.classList.add("sk-dragging");
+            document.documentElement.classList.add("sk-itemdrag");
+        }
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.dx) + "px"; drag.ghost.style.top = (ev.clientY - drag.dy) + "px";
+        var tg = targetAt(ev.clientX, ev.clientY);
+        box.querySelectorAll(".sk-dropon").forEach(function(x) { if (x != tg) x.classList.remove("sk-dropon"); });
+        if (tg) tg.classList.add("sk-dropon");
+    });
+    box.addEventListener("pointerup", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) { drag = null; return; }
+        var tg = targetAt(ev.clientX, ev.clientY), item = drag.item; clean();
+        // Le clic qui suit le dépôt n'ouvre pas le menu de l'objet.
+        var stop = function(e2) { e2.stopPropagation(); e2.preventDefault(); };
+        window.addEventListener("click", stop, true); setTimeout(function() { window.removeEventListener("click", stop, true); }, 0);
+        if (!tg) return;
+        var owner = tg.dataset.drophero || null, moved = false;
+        S.updateCampaign(cid, function(x) { (x.cache || []).forEach(function(it) { if (it.uid == item) moved = S.setItemOwner(x, it, owner); }); });
+        if (moved) S.renderCampaign(cid);
+    });
+    box.addEventListener("pointercancel", clean);
+};
+
+// ---------- Couleurs pastel : héros et types d'objets ne partagent jamais une couleur ----------
+S.PASTELS = ["#f4a6a6", "#f5c6aa", "#f9e79f", "#d4e9a8", "#a8e6cf", "#b8e0d2", "#a0d8ef", "#b5c7f2", "#cdb4f0", "#f2b5d4", "#e8d5b5", "#d9d4cf"];
+S.ITEM_COLOR_DEFAULTS = {eq: "#e8d5b5", sp: "#cdb4f0", up: "#a8e6cf"};
+S.itemColors = function() {
+    var ic = S.prefs().itemColors || {}, o = {};
+    ["eq", "sp", "up"].forEach(function(k) { o[k] = S.PASTELS.indexOf(ic[k]) >= 0 ? ic[k] : S.ITEM_COLOR_DEFAULTS[k]; });
+    return o;
+};
+S.applyItemColors = function() {
+    var ic = S.itemColors(), st = document.documentElement.style;
+    ["eq", "sp", "up"].forEach(function(k) { st.setProperty("--sk-c-" + k, ic[k]); });
+};
+var itemColorList = function() { var ic = S.itemColors(); return [ic.eq, ic.sp, ic.up]; };
+// Couleurs libres pour un héros : ni celle d'un type d'objet, ni celle d'un autre héros de la campagne.
+S.freeHeroColors = function(c, exceptHid) {
+    var used = itemColorList().concat((c.heroes || []).filter(function(h) { return h.id != exceptHid; }).map(function(h) { return h.color; }));
+    return S.PASTELS.filter(function(x) { return used.indexOf(x) < 0; });
+};
+S.pickHeroColor = function(c, exceptHid) {
+    var f = S.freeHeroColors(c, exceptHid), items = itemColorList();
+    if (!f.length) f = S.PASTELS.filter(function(x) { return items.indexOf(x) < 0; });
+    return f[Math.floor(Math.random() * f.length)];
+};
+// Un héros dont la couleur n'est plus valable (pas pastel, prise par un type d'objet ou par un autre héros) en reçoit une libre au hasard.
+S.fixHeroColors = function(c) {
+    var taken = itemColorList(), bad = [], n = 0;
+    (c.heroes || []).forEach(function(h) { if (S.PASTELS.indexOf(h.color) >= 0 && taken.indexOf(h.color) < 0) taken.push(h.color); else bad.push(h); });
+    bad.forEach(function(h) {
+        var f = S.PASTELS.filter(function(x) { return taken.indexOf(x) < 0; });
+        if (!f.length) f = S.PASTELS.filter(function(x) { return itemColorList().indexOf(x) < 0; });
+        h.color = f[Math.floor(Math.random() * f.length)]; taken.push(h.color); n++;
+    });
+    return n;
+};
+S.fixAllHeroColors = function() {
+    var l = S.campaigns(), n = 0;
+    l.forEach(function(c) { n += S.fixHeroColors(c); });
+    if (n) S.saveCampaigns(l);
+    return n;
+};
+// Nuancier : un bouton par couleur ; la valeur retenue est dans data-value du conteneur.
+S.swatchesCode = function(colors, current, id, kind) {
+    if (current && colors.indexOf(current) < 0) colors = [current].concat(colors);
+    return "<div class='sk-swatches' role='radiogroup' id='" + id + "' data-value='" + e(current || "") + "'" + (kind ? " data-kind='" + kind + "'" : "") + ">"
+        + colors.map(function(x) { var on = x == current; return "<button type='button' class='sk-swatch" + (on ? " on" : "") + "' role='radio' aria-checked='" + on + "' data-col='" + x + "' style='--sw:" + x + "' aria-label='" + x + "'></button>"; }).join("") + "</div>";
+};
+S.swatchClick = function(ev) {
+    var sw = ev.target.closest("[data-col]"); if (!sw) return false;
+    var box = sw.closest(".sk-swatches"); box.dataset.value = sw.dataset.col;
+    box.querySelectorAll(".sk-swatch").forEach(function(b) { var on = b == sw; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+    return true;
+};
+
+// ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
+// On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
+var COMPANY_SIZE = 4;
+var plain = function(s) { return String(s || "").replace(/<[^>]+>/g, "").trim(); };
+S.heroCatalog = function() {
+    return ((Encyclopedia.heroes && Encyclopedia.heroes.list) || []).map(function(x) {
+        return {ref: x.id, name: plain(x.name), sub: plain(x.subname), image: x.image || "", origins: x.origins || []};
+    }).filter(function(x) { return x.name; }).sort(function(a, b) { return (a.name + " " + a.sub).localeCompare(b.name + " " + b.sub, "fr"); });
+};
+// Image d'un héros : celle retenue au choix, sinon celle d'un héros de l'encyclopédie du même nom (anciens héros saisis à la main).
+S.heroImage = function(hh) {
+    if (hh.image) return hh.image;
+    var n = S.norm(hh.name || ""), x = S.heroCatalog().filter(function(k) { return S.norm(k.name) == n; })[0];
+    return x ? x.image : "";
+};
+// Fiche complète du héros, dessinée par le Compagnon (comme dans son encyclopédie).
+S.heroSheetFull = function(ref) {
+    try {
+        if (typeof HeroSheet == "undefined" || typeof EncyclopediaHeroes == "undefined") return null;
+        var x = (Encyclopedia.heroes.list || []).filter(function(h) { return h.id == ref; })[0];
+        return x ? HeroSheet._cardCode(EncyclopediaHeroes._convertHeroToStudio(x, false)) : null;
+    } catch (err) { return null; }
+};
+S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
+S.heroSheetCode = function(c, hh) {
+    var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; }), img = S.heroImage(hh);
+    return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' data-drophero='" + hh.id + "' style='--hc:" + hh.color + "'>"
+        + "<button class='sk-hsheet-p' data-cact='hero' data-hero='" + hh.id + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>"
+        + (img ? "<img src='" + e(img) + "' alt='' loading='lazy'>" : "<span class='sk-hsheet-ini' aria-hidden='true'>" + e((hh.name || "?").charAt(0)) + "</span>") + "</button>"
+        + "<div class='sk-hsheet-n'><b>" + e(hh.name) + "</b>" + (hh.sub ? "<small>" + e(hh.sub) + "</small>" : "") + "</div>"
+        + (hh.dead ? "<span class='sk-st loss'>" + e(t("fell_at", hh.deadAt || "?")) + "</span>" : "")
+        + "<div class='sk-hsheet-eq'><div class='sk-hsheet-t'>" + e(t("hero_equipment")) + "</div><div class='sk-chips'>"
+        + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false}); }).join("")
+        + "<button class='sk-chip sk-chipadd' data-act='heroassign' data-cid='" + c.id + "' data-hero='" + hh.id + "'>+ " + e(t("assign")) + "</button></div></div></div>";
+};
+S.companyCode = function(c) {
+    var h = "<div class='sk-company'>" + (c.heroes || []).map(function(hh) { return S.heroSheetCode(c, hh); }).join("");
+    for (var i = S.companyFree(c); i > 0; i--) h += "<button class='sk-hsheet sk-hsheet-empty' data-cact='addhero'><span aria-hidden='true'>+</span><small>" + e(t("add_hero")) + "</small></button>";
+    return h + "</div>";
+};
+// Sélection multiple des héros, sur le modèle du choix des tuiles : on touche, l'ordre s'affiche, on ajoute la sélection.
+S.openHeroPicker = function(cid) {
+    var c = S.campaign(cid), pr = S.prefs(), sel = [], free = S.companyFree(c);
+    var have = {}; (c.heroes || []).forEach(function(h) { if (!h.dead) have[S.norm(h.name)] = true; });
+    if (pr.heroBox == null) pr.heroBox = "";
+    var ov = S.root.querySelector("#sk-overlay");
+    ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-hpickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("hero_picker_title")) + "</h2>"
+        + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-addsel disabled>" + e(t("add_selection", 0)) + "</button>"
+        + "<button class='sk-btn' data-pclose>" + e(t("close")) + "</button></div></div>"
+        + "<div class='sk-filters'><input type='search' id='sk-hq' placeholder='" + e(t("search_hero")) + "' value='" + e(pr.heroQ || "") + "'><select id='sk-hbox'></select></div>"
+        + "<div class='sk-pickstatus' id='sk-hst' role='status'></div><div class='sk-picker sk-hpicker' id='sk-hg'></div></div>";
+    ov.classList.add("on");
+    var owned = S.ownedBoxes(), boxes = owned.length ? S.allBoxes().filter(function(k) { return owned.indexOf(k) >= 0; }) : S.allBoxes();
+    if (pr.heroBox && boxes.indexOf(pr.heroBox) < 0) pr.heroBox = "";
+    ov.querySelector("#sk-hbox").innerHTML = "<option value=''>" + e(t(owned.length ? "all_my_boxes" : "all_boxes")) + "</option>"
+        + boxes.map(function(k) { return "<option value='" + k + "'" + (k == pr.heroBox ? " selected" : "") + ">" + e(S.boxName(k)) + "</option>"; }).join("");
+    var cat = S.heroCatalog(), byRef = {}; cat.forEach(function(x) { byRef[x.ref] = x; });
+    var status = function() {
+        ov.querySelector("#sk-hst").innerHTML = "<div>" + e(t("hero_selection_count", sel.length, free)) + "</div><div class='sk-selchips'>" + sel.map(function(r, i) {
+            return "<button class='sk-chip' data-unsel='" + i + "' aria-label='" + e(t("unselect", byRef[r].name)) + "'><span class='sk-chip-n'>" + (i + 1) + "</span>" + e(byRef[r].name) + " <span aria-hidden='true'>✕</span></button>";
+        }).join("") + "</div>";
+        var a = ov.querySelector("[data-addsel]"); a.disabled = !sel.length; a.textContent = t("add_selection", sel.length);
+        ov.querySelectorAll(".sk-hpick[data-ref]").forEach(function(p) {
+            var k = sel.indexOf(p.dataset.ref), bd = p.querySelector(".sk-pickbadge");
+            if (k >= 0) { if (!bd) { bd = document.createElement("span"); bd.className = "sk-pickbadge"; p.appendChild(bd); } bd.textContent = k + 1; p.classList.add("picked"); }
+            else { if (bd) bd.remove(); p.classList.remove("picked"); }
+            p.setAttribute("aria-pressed", k >= 0);
+        });
+    };
+    var draw = function() {
+        pr.heroQ = ov.querySelector("#sk-hq").value; pr.heroBox = ov.querySelector("#sk-hbox").value; S.savePrefs();
+        var q = S.norm(pr.heroQ), bx = pr.heroBox;
+        var out = cat.filter(function(x) {
+            if (bx ? x.origins.indexOf(bx) < 0 : owned.length && !x.origins.some(function(o) { return owned.indexOf(o) >= 0; })) return false;
+            return !q || S.norm(x.name + " " + x.sub).indexOf(q) >= 0;
+        }).map(function(x) {
+            var inco = have[S.norm(x.name)];
+            var full = S.heroSheetFull(x.ref), lbl = x.name + (x.sub ? " " + x.sub : "") + (inco ? " — " + t("in_company") : "");
+            if (full) return "<button class='sk-hpick sk-hpick-full" + (inco ? " sk-inco" : "") + "' data-ref='" + e(x.ref) + "' aria-label='" + e(lbl) + "'" + (inco ? " disabled" : "") + ">"
+                + "<span class='sk-hsheetscale'>" + full + "</span>" + (inco ? "<span class='sk-inco-t'>" + e(t("in_company")) + "</span>" : "") + "</button>";
+            return "<button class='sk-hpick" + (inco ? " sk-inco" : "") + "' data-ref='" + e(x.ref) + "'" + (inco ? " disabled title='" + e(t("in_company")) + "'" : "") + ">"
+                + "<span class='sk-hpick-i'>" + (x.image ? "<img src='" + e(x.image) + "' alt='' loading='lazy'>" : "") + "</span>"
+                + "<span class='sk-hpick-n'><b>" + e(x.name) + "</b>" + (x.sub ? "<small>" + e(x.sub) + "</small>" : "") + (inco ? "<small class='sk-inco-t'>" + e(t("in_company")) + "</small>" : "") + "</span></button>";
+        }).join("");
+        ov.querySelector("#sk-hg").innerHTML = out || "<p class='sk-help'>" + e(t("no_hero_found")) + "</p>";
+        status();
+    };
+    var close = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; };
+    ov.querySelector("#sk-hq").addEventListener("input", draw);
+    ov.querySelector("#sk-hbox").addEventListener("change", draw);
+    ov.onclick = function(ev) {
+        if (ev.target === ov || ev.target.closest("[data-pclose]")) { close(); return; }
+        var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
+        if (ev.target.closest("[data-addsel]")) {
+            var picked = sel.map(function(r) { return byRef[r]; });
+            S.updateCampaign(cid, function(x) {
+                x.heroes = x.heroes || [];
+                picked.forEach(function(k) {
+                    x.heroes.push({id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref: k.ref, name: k.name, sub: k.sub, image: k.image,
+                        color: S.pickHeroColor(x, null), dead: false});
+                    S.campLog(x, t("clog_hero", k.name));
+                });
+            });
+            close(); S.renderCampaign(cid); return;
+        }
+        var p = ev.target.closest(".sk-hpick[data-ref]"); if (!p || p.disabled) return;
+        var k = sel.indexOf(p.dataset.ref), nm = S.norm(byRef[p.dataset.ref].name);
+        var twin = sel.filter(function(r) { return S.norm(byRef[r].name) == nm; })[0];
+        if (k >= 0) sel.splice(k, 1);
+        else if (twin) { sel[sel.indexOf(twin)] = p.dataset.ref; }
+        else if (sel.length >= free) { S.toast(t("company_full", COMPANY_SIZE)); return; }
+        else { sel.push(p.dataset.ref); p.classList.remove("added"); void p.offsetWidth; p.classList.add("added"); }
+        status();
+    };
+    draw(); ov.querySelector("#sk-hq").focus();
+};
+
+// ---------- Carte d'un objet au survol de la souris (équipement, sort, amélioration) ----------
+S.cardTipCode = function(code) {
+    var p = String(code).split(":"), kind = p[0], ref = p.slice(1).join(":");
+    var real = kind == "up" ? null : S.realCardCode(kind, ref);
+    if (real) return "<span class='sk-cardscale'>" + real + "</span>";
+    var it = S.catalog(kind).filter(function(x) { return x.ref == ref; })[0];
+    return it ? S.itemCardCode(it) : "";
+};
+S.showCardTip = function(el) {
+    var html = S.cardTipCode(el.dataset.card); if (!html) { S.hideCardTip(); return; }
+    var tip = S.root.querySelector("#sk-cardtip");
+    if (!tip) { tip = document.createElement("div"); tip.id = "sk-cardtip"; tip.className = "sk-cardtip"; tip.setAttribute("aria-hidden", "true"); S.root.appendChild(tip); }
+    if (tip.dataset.card != el.dataset.card) { tip.innerHTML = html; tip.dataset.card = el.dataset.card; }
+    tip.classList.add("on");
+    var place = function() {
+        if (tip.dataset.card != el.dataset.card || !el.isConnected) return;
+        // Hauteur attendue d'une carte même avant le chargement de son image (rapport 0,67).
+        var b = el.getBoundingClientRect(), w = tip.offsetWidth, hg = Math.max(tip.offsetHeight, Math.round(w / 0.67));
+        var bottom = window.innerHeight - 8, nb = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 2);
+        // La barre de navigation du Compagnon, en bas, ne doit pas couvrir la carte.
+        while (nb && nb != document.body && !S.root.contains(nb) && ["fixed", "absolute", "sticky"].indexOf(getComputedStyle(nb).position) < 0) nb = nb.parentElement;
+        if (nb && nb != document.body && !S.root.contains(nb)) bottom = Math.min(bottom, nb.getBoundingClientRect().top - 8);
+        var left = b.right + 10; if (left + w > window.innerWidth - 8) left = Math.max(8, b.left - w - 10);
+        var top = Math.max(8, Math.min(b.top + b.height / 2 - hg / 2, bottom - hg));
+        tip.style.left = left + "px"; tip.style.top = top + "px";
+    };
+    place();
+    tip.querySelectorAll("img").forEach(function(im) { if (!im.complete) im.addEventListener("load", place, {once: true}); });
+};
+S.hideCardTip = function() { var tip = S.root && S.root.querySelector("#sk-cardtip"); if (tip) tip.classList.remove("on"); };
+S.bindCardTips = function(root) {
+    root.addEventListener("mouseover", function(ev) {
+        if (S._lastPointer && S._lastPointer != "mouse") return;
+        var el = ev.target.closest(".sk-chip[data-card]");
+        if (el) S.showCardTip(el); else S.hideCardTip();
+    });
+    root.addEventListener("mouseleave", S.hideCardTip);
+    root.addEventListener("pointerdown", S.hideCardTip, true);
+    window.addEventListener("scroll", S.hideCardTip, true);
 };
 
 // ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------

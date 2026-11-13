@@ -1074,3 +1074,144 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-a-phase li.cur { font-weight: normal; }
 .skelos-game .sk-a-phase li { padding: 4px 6px; gap: 5px; }
 .skelos-game .sk-a-phase .sk-pnum { width: 20px; height: 20px; font-size: .8rem; }
+
+/* =====================================================================
+   Étape 9 : onglet Campagnes (cartes, pêle-mêle, ajout de scénario, fil réordonnable)
+   ===================================================================== */
+.sk-cheroes { display: flex; flex-wrap: wrap; gap: 6px; }
+.sk-chero { display: inline-flex; align-items: center; gap: 6px; font-family: 'Secondary', sans-serif; font-size: 20px; line-height: 1.2; color: var(--body-color); }
+.sk-chero::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--hc); box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.sk-chero.dead { opacity: .5; text-decoration: line-through; }
+.sk-cthread { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.sk-cdot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: 'Motrg', 'Primary', serif; font-size: 15px;
+    border: 2px solid var(--main-color); color: var(--main-color); box-sizing: border-box; }
+.sk-cdot.win { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.sk-cdot.loss { background: #b3261e; border-color: #b3261e; color: #fff; }
+.sk-cdot.playing { background: var(--highlight-color); border-color: var(--highlight-color); color: #fff; }
+.sk-cdot.empty { border-style: dashed; opacity: .6; }
+.sk-sbadge.sk-cdone { background: var(--main-color); color: var(--body-bg-color); }
+/* Écran vide : cartes de scénario en éventail */
+.sk-cpelemele { position: relative; width: 420px; max-width: 92%; height: 210px; opacity: .6; filter: saturate(.6); -webkit-mask-image: linear-gradient(#000 65%, transparent); mask-image: linear-gradient(#000 65%, transparent); }
+.sk-cmini { position: absolute; left: 50%; top: 10px; width: 250px; margin-left: -125px; padding: 8px 10px; border-radius: 8px; background: var(--body-bg-color); color: var(--body-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,.35); text-align: left; }
+.sk-cmini b { display: block; font-family: 'Primary', serif; font-weight: normal; font-size: 15px; color: var(--main-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-cmini .sk-srank { width: 12px; height: 12px; }
+.sk-cmini.p0 { transform: translateX(-95px) rotate(-12deg); } .sk-cmini.p1 { transform: translateX(-32px) rotate(-4deg); top: 2px; }
+.sk-cmini.p2 { transform: translateX(32px) rotate(5deg); top: 4px; } .sk-cmini.p3 { transform: translateX(95px) rotate(13deg); top: 14px; }
+/* Choix d'un scénario à copier */
+.sk-overlay .sk-dialog.sk-cpickdlg { max-width: 860px; max-height: 86vh; overflow: auto; }
+.sk-cpick-top { justify-content: flex-start; }
+.sk-cpicks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.sk-cpick { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--sk-line); background: var(--sk-card, rgba(128,128,128,.12));
+    color: var(--body-color); text-align: left; cursor: pointer; font: inherit; }
+.sk-cpick:hover, .sk-cpick:focus-visible { border-color: var(--highlight-color); outline: none; }
+.sk-cpick b { font-family: 'Primary', serif; font-weight: normal; font-size: 18px; color: var(--main-color); }
+.sk-cpick .sk-srank { width: 14px; height: 14px; }
+/* Fil des scénarios : poignée de glisser-déposer */
+.sk-grip { flex: none; width: 30px; height: 40px; padding: 0; border: 0; background: none; color: var(--main-color); opacity: .7; cursor: grab; touch-action: none;
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 16px; }
+.sk-grip:hover, .sk-grip:focus-visible { opacity: 1; }
+.sk-thread .sk-sc.sk-dragging { opacity: .45; }
+.sk-thread .sk-sc.sk-dropbefore { box-shadow: inset 0 3px 0 var(--highlight-color); }
+.sk-thread .sk-sc.sk-dropafter { box-shadow: inset 0 -3px 0 var(--highlight-color); }
+.sk-savealso { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+.sk-overlay .sk-cpickdlg .sk-fl, .sk-overlay .sk-cpickdlg p { font-family: 'Secondary', sans-serif; font-size: 21px; margin: 6px 0; color: var(--body-color); }
+
+/* Compagnie : quatre fiches de héros et sélecteur multiple */
+.sk-company { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sk-hsheet { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; padding: 0 0 8px; border-radius: 10px; overflow: hidden;
+    background: var(--body-bg-color); color: var(--body-color); border: 1px solid var(--sk-line, rgba(128,128,128,.35)); border-top: 5px solid var(--hc); box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.sk-hsheet-p { display: grid; place-items: end center; height: 170px; padding: 6px 0 0; border: 0; cursor: pointer;
+    background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--hc) 30%, transparent), transparent 70%); }
+.sk-hsheet-p { overflow: hidden; }
+.sk-hsheet-p img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: 50% 100%; display: block; }
+.sk-hsheet-ini { font-family: 'Primary', serif; font-size: 64px; color: var(--hc); align-self: center; }
+.sk-hsheet-n { padding: 0 10px; text-align: center; line-height: 1.15; }
+.sk-hsheet-n b { display: block; font-family: 'Primary', serif; font-weight: normal; font-size: 20px; color: var(--main-color); overflow-wrap: anywhere; }
+.sk-hsheet-n small { display: block; font-size: 15px; color: var(--body-color); opacity: .8; }
+.sk-hsheet .sk-st { align-self: center; }
+.sk-hsheet-eq { margin: 0 8px; padding-top: 6px; border-top: 1px dashed var(--sk-line, rgba(128,128,128,.4)); }
+.sk-hsheet-t { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--body-color); opacity: .75; margin-bottom: 4px; }
+.sk-hsheet.dead .sk-hsheet-p img { filter: grayscale(1); opacity: .5; }
+.sk-hsheet-empty { align-items: center; justify-content: center; min-height: 260px; border: 2px dashed var(--main-color); border-top-width: 2px; background: none; box-shadow: none;
+    color: var(--main-color); cursor: pointer; font: inherit; opacity: .75; }
+.sk-hsheet-empty:hover, .sk-hsheet-empty:focus-visible { opacity: 1; border-color: var(--highlight-color); color: var(--highlight-color); outline: none; }
+.sk-hsheet-empty span { font-size: 44px; line-height: 1; }
+.sk-hsheet-empty small { font-family: 'Primary', serif; font-size: 16px; }
+.sk-hpicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
+.sk-hpick { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px 8px; border-radius: 8px;
+    border: 2px solid transparent; background: var(--sk-card, rgba(128,128,128,.12)); color: var(--body-color); cursor: pointer; font: inherit; }
+.sk-hpick:hover, .sk-hpick:focus-visible { border-color: var(--highlight-color); outline: none; }
+.sk-hpick.picked { border-color: var(--highlight-color); }
+.sk-hpick-i { height: 130px; width: 100%; display: grid; place-items: end center; }
+.sk-hpick-i { overflow: hidden; }
+.sk-hpick-i img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: 50% 100%; display: block; }
+.sk-hpick-n { text-align: center; line-height: 1.1; }
+.sk-hpick-n b { display: block; font-family: 'Primary', serif; font-weight: normal; font-size: 16px; color: var(--main-color); }
+.sk-hpick-n small { display: block; font-size: 13px; }
+.sk-hpick.sk-inco { opacity: .45; cursor: default; }
+.sk-hpick .sk-pickbadge { position: absolute; top: 4px; right: 4px; }
+@media (max-width: 700px) { .sk-hsheet-p { height: 130px; } .sk-hpicker { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } .sk-hpick-i { height: 100px; } }
+/* Sélecteur : fiche complète du héros du Compagnon, mise à l'échelle de la case */
+.sk-hpicker:has(.sk-hpick-full) { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.sk-hpick.sk-hpick-full { display: block; padding: 0; border: 0; background: none; border-radius: 10px; line-height: 0; }
+.sk-hsheetscale .sheet.herosheet { display: block; line-height: normal; }
+.sk-hsheetscale { display: block; width: 100%; container-type: inline-size; pointer-events: none; }
+.sk-hsheetscale .sheet.herosheet { width: 100%; height: auto; aspect-ratio: 1.75; font-size: 7.5cqw; margin: 0 !important; }
+.sk-hpick.sk-hpick-full.picked { outline: 4px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hpick.sk-hpick-full:hover, .sk-hpick.sk-hpick-full:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hpick.sk-hpick-full .sk-pickbadge { top: 6px; right: 6px; z-index: 2; }
+.sk-hpick.sk-inco { opacity: .4; }
+.sk-hpick-full .sk-inco-t { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; padding: 4px 10px; border-radius: 6px;
+    background: var(--body-bg-color); color: var(--body-color); font-size: 15px; white-space: nowrap; }
+@media (max-width: 700px) { .sk-hpicker:has(.sk-hpick-full) { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); } }
+
+/* Fil des scénarios : dates des parties, pastille de la dernière partie */
+.sk-thread .sk-sc { align-items: center; }
+.sk-sc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.sk-sc-top { display: flex; align-items: center; gap: 8px; }
+.sk-sc-top .sk-sc-t { flex: 1; min-width: 0; font-size: 18px; line-height: 1.2; color: var(--body-color); }
+.sk-sc-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sk-sc-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; flex: 1 1 auto; }
+.sk-sc-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.sk-sc-hint { font-size: 15px; color: var(--sk-muted); }
+.sk-thread .sk-date { display: inline-block; flex: none; width: auto; white-space: nowrap; font-size: 15px; padding: 2px 8px; margin: 0; }
+.sk-date-win { border-left: 4px solid #2e7d32 !important; } .sk-date-loss { border-left: 4px solid #b3261e !important; }
+.sk-pastille { flex: none; min-width: 40px; height: 40px; padding: 0 4px; box-sizing: border-box; border-radius: 20px; display: inline-grid; place-items: center;
+    font-family: 'Primary', serif; font-size: 18px; color: #fff; }
+.sk-pastille.win { background: #2e7d32; } .sk-pastille.loss { background: #b3261e; }
+.sk-pastille.sk-sm { min-width: 32px; height: 32px; font-size: 15px; vertical-align: middle; }
+.sk-playdl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 8px 0 12px; align-items: center; font-size: 18px; }
+.sk-playdl dt { color: var(--sk-muted); } .sk-playdl dd { margin: 0; color: var(--body-color); }
+.sk-playedit { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Objets : le cadre suit le type (équipement, sort, amélioration), la pastille indique le propriétaire */
+.sk-chip.sk-k-eq, .sk-chip.sk-k-sp, .sk-chip.sk-k-up { border-width: 2px; border-style: solid; box-shadow: none; }
+.sk-chip.sk-k-eq { border-color: #8a6a3b !important; } .sk-chip.sk-k-sp { border-color: #7d6aa8 !important; } .sk-chip.sk-k-up { border-color: #3f8f7a !important; }
+.sk-chip .sk-ini { width: 20px; height: 20px; flex: none; font-size: 12px; font-weight: bold; color: #1b120d; background: var(--hc); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+/* Carte au survol */
+.sk-cardtip { position: fixed; z-index: 20030; width: 210px; pointer-events: none; display: none; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+.sk-cardtip.on { display: block; }
+.sk-cardtip .sk-icard { width: 100%; margin: 0; }
+
+/* Glisser-déposer des objets entre la cache et les héros */
+.sk-campaign .sk-chip[data-item] { touch-action: none; cursor: grab; }
+.sk-chip.sk-dragging { opacity: .35; }
+.sk-dragghost { position: fixed; z-index: 1001; pointer-events: none; margin: 0; transform: rotate(-3deg); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select: none; }
+.sk-hsheet.sk-dropon, .sk-blk.sk-dropon { outline: 3px dashed var(--highlight-color); outline-offset: -3px; }
+
+/* Couleurs pastel des types d'objets (réglables) : fond de l'étiquette et légende */
+:root { --sk-c-eq: #e8d5b5; --sk-c-sp: #cdb4f0; --sk-c-up: #a8e6cf; }
+.sk-chip.sk-k-eq, .sk-chip.sk-k-sp, .sk-chip.sk-k-up { color: #2b1d14 !important; }
+.sk-chip.sk-k-eq { background: var(--sk-c-eq) !important; border-color: color-mix(in srgb, var(--sk-c-eq) 60%, #000) !important; }
+.sk-chip.sk-k-sp { background: var(--sk-c-sp) !important; border-color: color-mix(in srgb, var(--sk-c-sp) 60%, #000) !important; }
+.sk-chip.sk-k-up { background: var(--sk-c-up) !important; border-color: color-mix(in srgb, var(--sk-c-up) 60%, #000) !important; }
+.sk-legend i.sk-k-eq { background: var(--sk-c-eq) !important; } .sk-legend i.sk-k-sp { background: var(--sk-c-sp) !important; } .sk-legend i.sk-k-up { background: var(--sk-c-up) !important; }
+.sk-chip .sk-ini { box-shadow: 0 0 0 2px color-mix(in srgb, var(--hc) 55%, #000); }
+/* Nuancier */
+.sk-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.sk-swatch { width: 34px; height: 34px; border-radius: 50%; padding: 0; cursor: pointer; background: var(--sw); border: 2px solid color-mix(in srgb, var(--sw) 60%, #000); }
+.sk-swatch.on { box-shadow: 0 0 0 3px var(--body-bg-color), 0 0 0 6px var(--highlight-color); }
+.sk-swatch:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
+.sk-itemcolors .sk-fl .sk-chip { display: inline-flex; width: auto; font-size: 16px; padding: 3px 12px; }
