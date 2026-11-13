@@ -418,5 +418,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'studio_locked': "Scenario editor: studio mode stays on. To play, launch the scenario from the list.",
     'confirm_leave_editor': "Leave the editor without saving the scenario changes?",
     'leave_editor_yes': "Leave without saving",
-    'confirm_delete_official': "Remove the official scenario “{0}” from your Companion?"
+    'confirm_delete_official': "Remove the official scenario “{0}” from your Companion?",
+    'hp_shared': "Life points shared with the same tile of the same colour"
 });

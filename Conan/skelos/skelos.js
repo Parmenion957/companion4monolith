@@ -66,6 +66,19 @@ var Skelos = {
 
     isEvent: function(slot) { return slot.tileId == "event"; },
 
+    // PV partagés : la même tuile présente plusieurs fois dans la Rivière avec la même couleur de socle
+    // ne forme qu'un seul groupe d'unités ; ses PV, sa mort et son renfort valent pour toutes ses cases.
+    hpGroup: function(slot) {
+        if (!slot || Skelos.isEvent(slot)) return slot ? [slot] : [];
+        return Skelos.state.river.filter(function(s) { return s === slot || (s.tileId == slot.tileId && s.color == slot.color); });
+    },
+    // Une case qui rejoint un groupe (ajout, changement de socle, début de partie) en prend les PV.
+    adoptSharedHp: function(slot, river) {
+        if (!slot || Skelos.isEvent(slot)) return;
+        var o = (river || Skelos.state.river).filter(function(s) { return s !== slot && s.tileId == slot.tileId && s.color == slot.color && s.lpMax; })[0];
+        if (o) { slot.lpMax = o.lpMax; slot.lp = o.lp; }
+    },
+
     tileCode: function(slot) {
         var tile = Skelos.tileOf(slot);
         if (!tile) return "";
@@ -469,6 +482,7 @@ var Skelos = {
             return {uid: "u" + i, token: i + 1, tileId: s.tileId, img: s.img, color: s.color, dead: false, eventText: s.eventText || "",
                     lpMax: s.lp || null, lp: s.lp || null};
         });
+        river.forEach(function(s, i) { Skelos.adoptSharedHp(s, river.slice(0, i)); });
         Skelos.state = {
             scenario: JSON.parse(JSON.stringify(d)),
             mode: d.mode, turn: 0, turns: d.turns,
@@ -582,8 +596,10 @@ var Skelos = {
         var st = Skelos.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
         var slot = st.river[i];
         Skelos.snapshot();
-        Skelos.killSlot(slot);
-        if (slot.lpMax) slot.lp = 0;
+        Skelos.hpGroup(slot).forEach(function(g) {
+            if (!g.dead) Skelos.killSlot(g);
+            if (g.lpMax) g.lp = 0;
+        });
         Skelos.save(); Skelos.renderGame();
     },
 
@@ -598,8 +614,7 @@ var Skelos = {
     reinforce: function(uid) {
         var slot = Skelos.slotByUid(uid);
         Skelos.snapshot();
-        slot.dead = false;
-        if (slot.lpMax) slot.lp = slot.lpMax;
+        Skelos.hpGroup(slot).forEach(function(g) { g.dead = false; if (g.lpMax) g.lp = g.lpMax; });
         Skelos.log(Skelos.t("log_reinforce", Skelos.tileName(slot)));
         Skelos.save(); Skelos.renderGame();
     },
@@ -619,23 +634,25 @@ var Skelos = {
         var cur = slot.lp || 0, v = Math.max(0, Math.min(slot.lpMax || 99, cur + delta));
         if (v == cur) return;
         Skelos.snapshot();
-        slot.lp = v;
+        var group = Skelos.hpGroup(slot);
+        group.forEach(function(g) { g.lp = v; });
         // Suivi des PV dans le Journal : les appuis successifs sur la même tuile forment une seule ligne.
         var last = st.log[0], name = Skelos.tileName(slot);
         if (last && last.hp == uid && last.turn == st.turn) { last.msg = Skelos.t("log_hp", name, last.hpFrom, v); last.ts = Date.now(); }
         else { Skelos.log(Skelos.t("log_hp", name, cur, v)); st.log[0].hp = uid; st.log[0].hpFrom = cur; }
         // 0 PV : toutes les unités sont mortes ; revenir au-dessus de 0 réactive la tuile.
-        if (v == 0 && !slot.dead) Skelos.killSlot(slot);
-        else if (v > 0 && slot.dead) { slot.dead = false; Skelos.log(Skelos.t("log_reinforce", name)); }
+        // PV partagés : toutes les cases du groupe meurent ou reviennent ensemble.
+        if (v == 0) group.forEach(function(g) { if (!g.dead) Skelos.killSlot(g); });
+        else if (group.some(function(g) { return g.dead; })) { group.forEach(function(g) { g.dead = false; }); Skelos.log(Skelos.t("log_reinforce", name)); }
         Skelos.save(); Skelos.renderGame();
     },
 
     hpBadge: function(s) {
         var open = Skelos._hpOpen == s.uid, tile = Skelos.tileOf(s);
-        var reinf = tile && (tile.reinforcement || tile.reinforcement === "0");
-        return "<span class='sk-hpwrap" + (open ? " open" : "") + (reinf ? " withreinf" : "") + "' data-hpwrap='" + s.uid + "'>"
+        var reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), shared = Skelos.hpGroup(s).length > 1;
+        return "<span class='sk-hpwrap" + (open ? " open" : "") + (reinf ? " withreinf" : "") + (shared ? " shared" : "") + "' data-hpwrap='" + s.uid + "'>"
             + "<button class='sk-hpbtn' data-hpdelta='-1' data-uid='" + s.uid + "' aria-label='" + Skelos.t("aria_hp_minus") + "' tabindex='" + (open ? 0 : -1) + "'>−</button>"
-            + "<span class='sk-hp" + (s.lp <= 0 ? " zero" : "") + "' data-hp='" + s.uid + "' role='button' tabindex='0' aria-label='" + Skelos.esc(Skelos.t("hp_label", s.lp, s.lpMax)) + "' title='" + Skelos.esc(Skelos.t("hp_hint")) + "'>"
+            + "<span class='sk-hp" + (s.lp <= 0 ? " zero" : "") + "' data-hp='" + s.uid + "' role='button' tabindex='0' aria-label='" + Skelos.esc(Skelos.t("hp_label", s.lp, s.lpMax) + (shared ? " — " + Skelos.t("hp_shared") : "")) + "' title='" + Skelos.esc(Skelos.t("hp_hint") + (shared ? "\n" + Skelos.t("hp_shared") : "")) + "'>"
             + "<svg viewBox='0 0 24 22' aria-hidden='true'><path d='M12 21.2 10.6 20C5.4 15.3 2 12.2 2 8.4 2 5.3 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.3 22 8.4c0 3.8-3.4 6.9-8.6 11.6z'/></svg>"
             + "<b>" + s.lp + "</b></span>"
             + "<button class='sk-hpbtn' data-hpdelta='1' data-uid='" + s.uid + "' aria-label='" + Skelos.t("aria_hp_plus") + "' tabindex='" + (open ? 0 : -1) + "'>+</button></span>";

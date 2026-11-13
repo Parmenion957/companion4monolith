@@ -94,7 +94,9 @@ S.newSlot = function(tile) {
     var st = S.state, n = 0;
     st.river.concat(st.removedSlots || []).forEach(function(s) { var k = parseInt(String(s.uid).slice(1), 10); if (k >= n) n = k + 1; });
     var maxTok = 0; st.river.forEach(function(s) { if (s.token > maxTok) maxTok = s.token; });
-    return {uid: "u" + n, token: maxTok + 1, tileId: tile.id, img: tile.image, color: tile.colors[0], dead: false, lpMax: null, lp: null};
+    var slot = {uid: "u" + n, token: maxTok + 1, tileId: tile.id, img: tile.image, color: tile.colors[0], dead: false, lpMax: null, lp: null};
+    S.adoptSharedHp(slot);
+    return slot;
 };
 S.addLiveSlot = function(tile) {
     var st = S.state, slot = S.newSlot(tile);

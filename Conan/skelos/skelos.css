@@ -1061,3 +1061,6 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
 #skelos .skelos-game:not(.sk-screen) > .sk-board { padding: 12px !important; }
 /* Plein écran : la tablette descend jusqu'en bas de l'écran (sans défilement) */
 html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: border-box; min-height: calc(100dvh - var(--sk-boardtop, 50px) - 12px); }
+/* PV partagés : un maillon de chaîne sous le cœur */
+.sk-hpwrap.shared .sk-hp::after { content: "\f0c1"; font-family: "Font Awesome 5 Free"; font-weight: 900; position: absolute; left: 50%; bottom: -5.5cqw; transform: translateX(-50%);
+    font-size: 7cqw; line-height: 1; color: #fff; background: #b3161b; border: 1px solid #f5e8d8; border-radius: 50%; width: 10cqw; height: 10cqw; display: grid; place-items: center; }

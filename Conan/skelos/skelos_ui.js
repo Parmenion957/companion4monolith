@@ -708,8 +708,8 @@ S.placeTabs = function() {
 
 // Points de vie en mode studio : les − et + fixent les PV de la tuile (ils deviennent aussi son maximum).
 S.studioHpCode = function(s) {
-    var tile = S.tileOf(s), reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), lp = s.lp || 0;
-    return "<span class='sk-hpwrap open sk-studiohp" + (reinf ? " withreinf" : "") + "'>"
+    var tile = S.tileOf(s), reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), lp = s.lp || 0, shared = S.hpGroup(s).length > 1;
+    return "<span class='sk-hpwrap open sk-studiohp" + (reinf ? " withreinf" : "") + (shared ? " shared" : "") + "'" + (shared ? " title='" + e(t("hp_shared")) + "'" : "") + ">"
         + "<button class='sk-hpbtn' data-act='studiolp' data-uid='" + s.uid + "' data-n='-1' aria-label='" + e(t("aria_hp_minus")) + "'>−</button>"
         + "<span class='sk-hp" + (lp <= 0 ? " zero" : "") + "' aria-label='" + e(t("life_points") + " " + lp) + "'>" + HEART + "<b>" + lp + "</b></span>"
         + "<button class='sk-hpbtn' data-act='studiolp' data-uid='" + s.uid + "' data-n='1' aria-label='" + e(t("aria_hp_plus")) + "'>+</button></span>";
@@ -808,13 +808,14 @@ S.studioLife = function(uid, d) {
     var v = Math.max(0, Math.min(40, (s.lp || 0) + d));
     if (v == (s.lp || 0)) return;
     S.snapshot();
-    s.lp = v || null; s.lpMax = v || null;
+    S.hpGroup(s).forEach(function(g) { g.lp = v || null; g.lpMax = v || null; });
     commit();
 };
 S.nextSocle = function(uid) {
     var s = S.slotByUid(uid), socles = S.socles(S.tileOf(s)); if (socles.length < 2) return;
     S.snapshot();
     s.color = socles[(socles.indexOf(s.color) + 1) % socles.length];
+    S.adoptSharedHp(s);
     commit();
 };
 S.studioGem = function(d) {
@@ -1151,7 +1152,7 @@ S.reinforce = function(uid) {
     if (st.energy < cost) { S.toast(t("not_enough", cost, st.energy)); return; }
     S.snapshot();
     st.energy -= cost; st.fatigue += cost;
-    s.dead = false; if (s.lpMax) s.lp = s.lpMax;
+    S.hpGroup(s).forEach(function(g) { g.dead = false; if (g.lpMax) g.lp = g.lpMax; });
     S.log(t(cost == 1 ? "log_reinforce_cost_1" : "log_reinforce_cost", S.tileName(s), cost));
     S.save(); S.renderGame();
 };

@@ -431,5 +431,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'studio_locked': "Éditeur de scénario : le mode studio reste actif. Pour jouer, lancez le scénario depuis la liste.",
     'confirm_leave_editor': "Quitter l’éditeur sans enregistrer les modifications du scénario ?",
     'leave_editor_yes': "Quitter sans enregistrer",
-    'confirm_delete_official': "Retirer le scénario officiel « {0} » de votre Compagnon ?"
+    'confirm_delete_official': "Retirer le scénario officiel « {0} » de votre Compagnon ?",
+    'hp_shared': "PV partagés avec la même tuile de même couleur"
 });
