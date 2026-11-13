@@ -1560,7 +1560,7 @@ S.bindItemDrag = function(cid) {
     box.addEventListener("pointerdown", function(ev) {
         if (drag || (ev.pointerType == "mouse" && ev.button != 0)) return;
         var chip = ev.target.closest(".sk-chip[data-item]"); if (!chip) return;
-        drag = {chip: chip, item: chip.dataset.item, id: ev.pointerId, x: ev.clientX, y: ev.clientY, on: false};
+        drag = {chip: chip, item: chip.dataset.item, from: chip.dataset.from || null, id: ev.pointerId, x: ev.clientX, y: ev.clientY, on: false};
     });
     box.addEventListener("pointermove", function(ev) {
         if (!drag || ev.pointerId != drag.id) return;
@@ -1584,13 +1584,20 @@ S.bindItemDrag = function(cid) {
     box.addEventListener("pointerup", function(ev) {
         if (!drag || ev.pointerId != drag.id) return;
         if (!drag.on) { drag = null; return; }
-        var tg = targetAt(ev.clientX, ev.clientY), item = drag.item; clean();
+        var tg = targetAt(ev.clientX, ev.clientY), item = drag.item, from = drag.from; clean();
         // Le clic qui suit le dépôt n'ouvre pas le menu de l'objet.
         var stop = function(e2) { e2.stopPropagation(); e2.preventDefault(); };
         window.addEventListener("click", stop, true); setTimeout(function() { window.removeEventListener("click", stop, true); }, 0);
         if (!tg) return;
         var owner = tg.dataset.drophero || null, moved = false;
-        S.updateCampaign(cid, function(x) { (x.cache || []).forEach(function(it) { if (it.uid == item) moved = S.setItemOwner(x, it, owner); }); });
+        S.updateCampaign(cid, function(x) { (x.cache || []).forEach(function(it) {
+            if (it.uid != item) return;
+            if (it.kind != "up") { moved = S.setItemOwner(x, it, owner); return; }
+            // Amélioration : le héros d'arrivée la prend, celui de départ la rend ; reposée dans la cache, elle est rendue.
+            if (owner == from) return;
+            if (owner && S.setTaker(x, it, owner, true)) moved = true;
+            if (from && S.setTaker(x, it, from, false)) moved = true;
+        }); });
         if (moved) S.renderCampaign(cid);
     });
     box.addEventListener("pointercancel", clean);
@@ -1796,14 +1803,14 @@ S.heroSheetFull = function(ref) {
 };
 S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
 S.heroSheetCode = function(c, hh) {
-    var items = S.sortItems((c.cache || []).filter(function(it) { return it.owner == hh.id; })), img = S.heroImage(hh);
+    var items = S.sortItems((c.cache || []).filter(function(it) { return S.heldBy(it, hh.id); })), img = S.heroImage(hh);
     return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' data-drophero='" + hh.id + "' style='--hc:" + hh.color + "'>"
         + "<button class='sk-hsheet-p' data-cact='hero' data-hero='" + hh.id + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>"
         + (img ? "<img src='" + e(img) + "' alt='' loading='lazy'>" : "<span class='sk-hsheet-ini' aria-hidden='true'>" + e((hh.name || "?").charAt(0)) + "</span>") + "</button>"
         + "<div class='sk-hsheet-n'><b>" + e(hh.name) + "</b>" + (hh.sub ? "<small>" + e(hh.sub) + "</small>" : "") + "</div>"
         + (hh.dead ? "<span class='sk-st loss'>" + e(t("fell_at", hh.deadAt || "?")) + "</span>" : "")
         + "<div class='sk-hsheet-eq'><div class='sk-hsheet-t'>" + e(t("hero_equipment")) + "</div><div class='sk-chips'>"
-        + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false}); }).join("")
+        + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false, hero: hh.id}); }).join("")
         + "<button class='sk-chip sk-chipadd' data-act='heroassign' data-cid='" + c.id + "' data-hero='" + hh.id + "'>+ " + e(t("assign")) + "</button></div></div></div>";
 };
 S.companyCode = function(c) {
