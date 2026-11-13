@@ -584,6 +584,24 @@ S.renderSettings = function() {
     scr.classList.add("sk-dialogscreen");
     var hb = scr.querySelector(".sk-headblk");
     if (hb) hb.outerHTML = "<div class='sk-dlghead'><button class='sk-dlgback' data-nav='home' title='" + e(t("close")) + "' aria-label='" + e(t("close")) + "'>&#xf060;</button><h1>" + t("settings") + "</h1></div>";
+    var g = scr.querySelector(".sk-g8"), ic = S.itemColors();
+    if (g) {
+        g.insertAdjacentHTML("beforeend", "<div class='sk-blk sk-c3 sk-itemcolors'><h3>" + e(t("item_colors")) + "</h3><p>" + e(t("item_colors_help")) + "</p>"
+            + ["eq", "sp", "up"].map(function(k) {
+                var others = ["eq", "sp", "up"].filter(function(o) { return o != k; }).map(function(o) { return ic[o]; });
+                return "<div class='sk-fl'><span class='sk-chip sk-k-" + k + "'>" + e(t("kind_" + k)) + "</span></div>"
+                    + S.swatchesCode(S.PASTELS.filter(function(x) { return others.indexOf(x) < 0; }), ic[k], "sk-ic-" + k, k);
+            }).join("") + "</div>");
+        g.querySelector(".sk-itemcolors").addEventListener("click", function(ev) {
+            var sw = ev.target.closest("[data-col]"); if (!sw) return;
+            var k = sw.closest("[data-kind]").dataset.kind, pr = S.prefs();
+            pr.itemColors = S.itemColors(); pr.itemColors[k] = sw.dataset.col; S.savePrefs();
+            S.applyItemColors();
+            var n = S.fixAllHeroColors();
+            S.renderSettings();
+            if (n) S.toast(t("hero_colors_changed", n));
+        });
+    }
     S.syncDialogMode();
 };
 // La fin de scénario prend aussi l'allure d'un dialogue du Compagnon.
@@ -1137,6 +1155,7 @@ S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
     S.bindCardTips(root);
+    S.applyItemColors(); S.fixAllHeroColors();
     S.bindStudioDrag(root);
     S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
@@ -1457,6 +1476,59 @@ S.bindItemDrag = function(cid) {
     box.addEventListener("pointercancel", clean);
 };
 
+// ---------- Couleurs pastel : héros et types d'objets ne partagent jamais une couleur ----------
+S.PASTELS = ["#f4a6a6", "#f5c6aa", "#f9e79f", "#d4e9a8", "#a8e6cf", "#b8e0d2", "#a0d8ef", "#b5c7f2", "#cdb4f0", "#f2b5d4", "#e8d5b5", "#d9d4cf"];
+S.ITEM_COLOR_DEFAULTS = {eq: "#e8d5b5", sp: "#cdb4f0", up: "#a8e6cf"};
+S.itemColors = function() {
+    var ic = S.prefs().itemColors || {}, o = {};
+    ["eq", "sp", "up"].forEach(function(k) { o[k] = S.PASTELS.indexOf(ic[k]) >= 0 ? ic[k] : S.ITEM_COLOR_DEFAULTS[k]; });
+    return o;
+};
+S.applyItemColors = function() {
+    var ic = S.itemColors(), st = document.documentElement.style;
+    ["eq", "sp", "up"].forEach(function(k) { st.setProperty("--sk-c-" + k, ic[k]); });
+};
+var itemColorList = function() { var ic = S.itemColors(); return [ic.eq, ic.sp, ic.up]; };
+// Couleurs libres pour un héros : ni celle d'un type d'objet, ni celle d'un autre héros de la campagne.
+S.freeHeroColors = function(c, exceptHid) {
+    var used = itemColorList().concat((c.heroes || []).filter(function(h) { return h.id != exceptHid; }).map(function(h) { return h.color; }));
+    return S.PASTELS.filter(function(x) { return used.indexOf(x) < 0; });
+};
+S.pickHeroColor = function(c, exceptHid) {
+    var f = S.freeHeroColors(c, exceptHid), items = itemColorList();
+    if (!f.length) f = S.PASTELS.filter(function(x) { return items.indexOf(x) < 0; });
+    return f[Math.floor(Math.random() * f.length)];
+};
+// Un héros dont la couleur n'est plus valable (pas pastel, prise par un type d'objet ou par un autre héros) en reçoit une libre au hasard.
+S.fixHeroColors = function(c) {
+    var taken = itemColorList(), bad = [], n = 0;
+    (c.heroes || []).forEach(function(h) { if (S.PASTELS.indexOf(h.color) >= 0 && taken.indexOf(h.color) < 0) taken.push(h.color); else bad.push(h); });
+    bad.forEach(function(h) {
+        var f = S.PASTELS.filter(function(x) { return taken.indexOf(x) < 0; });
+        if (!f.length) f = S.PASTELS.filter(function(x) { return itemColorList().indexOf(x) < 0; });
+        h.color = f[Math.floor(Math.random() * f.length)]; taken.push(h.color); n++;
+    });
+    return n;
+};
+S.fixAllHeroColors = function() {
+    var l = S.campaigns(), n = 0;
+    l.forEach(function(c) { n += S.fixHeroColors(c); });
+    if (n) S.saveCampaigns(l);
+    return n;
+};
+// Nuancier : un bouton par couleur ; la valeur retenue est dans data-value du conteneur.
+S.swatchesCode = function(colors, current, id, kind) {
+    if (current && colors.indexOf(current) < 0) colors = [current].concat(colors);
+    return "<div class='sk-swatches' role='radiogroup' id='" + id + "' data-value='" + e(current || "") + "'" + (kind ? " data-kind='" + kind + "'" : "") + ">"
+        + colors.map(function(x) { var on = x == current; return "<button type='button' class='sk-swatch" + (on ? " on" : "") + "' role='radio' aria-checked='" + on + "' data-col='" + x + "' style='--sw:" + x + "' aria-label='" + x + "'></button>"; }).join("") + "</div>";
+};
+S.swatchClick = function(ev) {
+    var sw = ev.target.closest("[data-col]"); if (!sw) return false;
+    var box = sw.closest(".sk-swatches"); box.dataset.value = sw.dataset.col;
+    box.querySelectorAll(".sk-swatch").forEach(function(b) { var on = b == sw; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+    return true;
+};
+
 // ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
 // On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
 var COMPANY_SIZE = 4;
@@ -1556,7 +1628,7 @@ S.openHeroPicker = function(cid) {
                 x.heroes = x.heroes || [];
                 picked.forEach(function(k) {
                     x.heroes.push({id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref: k.ref, name: k.name, sub: k.sub, image: k.image,
-                        color: S.HERO_COLORS[x.heroes.length % S.HERO_COLORS.length], dead: false});
+                        color: S.pickHeroColor(x, null), dead: false});
                     S.campLog(x, t("clog_hero", k.name));
                 });
             });

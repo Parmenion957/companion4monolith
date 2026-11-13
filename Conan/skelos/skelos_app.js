@@ -412,14 +412,15 @@ S.openHeroEditor = function(cid, hid) {
         + "<datalist id='sk-heronames'>" + S.heroNames().map(function(n) { return "<option value='" + e(n) + "'>"; }).join("") + "</datalist>"
         + "<label class='sk-fl'>" + t("archetype") + "<small>" + t("archetype_help") + "</small><input class='sk-in' id='sk-ha' list='sk-archs' value='" + e(hh ? hh.archetype || "" : "") + "'>"
         + "<datalist id='sk-archs'>" + ARCHETYPES.map(function(a) { return "<option value='" + t("arch_" + a) + "'>"; }).join("") + "</datalist></label>"
-        + "<label class='sk-fl'>" + t("hero_color") + "<input type='color' id='sk-hc' value='" + (hh ? hh.color : HERO_COLORS[(c.heroes || []).length % HERO_COLORS.length]) + "'></label>"
+        + "<div class='sk-fl'>" + t("hero_color") + "</div>" + S.swatchesCode(S.freeHeroColors(c, hid), hh ? hh.color : S.pickHeroColor(c, null), "sk-hc")
         + (hh ? "<label class='sk-check'><input type='checkbox' id='sk-hd'" + (hh.dead ? " checked" : "") + "> " + t("hero_dead") + "</label>" : "")
         + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button>"
         + (hh ? "<button class='sk-btn sk-danger' data-rm>" + t("remove_hero") + "</button>" : "") + "</div>",
         function(ev, close) {
+            if (S.swatchClick(ev)) return;
             if (ev.target.closest("[data-ok]")) {
                 var name = S.root.querySelector("#sk-hn").value.trim(); if (!name) { S.toast(t("name_required")); return; }
-                var arch = S.root.querySelector("#sk-ha").value.trim(), col = S.root.querySelector("#sk-hc").value, dead = hh ? S.root.querySelector("#sk-hd").checked : false;
+                var arch = S.root.querySelector("#sk-ha").value.trim(), col = S.root.querySelector("#sk-hc").dataset.value, dead = hh ? S.root.querySelector("#sk-hd").checked : false;
                 S.updateCampaign(cid, function(x) {
                     if (hh) { var y = x.heroes.filter(function(z) { return z.id == hid; })[0]; y.name = name; y.archetype = arch; y.color = col; if (y.dead != dead) { y.dead = dead; y.deadAt = dead ? (S.playedCount(x) || 1) : null; } }
                     else { x.heroes.push({id: uid("h"), name: name, archetype: arch, color: col, dead: false}); S.campLog(x, t("clog_hero", name)); }

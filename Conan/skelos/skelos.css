@@ -1200,3 +1200,18 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-dragghost { position: fixed; z-index: 1001; pointer-events: none; margin: 0; transform: rotate(-3deg); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
 html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select: none; }
 .sk-hsheet.sk-dropon, .sk-blk.sk-dropon { outline: 3px dashed var(--highlight-color); outline-offset: -3px; }
+
+/* Couleurs pastel des types d'objets (réglables) : fond de l'étiquette et légende */
+:root { --sk-c-eq: #e8d5b5; --sk-c-sp: #cdb4f0; --sk-c-up: #a8e6cf; }
+.sk-chip.sk-k-eq, .sk-chip.sk-k-sp, .sk-chip.sk-k-up { color: #2b1d14 !important; }
+.sk-chip.sk-k-eq { background: var(--sk-c-eq) !important; border-color: color-mix(in srgb, var(--sk-c-eq) 60%, #000) !important; }
+.sk-chip.sk-k-sp { background: var(--sk-c-sp) !important; border-color: color-mix(in srgb, var(--sk-c-sp) 60%, #000) !important; }
+.sk-chip.sk-k-up { background: var(--sk-c-up) !important; border-color: color-mix(in srgb, var(--sk-c-up) 60%, #000) !important; }
+.sk-legend i.sk-k-eq { background: var(--sk-c-eq) !important; } .sk-legend i.sk-k-sp { background: var(--sk-c-sp) !important; } .sk-legend i.sk-k-up { background: var(--sk-c-up) !important; }
+.sk-chip .sk-ini { box-shadow: 0 0 0 2px color-mix(in srgb, var(--hc) 55%, #000); }
+/* Nuancier */
+.sk-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.sk-swatch { width: 34px; height: 34px; border-radius: 50%; padding: 0; cursor: pointer; background: var(--sw); border: 2px solid color-mix(in srgb, var(--sw) 60%, #000); }
+.sk-swatch.on { box-shadow: 0 0 0 3px var(--body-bg-color), 0 0 0 6px var(--highlight-color); }
+.sk-swatch:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
+.sk-itemcolors .sk-fl .sk-chip { display: inline-flex; width: auto; font-size: 16px; padding: 3px 12px; }

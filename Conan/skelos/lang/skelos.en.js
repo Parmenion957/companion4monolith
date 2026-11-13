@@ -452,5 +452,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'last_counts': "Last game: this is the one that counts in the total",
     'play_scenario': "Scenario",
     'clog_move': "{0}: {1} → {2}",
-    'start_item_of': "Starting equipment of {0}"
+    'start_item_of': "Starting equipment of {0}",
+    'item_colors': "Item colours",
+    'item_colors_help': "Each item type has its own pastel colour. A colour taken by a type is no longer offered to heroes: a hero who had it gets another one at random.",
+    'hero_colors_changed': "New colour given to {0} hero(es)."
 });
