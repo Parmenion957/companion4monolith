@@ -716,12 +716,13 @@ var Skelos = {
             var s = st.river[i];
             h += "<div class='sk-slot" + (s && s.uid == Skelos.selected ? " sel" : "") + (s && s.uid == st.highlight ? " hl" : "") + "'>";
             h += "<div class='sk-cost'>" + (solo ? (s ? "<span class='sk-token" + (st.removed.indexOf(s.uid) >= 0 ? " gone" : "") + "'>" + s.token + "</span>" : "") : Skelos.costToken(s, i)) + "</div>";
+            h += "<div class='sk-well'>";
             if (s) {
                 h += "<div class='sk-tilebox" + (s.dead ? " dead" : "") + "' role='button' tabindex='0' data-act='select' data-uid='" + s.uid + "' aria-label='" + e(Skelos.tileName(s)) + "'>" + Skelos.tileCode(s)
                     + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
                     + (s.lpMax ? Skelos.hpBadge(s) : "") + "</div>";
             } else h += "<div class='sk-empty'></div>";
-            h += "</div>";
+            h += "</div></div>";
         }
         h += "</div>";
         h += "</div>";
