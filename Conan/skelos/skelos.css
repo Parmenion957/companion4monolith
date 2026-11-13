@@ -1074,3 +1074,45 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-a-phase li.cur { font-weight: normal; }
 .skelos-game .sk-a-phase li { padding: 4px 6px; gap: 5px; }
 .skelos-game .sk-a-phase .sk-pnum { width: 20px; height: 20px; font-size: .8rem; }
+
+/* =====================================================================
+   Étape 9 : onglet Campagnes (cartes, pêle-mêle, ajout de scénario, fil réordonnable)
+   ===================================================================== */
+.sk-cheroes { display: flex; flex-wrap: wrap; gap: 6px; }
+.sk-chero { display: inline-flex; align-items: center; gap: 6px; font-family: 'Secondary', sans-serif; font-size: 20px; line-height: 1.2; color: var(--body-color); }
+.sk-chero::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--hc); box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.sk-chero.dead { opacity: .5; text-decoration: line-through; }
+.sk-cthread { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.sk-cdot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: 'Motrg', 'Primary', serif; font-size: 15px;
+    border: 2px solid var(--main-color); color: var(--main-color); box-sizing: border-box; }
+.sk-cdot.win { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.sk-cdot.loss { background: #b3261e; border-color: #b3261e; color: #fff; }
+.sk-cdot.playing { background: var(--highlight-color); border-color: var(--highlight-color); color: #fff; }
+.sk-cdot.empty { border-style: dashed; opacity: .6; }
+.sk-sbadge.sk-cdone { background: var(--main-color); color: var(--body-bg-color); }
+/* Écran vide : cartes de scénario en éventail */
+.sk-cpelemele { position: relative; width: 420px; max-width: 92%; height: 210px; opacity: .6; filter: saturate(.6); -webkit-mask-image: linear-gradient(#000 65%, transparent); mask-image: linear-gradient(#000 65%, transparent); }
+.sk-cmini { position: absolute; left: 50%; top: 10px; width: 250px; margin-left: -125px; padding: 8px 10px; border-radius: 8px; background: var(--body-bg-color); color: var(--body-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,.35); text-align: left; }
+.sk-cmini b { display: block; font-family: 'Primary', serif; font-weight: normal; font-size: 15px; color: var(--main-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sk-cmini .sk-srank { width: 12px; height: 12px; }
+.sk-cmini.p0 { transform: translateX(-95px) rotate(-12deg); } .sk-cmini.p1 { transform: translateX(-32px) rotate(-4deg); top: 2px; }
+.sk-cmini.p2 { transform: translateX(32px) rotate(5deg); top: 4px; } .sk-cmini.p3 { transform: translateX(95px) rotate(13deg); top: 14px; }
+/* Choix d'un scénario à copier */
+.sk-overlay .sk-dialog.sk-cpickdlg { max-width: 860px; max-height: 86vh; overflow: auto; }
+.sk-cpick-top { justify-content: flex-start; }
+.sk-cpicks { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.sk-cpick { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--sk-line); background: var(--sk-card, rgba(128,128,128,.12));
+    color: var(--body-color); text-align: left; cursor: pointer; font: inherit; }
+.sk-cpick:hover, .sk-cpick:focus-visible { border-color: var(--highlight-color); outline: none; }
+.sk-cpick b { font-family: 'Primary', serif; font-weight: normal; font-size: 18px; color: var(--main-color); }
+.sk-cpick .sk-srank { width: 14px; height: 14px; }
+/* Fil des scénarios : poignée de glisser-déposer */
+.sk-grip { flex: none; width: 30px; height: 40px; padding: 0; border: 0; background: none; color: var(--main-color); opacity: .7; cursor: grab; touch-action: none;
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 16px; }
+.sk-grip:hover, .sk-grip:focus-visible { opacity: 1; }
+.sk-thread .sk-sc.sk-dragging { opacity: .45; }
+.sk-thread .sk-sc.sk-dropbefore { box-shadow: inset 0 3px 0 var(--highlight-color); }
+.sk-thread .sk-sc.sk-dropafter { box-shadow: inset 0 -3px 0 var(--highlight-color); }
+.sk-savealso { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+.sk-overlay .sk-cpickdlg .sk-fl, .sk-overlay .sk-cpickdlg p { font-family: 'Secondary', sans-serif; font-size: 21px; margin: 6px 0; color: var(--body-color); }

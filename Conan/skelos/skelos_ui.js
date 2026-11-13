@@ -317,7 +317,7 @@ S.tabsCode = function(active) {
 S.placeTabs = function() {
     if (!S.root) return;
     var old = S.root.querySelector(":scope > .sk-tabs"); if (old) old.remove();
-    var tab = S.screen == "game" && S.editing ? "scenarios" : TAB_OF[S.screen]; if (!tab) return;
+    var tab = S.screen == "game" && S.editing ? (S.editing.cid ? "campaigns" : "scenarios") : TAB_OF[S.screen]; if (!tab) return;
     S.root.insertAdjacentHTML("afterbegin", S.tabsCode(tab));
     var scr = S.root.querySelector(".sk-screen, .skelos-game"); if (scr) scr.classList.add("sk-tabbed");
 };
@@ -335,11 +335,15 @@ S.mount = function(html) {
 var origNav = S.navClick;
 S.navClick = function(ev) {
     var n = ev.target.closest("[data-nav]");
-    if (n && S.editing) { S.leaveEditor(function() { S.navClick(ev); }); return; }
+    if (n && S.editing) {
+        var ecid = S.editing.cid;
+        S.leaveEditor(function() { if (ecid && n.dataset.nav == "campaigns") S.renderCampaign(ecid); else S.navClick(ev); });
+        return;
+    }
     if (n && n.dataset.nav == "home") { S.renderHome(); return; }
     if (n && n.dataset.nav == "scenarios") { S.renderScenarios(); return; }
     var f = ev.target.closest("[data-fab]");
-    if (f) { if (f.dataset.fab == "scenario") S.newScenario(); else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
+    if (f) { if (f.dataset.fab == "scenario") S.newScenario(); else if (f.dataset.fab == "campaign") S.newCampaign(); else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
     origNav.call(S, ev);
 };
 // Onglet Partie : directement le plateau ; sans partie en cours, une partie vide aux valeurs par défaut.
@@ -658,7 +662,7 @@ S.placeTabs = function() {
     if (S.studio) {
         g += "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
             var on = st.mode == m[0];
-            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
+            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'" + (S.editing && S.editing.cid ? " disabled title='" + e(t("mode_locked")) + "'" : "") + ">" + e(t(m[1])) + "</button>";
         }).join("") + "</div>"
             + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>";
     }
@@ -1148,6 +1152,256 @@ S.init = function(root) {
         inp.value = Math.max(min, Math.min(max, v));
         inp.dispatchEvent(new Event("change", {bubbles: true}));
     }, true);
+};
+
+// ---------- Onglet Campagnes ----------
+// Même logique que l'onglet Scénarios : cartes, filtres, écran vide en pêle-mêle, bouton flottant.
+var campMode = function(sc) { var s = sc && sc.setup; return s ? (s.saved ? s.saved.mode : s.mode) : null; };
+S.campaignCardCode = function(c) {
+    var scs = c.scenarios || [], played = S.playedCount(c), vp = S.vpTotal(c), rank = S.rank(c);
+    var info = [t(c.mode == "solo" ? "mode_solo" : "mode_classic"), t("camp_progress", played, scs.length), t("vp_n", vp)];
+    if (rank) info.push(t("rank_is", rank));
+    var dates = [];
+    if (c.created) dates.push(t("created_on", fmtDay(c.created)));
+    if (c.last) dates.push(t("last_played", fmtDay(c.last)));
+    var playing = S.state && S.state.campaign && S.state.campaign.cid == c.id ? S.state.campaign.idx : -1;
+    var dots = scs.map(function(sc, i) {
+        var st = i == playing ? "playing" : sc.status == "win" || sc.status == "loss" ? sc.status : sc.setup ? "todo" : "empty";
+        var lab = (i + 1) + ". " + (sc.title || t("scenario_to_choose")) + " — " + t("thread_" + st);
+        return "<span class='sk-cdot " + st + "' title='" + e(lab) + "'>" + (i + 1) + "</span>";
+    }).join("");
+    var heroes = (c.heroes || []).map(function(h) {
+        return "<span class='sk-chero" + (h.dead ? " dead" : "") + "' style='--hc:" + e(h.color || "#888") + "'>" + e(h.name) + "</span>";
+    }).join("");
+    return "<article class='sk-scard sk-ccard' aria-label='" + e(c.name) + "'>"
+        + "<div class='sk-scard-head'><h3>" + e(c.name || t("untitled")) + "</h3>"
+        + (c.finished ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + "</div>"
+        + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p>"
+        + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
+        + "<div class='sk-cheroes'>" + (heroes || "<span class='sk-sdates'>" + e(t("camp_no_hero")) + "</span>") + "</div>"
+        + "<div class='sk-cthread' role='img' aria-label='" + e(t("scenario_thread")) + "'>" + (dots || "<span class='sk-sdates'>" + e(t("camp_no_scenario")) + "</span>") + "</div>"
+        + "<div class='sk-scard-acts'><button class='sk-btn sk-primary' data-camp='" + c.id + "'>" + e(t("open")) + "</button>"
+        + "<span class='sk-scard-sp'></span>"
+        + "<button class='sk-iconbtn sk-scact sk-danger' data-cdel='" + c.id + "' title='" + e(t("delete")) + "' aria-label='" + e(t("delete") + " : " + c.name) + "'>&#xf2ed;</button>"
+        + "</div></article>";
+};
+// Écran vide : pêle-mêle de cartes de scénario (les vôtres s'il y en a, sinon l'exemple).
+S.emptyCampaignsCode = function(filtered) {
+    if (filtered) return "<p class='sk-snone'>" + e(t("no_campaign_match")) + "</p>";
+    var src = S.scenarioList().slice(-4);
+    while (src.length < 4) {
+        var x = S.exampleScenario(), k = src.length;
+        x.river = x.river.slice(k).concat(x.river.slice(0, k));
+        src.push(x);
+    }
+    var cards = src.map(function(sc, k) {
+        return "<div class='sk-cmini p" + k + "'><b>" + e(sc.title || t("untitled")) + "</b>" + S.riverThumbCode(sc) + "</div>";
+    }).join("");
+    return "<div class='sk-sempty'><div class='sk-cpelemele' aria-hidden='true'>" + cards + "</div><p>" + e(t("no_campaign")) + "<br>" + e(t("no_campaign_hint")) + "</p></div>";
+};
+S.renderCampaigns = function() {
+    S.screen = "campaigns"; S.ctx = null;
+    var list = S.campaigns(), pr = S.prefs();
+    var seg = function(attr, cur, opts, label) {
+        return "<div class='sk-seg sk-sseg' role='radiogroup' aria-label='" + e(t(label)) + "'>" + opts.map(function(m) {
+            return "<button " + attr + "='" + m[0] + "' class='" + (cur == m[0] ? "sk-on" : "") + "' role='radio' aria-checked='" + (cur == m[0]) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>";
+    };
+    var h = "<div class='sk-sbar'><input type='search' class='sk-in sk-ssearch' id='sk-cq' placeholder='" + e(t("search_campaign")) + "' aria-label='" + e(t("search_campaign")) + "' value='" + e(pr.campQ || "") + "'>"
+        + seg("data-cmode", pr.campMode || "", [["", "all_modes"], ["classic", "mode_classic"], ["solo", "mode_solo"]], "filter_mode")
+        + seg("data-cstate", pr.campState || "", [["", "all_campaigns"], ["cur", "in_progress"], ["done", "finished"]], "filter_state")
+        + seg("data-csort", pr.campSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by") + "</div>"
+        + "<div id='sk-clist' class='sk-slist'></div>" + S.floatingCode("campaign", t("new_campaign"));
+    origMount.call(S, "<div class='skelos-game sk-screen sk-scen sk-camps'><div class='sk-board'>" + h + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
+    S.placeTabs();
+    var draw = function() {
+        var q = S.norm(pr.campQ || ""), m = pr.campMode || "", stt = pr.campState || "", sort = pr.campSort || "recent";
+        var rows = list.filter(function(c) {
+            return (!q || S.norm(c.name || "").indexOf(q) >= 0) && (!m || c.mode == m) && (!stt || (stt == "done") == !!c.finished);
+        });
+        rows.sort(sort == "alpha"
+            ? function(a, b) { return (a.name || "").localeCompare(b.name || "", undefined, {sensitivity: "base"}); }
+            : function(a, b) { return (b.last || b.created || "").localeCompare(a.last || a.created || ""); });
+        S.root.querySelector("#sk-clist").innerHTML = rows.length ? rows.map(S.campaignCardCode).join("") : S.emptyCampaignsCode(list.length > 0);
+    };
+    draw();
+    S.root.querySelector("#sk-cq").addEventListener("input", function(ev) { pr.campQ = ev.target.value; S.savePrefs(); draw(); });
+    var pick = function(attr, key, b) {
+        pr[key] = b.getAttribute(attr); S.savePrefs();
+        S.root.querySelectorAll("[" + attr + "]").forEach(function(x) { x.classList.toggle("sk-on", x == b); x.setAttribute("aria-checked", x == b); });
+        draw();
+    };
+    S.screenClick = function(ev) {
+        var b;
+        if ((b = ev.target.closest("[data-cmode]"))) { pick("data-cmode", "campMode", b); return; }
+        if ((b = ev.target.closest("[data-cstate]"))) { pick("data-cstate", "campState", b); return; }
+        if ((b = ev.target.closest("[data-csort]"))) { pick("data-csort", "campSort", b); return; }
+        if ((b = ev.target.closest("[data-camp]"))) { S.renderCampaign(b.dataset.camp); return; }
+        if ((b = ev.target.closest("[data-cdel]"))) {
+            var cid = b.dataset.cdel, c = S.campaign(cid);
+            S.ask(t("confirm_delete_campaign_n", c ? c.name : ""), t("delete"), function() {
+                S.saveCampaigns(S.campaigns().filter(function(x) { return x.id != cid; }));
+                if (S.state && S.state.campaign && S.state.campaign.cid == cid) { S.state.campaign = null; S.save(); }
+                S.renderCampaigns();
+            });
+        }
+    };
+};
+// Nouvelle campagne : nom et mode, puis l'écran de la campagne.
+S.newCampaign = function() {
+    var mode = S.prefs().alwaysSolo ? "solo" : "classic";
+    S.dialog("<h2>" + e(t("new_campaign")) + "</h2>"
+        + "<label class='sk-fl'>" + e(t("name")) + "<input class='sk-in' id='sk-cn' placeholder='" + e(t("campaign_name_ph")) + "'></label>"
+        + "<span class='sk-fl'>" + e(t("mode")) + "</span><div class='sk-seg' role='radiogroup'>" + [["classic", "mode_classic"], ["solo", "mode_solo"]].map(function(m) {
+            return "<button data-nmode='" + m[0] + "' class='" + (m[0] == mode ? "sk-on" : "") + "' role='radio' aria-checked='" + (m[0] == mode) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>"
+        + "<p>" + e(t("new_campaign_help")) + "</p>"
+        + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + e(t("create")) + "</button><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
+        function(ev, close) {
+            var m = ev.target.closest("[data-nmode]");
+            if (m) { mode = m.dataset.nmode; S.root.querySelectorAll("[data-nmode]").forEach(function(x) { x.classList.toggle("sk-on", x == m); x.setAttribute("aria-checked", x == m); }); return; }
+            if (!ev.target.closest("[data-ok]")) return;
+            var name = S.root.querySelector("#sk-cn").value.trim() || t("campaign_name_ph");
+            var c = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, mode: mode, tiers: S.defaultTiers(), scenarios: [], heroes: [], cache: [], log: [], created: nowIso()};
+            S.campLog(c, t("clog_created"));
+            var l = S.campaigns(); l.push(c); S.saveCampaigns(l);
+            close(); S.renderCampaign(c.id);
+        });
+};
+
+// Ajouter (ou choisir) un scénario : copie d'un de mes scénarios du même mode, nouveau dans l'éditeur, ou emplacement vide.
+S.openChooseScenario = function(cid, idx) {
+    var c = S.campaign(cid); if (!c) return;
+    var list = S.scenarioList().filter(function(sc) { return (sc.saved ? sc.saved.mode : sc.mode) == c.mode; });
+    var cards = list.map(function(sc, i) {
+        return "<button class='sk-cpick' data-pick='" + i + "'><b>" + e(sc.title || t("untitled")) + "</b>" + S.riverThumbCode(sc) + "</button>";
+    }).join("");
+    S.dialog("<h2>" + e(t(idx == null ? "add_scenario" : "choose_scenario")) + "</h2>"
+        + "<div class='sk-actions sk-cpick-top'><button class='sk-btn sk-primary' data-new>" + e(t("new_scenario")) + "</button>"
+        + (idx == null ? "<button class='sk-btn' data-placeholder>" + e(t("placeholder_scenario")) + "</button>" : "") + "</div>"
+        + "<div class='sk-fl'>" + e(t("from_my_scenarios", t(c.mode == "solo" ? "mode_solo" : "mode_classic"))) + "</div>"
+        + (cards ? "<div class='sk-cpicks'>" + cards + "</div>" : "<p>" + e(t("no_scenario_for_mode", t(c.mode == "solo" ? "mode_solo" : "mode_classic"))) + "</p>")
+        + "<div class='sk-actions'><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
+        function(ev, close) {
+            if (ev.target.closest("[data-new]")) { close(); S.openCampaignEditor(cid, idx); return; }
+            if (ev.target.closest("[data-placeholder]")) {
+                close();
+                S.updateCampaign(cid, function(x) { x.scenarios.push({id: "s" + Date.now().toString(36), title: "", status: "todo", setup: null, vp: 0, date: null}); });
+                S.renderCampaign(cid); return;
+            }
+            var p = ev.target.closest("[data-pick]"); if (!p) return;
+            close();
+            // Copie : modifier plus tard le scénario d'origine ne change pas la campagne.
+            var src = list[+p.dataset.pick], setup = JSON.parse(JSON.stringify(src));
+            setup.fromSid = src.sid; delete setup.sid;
+            S.putCampaignScenario(cid, idx, setup, src.title || "");
+            S.renderCampaign(cid);
+        });
+    var dlg = S.root.querySelector("#sk-overlay .sk-dialog"); if (dlg) dlg.classList.add("sk-cpickdlg");
+};
+S.putCampaignScenario = function(cid, idx, setup, title) {
+    var at = idx;
+    S.updateCampaign(cid, function(c) {
+        var old = at != null ? c.scenarios[at] : null;
+        var sc = {id: old ? old.id : "s" + Date.now().toString(36), title: title, status: old ? old.status : "todo", setup: setup, vp: old ? old.vp : 0, date: old ? old.date : null};
+        if (old) { sc.turnReached = old.turnReached; c.scenarios[at] = sc; } else { c.scenarios.push(sc); at = c.scenarios.length - 1; }
+        S.campLog(c, t("clog_scenario", title || t("untitled")));
+    });
+    return at;
+};
+
+// Éditeur dans l'onglet Campagnes : même plateau que l'onglet Scénarios, mode fixé par la campagne.
+S.openCampaignEditor = function(cid, idx) {
+    var c = S.campaign(cid); if (!c) return;
+    var sc = idx != null ? c.scenarios[idx] : null, setup = sc && sc.setup ? JSON.parse(JSON.stringify(sc.setup)) : null;
+    if (setup) setup.title = sc.title || setup.title;
+    if (!setup) { setup = S.blankScenario(); setup.mode = c.mode; }
+    S.openEditor(setup);
+    S.editing.cid = cid; S.editing.idx = idx;
+    if (S.state && S.state.mode != c.mode) { S.state.mode = c.mode; S.state.scenario.mode = c.mode; }
+    S.renderGame();
+};
+var origOpenSave = S.openSaveScenario;
+S.openSaveScenario = function() {
+    if (!S.editing || !S.editing.cid) return origOpenSave.apply(S, arguments);
+    var sc = S.state.scenario;
+    Nav.dialog(e(t("save_in_campaign")),
+        "<div class='sk-savedlg'><label for='sk-savetitle'>" + e(t("scenario_name")) + "</label>"
+        + "<input id='sk-savetitle' type='text' value='" + e(sc.title || "") + "' placeholder='" + e(t("scenario_name_placeholder")) + "'>"
+        + "<p class='sk-savemsg' id='sk-savemsg' role='alert'></p>"
+        + "<label for='sk-savenotes'>" + e(t("notes")) + "</label><textarea id='sk-savenotes' rows='5'>" + e(sc.notes || "") + "</textarea>"
+        + "<label class='sk-check sk-savealso'><input type='checkbox' id='sk-savealso'> " + e(t("also_my_scenarios")) + "</label>"
+        + "<button type='button' class='sk-savebtn' onclick='Skelos.saveCampaignScenarioFromDialog()'>" + e(t("save_in_campaign")) + "</button></div>",
+        null, [{fn: "Skelos.saveCampaignScenarioFromDialog()", icon: "skelos-save-icon", label: e(t("save_in_campaign"))}]);
+    var inp = document.getElementById("sk-savetitle"); if (inp) { inp.focus(); inp.select(); }
+};
+S.saveCampaignScenarioFromDialog = function() {
+    var title = (document.getElementById("sk-savetitle").value || "").trim();
+    if (!title) { document.getElementById("sk-savemsg").textContent = t("title_required"); document.getElementById("sk-savetitle").focus(); return; }
+    var st = S.state, ed = S.editing, also = document.getElementById("sk-savealso").checked;
+    st.scenario.title = title; st.scenario.notes = document.getElementById("sk-savenotes").value;
+    st.log = [];
+    var d = S.scenarioFromState(); d.saved = S.stateCopy(st, true); d.title = title; d.notes = st.scenario.notes;
+    var old = ed.idx != null ? (S.campaign(ed.cid).scenarios[ed.idx] || {}).setup : null;
+    if (old && old.fromSid) d.fromSid = old.fromSid;
+    delete d.sid; if (d.saved.scenario) delete d.saved.scenario.sid;
+    S.putCampaignScenario(ed.cid, ed.idx, d, title);
+    if (also) {
+        var copy = JSON.parse(JSON.stringify(d)), now = nowIso();
+        delete copy.fromSid; copy.sid = newSid(); copy.source = "user"; copy.created = now; copy.updated = now;
+        if (copy.saved.scenario) copy.saved.scenario.sid = copy.sid;
+        var l = S.scenarioList(); l.push(copy); S.saveScenarios(l);
+    }
+    Nav.closeDialog();
+    var cid = ed.cid;
+    S.closeEditor(); S.toast(t(also ? "saved_campaign_and_mine" : "saved_in_campaign"));
+    S.renderCampaign(cid);
+};
+// Mode fixé par la campagne : pas de bascule Aventure / Coop dans son éditeur.
+var origSwitchMode = S.switchMode;
+S.switchMode = function() { if (S.editing && S.editing.cid) { S.toast(t("mode_locked")); return; } return origSwitchMode.apply(S, arguments); };
+
+// Fil des scénarios d'une campagne : réordonné par glisser-déposer de la poignée.
+S.moveCampaignScenario = function(cid, from, to) {
+    if (from == to) return;
+    var order = null;
+    S.updateCampaign(cid, function(c) {
+        order = c.scenarios.map(function(x, i) { return i; });
+        c.scenarios.splice(to, 0, c.scenarios.splice(from, 1)[0]);
+        order.splice(to, 0, order.splice(from, 1)[0]);
+    });
+    var st = S.state;
+    if (st && st.campaign && st.campaign.cid == cid && order) { st.campaign.idx = order.indexOf(st.campaign.idx); S.save(); }
+    S.renderCampaign(cid);
+};
+S.bindThreadDrag = function(cid) {
+    var box = S.root.querySelector(".sk-thread"); if (!box) return;
+    var drag = null;
+    var rows = function() { return Array.prototype.slice.call(box.querySelectorAll(".sk-sc")); };
+    var clean = function() { if (!drag) return; drag.row.classList.remove("sk-dragging"); rows().forEach(function(r) { r.classList.remove("sk-dropbefore", "sk-dropafter"); }); drag = null; };
+    var targetAt = function(y) {
+        var rs = rows(), to = rs.length - 1;
+        for (var i = 0; i < rs.length; i++) { var rc = rs[i].getBoundingClientRect(); if (y < rc.top + rc.height / 2) { to = i; break; } }
+        return to;
+    };
+    box.addEventListener("pointerdown", function(ev) {
+        var g = ev.target.closest("[data-grip]"); if (!g || drag) return;
+        ev.preventDefault();
+        drag = {row: g.closest(".sk-sc"), from: +g.dataset.grip, id: ev.pointerId, y: ev.clientY, on: false};
+        try { g.setPointerCapture(ev.pointerId); } catch (x) {}
+    });
+    box.addEventListener("pointermove", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) { if (Math.abs(ev.clientY - drag.y) < 6) return; drag.on = true; drag.row.classList.add("sk-dragging"); }
+        ev.preventDefault();
+        var to = targetAt(ev.clientY), rs = rows();
+        rs.forEach(function(r, i) { r.classList.toggle("sk-dropbefore", i == to && to < drag.from); r.classList.toggle("sk-dropafter", i == to && to > drag.from); });
+        drag.to = to;
+    });
+    box.addEventListener("pointerup", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        var from = drag.from, to = drag.on ? drag.to : null; clean();
+        if (to != null) S.moveCampaignScenario(cid, from, to);
+    });
+    box.addEventListener("pointercancel", clean);
 };
 
 // ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------

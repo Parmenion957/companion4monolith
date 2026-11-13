@@ -224,10 +224,10 @@ S.renderCampaign = function(cid) {
         + "<div class='sk-score'><b>" + S.vpTotal(c) + "</b><small>" + t("victory_points") + "<br>" + e(t("rank_is", S.rank(c))) + "</small></div>"
         + "<button class='sk-btn sk-icon' data-cact='settings' aria-label='" + e(t("campaign_settings")) + "'>⚙</button>");
     // Fil des scénarios
-    h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3>";
+    h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
     (c.scenarios || []).forEach(function(sc, i) {
         var done = sc.status == "win" || sc.status == "loss", next = i == nextIdx;
-        h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><span class='sk-sc-n'>" + (i + 1) + "</span><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose"))
+        h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><button class='sk-grip' data-grip='" + i + "' title='" + e(t("move_scenario")) + "' aria-label='" + e(t("move_scenario")) + "'>&#xf58e;</button><span class='sk-sc-n'>" + (i + 1) + "</span><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose"))
             + "<small>" + (done || sc.date ? "<button class='sk-date' data-cact='date' data-i='" + i + "' aria-label='" + e(t("edit_date")) + "'>📅 " + fmtDate(sc.date) + "</button>" : "")
             + (done && sc.turnReached ? t("turn_reached", sc.turnReached, sc.setup && sc.setup.turns || "?") : next ? t("next_scenario") : sc.setup ? "" : t("to_choose")) + "</small></span>";
         if (done) h += "<span class='sk-st " + sc.status + "'>" + t(sc.status == "win" ? "victory" : "defeat") + "</span><button class='sk-vp" + ((parseInt(sc.vp, 10) || 0) < 0 ? " neg" : "") + "' data-cact='vp' data-i='" + i + "' aria-label='" + e(t("edit_vp")) + "'>" + ((sc.vp > 0 ? "+" : "") + (sc.vp || 0)) + "</button>";
@@ -237,7 +237,7 @@ S.renderCampaign = function(cid) {
         if (!done) h += "<button class='sk-btn sk-icon sk-sm' data-cact='rmsc' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button>";
         h += "</div>";
     });
-    h += "<button class='sk-btn sk-addrow' data-cact='addsc'>+ " + t("add_scenario") + "</button></div>";
+    h += "</div><button class='sk-btn sk-addrow' data-cact='addsc'>+ " + t("add_scenario") + "</button></div>";
     // Compagnie
     h += "<div class='sk-blk sk-c3'><h3>" + t("company") + "</h3>";
     (c.heroes || []).forEach(function(hh) {
@@ -258,6 +258,7 @@ S.renderCampaign = function(cid) {
     h += "<button class='sk-btn sk-addrow' data-cact='addcache'>+ " + t("add_to_cache") + "</button>";
     h += "<h3 class='sk-mt'>" + t("log") + "</h3><ol class='sk-clog'>" + (c.log || []).slice(0, 8).map(function(l) { return "<li>" + e(l.msg) + "</li>"; }).join("") + "</ol></div>";
     S.mount(shell("sk-campaign", h));
+    if (S.bindThreadDrag) S.bindThreadDrag(c.id);
     S.screenClick = function(ev) {
         var b = ev.target.closest("[data-cact], [data-act='heroassign'], [data-act='itemmenu']"); if (!b) return;
         if (b.dataset.act == "heroassign") { S.openAssign(c.id, b.dataset.hero); return; }
@@ -267,7 +268,7 @@ S.renderCampaign = function(cid) {
             case "settings": S.openCampaignSettings(c.id); break;
             case "addsc": case "choose": S.openChooseScenario(c.id, b.dataset.cact == "choose" ? i : null); break;
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
-            case "prepare": S.ctx = {cid: c.id, idx: i}; S.draft = JSON.parse(JSON.stringify(c.scenarios[i].setup)); S.renderSetup(); break;
+            case "prepare": S.openCampaignEditor(c.id, i); break;
             case "launch": S.launchCampaignScenario(c.id, i); break;
             case "date": S.editField(t("edit_date"), "date", c.scenarios[i].date || today(), function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].date = v; }); S.renderCampaign(c.id); }); break;
             case "vp": S.editField(t("edit_vp"), "number", c.scenarios[i].vp || 0, function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].vp = parseInt(v, 10) || 0; }); S.renderCampaign(c.id); }); break;
