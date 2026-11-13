@@ -64,8 +64,10 @@ S.catalog = function(kind) {
     var seen = {}, out = [], arr = Array.isArray(src.list);
     (arr ? src.list.map(function(x) { return x.id; }) : Object.keys(src.list)).forEach(function(k, n) {
         var x = arr ? src.list[n] : src.list[k]; if (!x || !x.title) return;
-        var key = x.title.toLowerCase(); if (seen[key]) return; seen[key] = true;
-        out.push({kind: kind, ref: k, name: x.title, data: x});
+        var key = x.title.toLowerCase(), o = x.origins || [];
+        if (seen[key]) { o.forEach(function(b) { if (seen[key].origins.indexOf(b) < 0) seen[key].origins.push(b); }); return; }
+        seen[key] = {kind: kind, ref: k, name: x.title, data: x, origins: o.slice()};
+        out.push(seen[key]);
     });
     return out.sort(function(a, b) { return a.name.localeCompare(b.name, "fr"); });
 };
@@ -516,15 +518,16 @@ S.openItemPicker = function(opts) {
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(opts.title) + "</h2><div class='sk-actions sk-pickactions'>"
         + (browse ? "" : "<button class='sk-btn sk-primary' data-addsel disabled>" + t("add_selection", 0) + "</button>") + "<button class='sk-btn' data-pclose>" + t("close") + "</button></div></div>"
         + "<div class='sk-tabs' role='tablist'>" + tabs.map(function(x) { return "<button class='sk-tab' role='tab' data-tab='" + x[0] + "'>" + t(x[1]) + "</button>"; }).join("") + "</div>"
-        + "<div class='sk-filters'><input type='search' id='sk-iq' placeholder='" + e(t("search")) + "'></div>"
+        + "<div class='sk-filters'><input type='search' id='sk-iq' placeholder='" + e(t("search")) + "'>" + S.scopeCode() + "</div>"
         + (browse ? "" : "<div class='sk-pickstatus' id='sk-ist'></div>") + "<div class='sk-picker sk-ipicker' id='sk-ig'></div></div>";
     ov.classList.add("on");
     var q = ov.querySelector("#sk-iq");
     q.value = (pr.itemQ || {})[kind] || "";
+    S.bindScope(ov, function() { draw(); });
     var items = function() {
         if (kind == "tile") return [];
         var nq = S.norm(q.value);
-        return S.catalog(kind).filter(function(it) { return !nq || S.norm(it.name).indexOf(nq) >= 0 || S.norm((it.data && (it.data.effect || it.data.text)) || "").indexOf(nq) >= 0; });
+        return S.catalog(kind).filter(function(it) { return (kind == "up" || S.inScope(it.origins)) && (!nq || S.norm(it.name).indexOf(nq) >= 0 || S.norm((it.data && (it.data.effect || it.data.text)) || "").indexOf(nq) >= 0); });
     };
     var status = function() {
         if (browse) return;
@@ -542,12 +545,13 @@ S.openItemPicker = function(opts) {
     var draw = function() {
         ov.querySelectorAll("[data-tab]").forEach(function(b) { var on = b.dataset.tab == kind; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
         q.placeholder = t("search_" + kind);
+        ov.querySelector(".sk-scope").style.display = kind == "up" ? "none" : "";
         var g = ov.querySelector("#sk-ig"), out = "";
         if (kind == "tile") {
-            var nq = S.norm(q.value), seen = {}, owned = S.ownedBoxes();
+            var nq = S.norm(q.value), seen = {};
             Encyclopedia.tiles.list.forEach(function(x) {
                 var nm = x.id == "event" ? t("scenario_events") : x.name; if (nq && S.norm(nm).indexOf(nq) < 0) return;
-                if (owned.length && !(x.origins || []).some(function(o) { return owned.indexOf(o) >= 0; })) return;
+                if (!S.inScope(x.origins)) return;
                 var key = x.id + "|" + x.image; if (seen[key]) return; seen[key] = true;
                 out += "<div class='sk-pick sk-tilebox' role='img' aria-label='" + e(nm) + "'>" + S.tileCode({tileId: x.id, color: x.colors[0], img: x.image}) + "</div>";
             });
@@ -669,12 +673,8 @@ S.applyDisplayPrefs = function() {
 };
 S.renderSettings = function() {
     S.screen = "settings";
-    var pr = S.prefs(), owned = S.ownedBoxes(), b = S.bg() || {};
+    var pr = S.prefs(), b = S.bg() || {};
     var h = head("home", t("settings"));
-    if (S.inCompanion) h += "<div class='sk-blk sk-c3'><h3>" + t("my_boxes") + "</h3><p>" + t("my_boxes_companion") + "</p><ul class='sk-mini-list'>"
-        + owned.map(function(k) { return "<li>" + e(S.boxName(k)) + "</li>"; }).join("") + "</ul></div>";
-    else h += "<div class='sk-blk sk-c3'><h3>" + t("my_boxes") + "</h3><p>" + t("my_boxes_help") + "</p><div class='sk-switches'>"
-        + S.allBoxes().map(function(k) { return "<label class='sk-sw'><span>" + e(S.boxName(k)) + "</span><input type='checkbox' data-box='" + k + "'" + (owned.indexOf(k) >= 0 ? " checked" : "") + "></label>"; }).join("") + "</div></div>";
     h += "<div class='sk-blk sk-c3'><h3>" + t("background") + "</h3><p>" + t("background_help") + "</p>"
         + "<div class='sk-bgprev'" + S.boardBgStyle() + ">" + (b.img ? "" : "<span>" + t("no_background") + "</span>") + "</div>"
         + "<label class='sk-btn sk-filebtn'>" + t("choose_photo") + "<input type='file' accept='image/*' id='sk-bgfile' hidden></label>"
@@ -690,8 +690,7 @@ S.renderSettings = function() {
     var scr = S.root.querySelector(".sk-screen");
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
-        if (x.dataset.box) { pr.ownedBoxes = Array.prototype.map.call(scr.querySelectorAll("[data-box]:checked"), function(i) { return i.dataset.box; }); S.savePrefs(); }
-        else if (x.dataset.pref == "alwaysSolo") { pr.alwaysSolo = x.checked; S.savePrefs(); }
+        if (x.dataset.pref == "alwaysSolo") { pr.alwaysSolo = x.checked; S.savePrefs(); }
         else if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
         else if (x.id == "sk-bgfile" && x.files && x.files[0]) S.loadBackground(x.files[0]);
         else if (x.dataset.bg) { var bb = S.bg() || {}; bb[x.dataset.bg] = +x.value; store(KEY_BG, bb); S.renderSettings(); }

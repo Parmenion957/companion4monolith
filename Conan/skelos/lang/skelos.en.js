@@ -57,7 +57,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'die_yellow': "a yellow die",
     'tab': "Book of Skelos",
     'menu': "Skelos",
-    'my_boxes_companion': "The boxes you own are set in the Companion preferences.",
     'setup_title': "Prepare a game",
     'mode': "Game mode",
     'mode_classic': "Adventure",
@@ -88,7 +87,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'resume': "Resume the current game",
     'picker_title': "Choose a tile",
     'search': "Search",
-    'all_boxes': "All boxes",
     'color': "Base",
     'cancel': "Cancel",
     'close': "Close",
@@ -154,10 +152,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'add_selection': "Add the selection ({0})",
     'unselect': "Remove {0} from the selection",
     'my_boxes': "My boxes",
-    'my_boxes_help': "Check the boxes you own: the picker will only offer their tiles. Nothing checked: all boxes.",
-    'all_my_boxes': "All my boxes",
-    'check_all': "Check all",
-    'check_none': "Uncheck all",
     'river_full': "The River is full (8 tiles).",
     'no_tile_found': "No tile matches these filters.",
     'activate_named': "Activate {0} — {1} gem(s)",
@@ -470,5 +464,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'xfer_import_hint3': "Confirm by clicking the import button",
     'xfer_import_nothing': "Nothing selected.",
     'xfer_exists': "already exists: will be replaced",
-    'xfer_import_done': "{0} item(s) imported."
+    'xfer_import_done': "{0} item(s) imported.",
+    'scope_all': "All",
+    'search_scope': "Search scope"
 });

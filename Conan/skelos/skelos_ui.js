@@ -1709,18 +1709,13 @@ S.companyCode = function(c) {
 S.openHeroPicker = function(cid) {
     var c = S.campaign(cid), pr = S.prefs(), sel = [], free = S.companyFree(c);
     var have = {}; (c.heroes || []).forEach(function(h) { if (!h.dead) have[S.norm(h.name)] = true; });
-    if (pr.heroBox == null) pr.heroBox = "";
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-hpickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("hero_picker_title")) + "</h2>"
         + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-addsel disabled>" + e(t("add_selection", 0)) + "</button>"
         + "<button class='sk-btn' data-pclose>" + e(t("close")) + "</button></div></div>"
-        + "<div class='sk-filters'><input type='search' id='sk-hq' placeholder='" + e(t("search_hero")) + "' value='" + e(pr.heroQ || "") + "'><select id='sk-hbox'></select></div>"
+        + "<div class='sk-filters'><input type='search' id='sk-hq' placeholder='" + e(t("search_hero")) + "' value='" + e(pr.heroQ || "") + "'>" + S.scopeCode() + "</div>"
         + "<div class='sk-pickstatus' id='sk-hst' role='status'></div><div class='sk-picker sk-hpicker' id='sk-hg'></div></div>";
     ov.classList.add("on");
-    var owned = S.ownedBoxes(), boxes = owned.length ? S.allBoxes().filter(function(k) { return owned.indexOf(k) >= 0; }) : S.allBoxes();
-    if (pr.heroBox && boxes.indexOf(pr.heroBox) < 0) pr.heroBox = "";
-    ov.querySelector("#sk-hbox").innerHTML = "<option value=''>" + e(t(owned.length ? "all_my_boxes" : "all_boxes")) + "</option>"
-        + boxes.map(function(k) { return "<option value='" + k + "'" + (k == pr.heroBox ? " selected" : "") + ">" + e(S.boxName(k)) + "</option>"; }).join("");
     var cat = S.heroCatalog(), byRef = {}; cat.forEach(function(x) { byRef[x.ref] = x; });
     var status = function() {
         ov.querySelector("#sk-hst").innerHTML = "<div>" + e(t("hero_selection_count", sel.length, free)) + "</div><div class='sk-selchips'>" + sel.map(function(r, i) {
@@ -1735,10 +1730,10 @@ S.openHeroPicker = function(cid) {
         });
     };
     var draw = function() {
-        pr.heroQ = ov.querySelector("#sk-hq").value; pr.heroBox = ov.querySelector("#sk-hbox").value; S.savePrefs();
-        var q = S.norm(pr.heroQ), bx = pr.heroBox;
+        pr.heroQ = ov.querySelector("#sk-hq").value; S.savePrefs();
+        var q = S.norm(pr.heroQ);
         var out = cat.filter(function(x) {
-            if (bx ? x.origins.indexOf(bx) < 0 : owned.length && !x.origins.some(function(o) { return owned.indexOf(o) >= 0; })) return false;
+            if (!S.inScope(x.origins)) return false;
             return !q || S.norm(x.name + " " + x.sub).indexOf(q) >= 0;
         }).map(function(x) {
             var inco = have[S.norm(x.name)];
@@ -1754,7 +1749,7 @@ S.openHeroPicker = function(cid) {
     };
     var close = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; };
     ov.querySelector("#sk-hq").addEventListener("input", draw);
-    ov.querySelector("#sk-hbox").addEventListener("change", draw);
+    S.bindScope(ov, draw);
     ov.onclick = function(ev) {
         if (ev.target === ov || ev.target.closest("[data-pclose]")) { close(); return; }
         var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }

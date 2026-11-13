@@ -147,6 +147,8 @@ var Skelos = {
     prefs: function() {
         if (!Skelos._prefs) {
             try { Skelos._prefs = JSON.parse(localStorage.getItem(Application + "_SkelosPrefs")) || {}; } catch (e) { Skelos._prefs = {}; }
+            // Anciens filtres par boîte, remplacés par la portée « Mes boîtes » / « Tout ».
+            delete Skelos._prefs.ownedBoxes; delete Skelos._prefs.pickerBox; delete Skelos._prefs.heroBox;
         }
         return Skelos._prefs;
     },
@@ -314,40 +316,52 @@ var Skelos = {
         });
     },
 
+    // Boîtes possédées : celles cochées dans les paramètres du Compagnon.
     ownedBoxes: function() {
-        if (typeof Extensions != "undefined" && Skelos.inCompanion) return Object.keys(Extensions).filter(function(k) { return Extensions[k]; });
-        return Skelos.prefs().ownedBoxes || [];
+        if (typeof Extensions != "undefined") return Object.keys(Extensions).filter(function(k) { return Extensions[k]; });
+        return [];
+    },
+
+    // Deux portées de recherche pour les tuiles, les héros et les objets : « Mes boîtes » ou « Tout ».
+    scopeMine: function() { return Skelos.prefs().pickScope != "all"; },
+    inScope: function(origins) {
+        var owned = Skelos.ownedBoxes();
+        if (!Skelos.scopeMine() || !owned.length || !origins || !origins.length) return true;
+        return origins.some(function(o) { return owned.indexOf(o) >= 0; });
+    },
+    scopeCode: function() {
+        var t = Skelos.t, e = Skelos.esc, mine = Skelos.scopeMine();
+        return "<div class='sk-seg sk-sseg sk-scope' role='radiogroup' aria-label='" + e(t("search_scope")) + "'>"
+            + [["mine", "my_boxes"], ["all", "scope_all"]].map(function(m) {
+                var on = (m[0] == "mine") == mine;
+                return "<button type='button' data-scope='" + m[0] + "' class='" + (on ? "sk-on" : "") + "' role='radio' aria-checked='" + on + "'>" + e(t(m[1])) + "</button>";
+            }).join("") + "</div>";
+    },
+    // Branche l'interrupteur de portée d'un sélecteur ; « redraw » relance la recherche.
+    bindScope: function(box, redraw) {
+        box.querySelector(".sk-scope").addEventListener("click", function(ev) {
+            var b = ev.target.closest("[data-scope]"); if (!b) return;
+            ev.stopPropagation();
+            var pr = Skelos.prefs(); pr.pickScope = b.dataset.scope; Skelos.savePrefs();
+            box.querySelectorAll(".sk-scope [data-scope]").forEach(function(x) { var on = x === b; x.classList.toggle("sk-on", on); x.setAttribute("aria-checked", on); });
+            redraw();
+        });
     },
 
     // Sélecteur de tuiles : reste ouvert et garde ses filtres pour ajouter plusieurs tuiles d'affilée.
     openPicker: function() {
         var t = Skelos.t, e = Skelos.esc, pr = Skelos.prefs();
         if (pr.pickerQ == null) pr.pickerQ = "";
-        if (pr.pickerBox == null) pr.pickerBox = "corebox";
         var ov = Skelos.root.querySelector("#sk-overlay");
         ov.innerHTML = "<div class='sk-dialog sk-pickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + t("picker_title") + "</h2>"
             + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-act='addsel' disabled>" + t("add_selection", 0) + "</button>"
             + "<button class='sk-btn' data-act='close'>" + t("close") + "</button></div></div>"
             + "<div class='sk-filters'><input type='search' id='sk-q' placeholder='" + e(t("search")) + "' value='" + e(pr.pickerQ) + "'>"
-            + "<select id='sk-box'></select><button class='sk-btn' data-act='owned' aria-expanded='false'>" + t("my_boxes") + "</button></div>"
-            + "<div class='sk-owned' id='sk-owned' hidden></div>"
+            + Skelos.scopeCode() + "</div>"
             + "<div class='sk-pickstatus' id='sk-pickstatus' role='status'></div>"
             + "<div class='sk-picker' id='sk-picker'></div></div>";
         ov.classList.add("on");
 
-        var fillBoxes = function() {
-            var owned = Skelos.ownedBoxes(), list = owned.length ? Skelos.allBoxes().filter(function(k) { return owned.indexOf(k) >= 0; }) : Skelos.allBoxes();
-            if (pr.pickerBox && list.indexOf(pr.pickerBox) < 0) pr.pickerBox = "";
-            document.getElementById("sk-box").innerHTML = "<option value=''>" + t(owned.length ? "all_my_boxes" : "all_boxes") + "</option>"
-                + list.map(function(k) { return "<option value='" + k + "'" + (k == pr.pickerBox ? " selected" : "") + ">" + e(Skelos.boxName(k)) + "</option>"; }).join("");
-        };
-        var fillOwned = function() {
-            var owned = Skelos.ownedBoxes();
-            document.getElementById("sk-owned").innerHTML = "<p class='sk-help'>" + t("my_boxes_help") + "</p><div class='sk-owned-grid'>"
-                + Skelos.allBoxes().map(function(k) {
-                    return "<label><input type='checkbox' value='" + k + "'" + (owned.indexOf(k) >= 0 ? " checked" : "") + "> " + e(Skelos.boxName(k)) + "</label>";
-                }).join("") + "</div><div class='sk-actions'><button class='sk-btn' data-act='ownedall'>" + t("check_all") + "</button><button class='sk-btn' data-act='ownednone'>" + t("check_none") + "</button></div>";
-        };
         var sel = [];
         var status = function() {
             var n = (Skelos._pickToGame && Skelos.state ? Skelos.state.river : Skelos.draft.river).length, free = Skelos.RIVER_SIZE - n;
@@ -372,14 +386,11 @@ var Skelos = {
         };
         var draw = function() {
             pr.pickerQ = document.getElementById("sk-q").value;
-            pr.pickerBox = document.getElementById("sk-box").value;
             Skelos.savePrefs();
-            var q = Skelos.norm(pr.pickerQ), bx = pr.pickerBox, owned = Skelos.ownedBoxes();
+            var q = Skelos.norm(pr.pickerQ);
             var seen = {}, out = "";
             Encyclopedia.tiles.list.forEach(function(x) {
-                var orig = x.origins || [];
-                if (bx && orig.indexOf(bx) < 0) return;
-                if (!bx && owned.length && !orig.some(function(o) { return owned.indexOf(o) >= 0; })) return;
+                if (!Skelos.inScope(x.origins)) return;
                 var nm = x.id == "event" ? Skelos.t("scenario_events") : x.name;
                 if (q && Skelos.norm(nm).indexOf(q) < 0) return;
                 var key = x.id + "|" + x.image; if (seen[key]) return; seen[key] = true;
@@ -394,27 +405,11 @@ var Skelos = {
             if (Skelos._pickToGame) { Skelos._pickToGame = false; Skelos.renderGame(); } else Skelos.renderSetup();
         };
 
-        fillBoxes(); draw();
+        draw();
         document.getElementById("sk-q").addEventListener("input", draw);
-        document.getElementById("sk-box").addEventListener("change", draw);
-        document.getElementById("sk-owned").addEventListener("change", function() {
-            pr.ownedBoxes = Array.prototype.map.call(document.querySelectorAll("#sk-owned input:checked"), function(i) { return i.value; });
-            Skelos.savePrefs(); fillBoxes(); draw();
-        });
+        Skelos.bindScope(ov, draw);
         ov.onclick = function(ev) {
             if (ev.target === ov || ev.target.closest("[data-act=close]")) { close(); return; }
-            var ob = ev.target.closest("[data-act=owned]");
-            if (ob) {
-                var panel = document.getElementById("sk-owned"), open = panel.hasAttribute("hidden");
-                if (open) { fillOwned(); panel.removeAttribute("hidden"); } else panel.setAttribute("hidden", "");
-                ob.setAttribute("aria-expanded", open);
-                return;
-            }
-            var all = ev.target.closest("[data-act=ownedall], [data-act=ownednone]");
-            if (all) {
-                pr.ownedBoxes = all.dataset.act == "ownedall" ? Skelos.allBoxes() : [];
-                Skelos.savePrefs(); fillOwned(); fillBoxes(); draw(); return;
-            }
             var un = ev.target.closest("[data-unsel]");
             if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
             if (ev.target.closest("[data-act=addsel]")) {

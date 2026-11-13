@@ -57,7 +57,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'die_yellow': "un dé jaune",
     'tab': "Livre de Skelos",
     'menu': "Skelos",
-    'my_boxes_companion': "Les boîtes que tu possèdes se règlent dans les préférences du Compagnon.",
 
     'setup_title': "Préparer une partie",
     'mode': "Mode de jeu",
@@ -90,7 +89,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
 
     'picker_title': "Choisir une tuile",
     'search': "Rechercher",
-    'all_boxes': "Toutes les boîtes",
     'color': "Socle",
     'cancel': "Annuler",
     'close': "Fermer",
@@ -164,10 +162,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'add_selection': "Ajouter la sélection ({0})",
     'unselect': "Retirer {0} de la sélection",
     'my_boxes': "Mes boîtes",
-    'my_boxes_help': "Cochez les boîtes que vous possédez : le sélecteur ne proposera plus que leurs tuiles. Rien de coché : toutes les boîtes.",
-    'all_my_boxes': "Toutes mes boîtes",
-    'check_all': "Tout cocher",
-    'check_none': "Tout décocher",
     'river_full': "La Rivière est pleine (8 tuiles).",
     'no_tile_found': "Aucune tuile ne correspond à ces filtres.",
 
@@ -483,5 +477,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'xfer_import_hint3': "Validez l'import en cliquant sur le bouton importer",
     'xfer_import_nothing': "Aucun élément sélectionné.",
     'xfer_exists': "existe déjà : sera remplacé",
-    'xfer_import_done': "{0} élément(s) importé(s)."
+    'xfer_import_done': "{0} élément(s) importé(s).",
+    'scope_all': "Tout",
+    'search_scope': "Portée de la recherche"
 });
