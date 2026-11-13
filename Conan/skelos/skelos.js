@@ -729,39 +729,7 @@ var Skelos = {
         });
     },
 
-    // Pions dessinés (création originale) : sablier, gemme, récupération, cases de la Rivière.
-    ICONS: {
-        hourglass: "<path d='M7 3h10M7 21h10M8 3c0 5 4 6.5 4 9s-4 4-4 9M16 3c0 5-4 6.5-4 9s4 4 4 9' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round'/><path d='M9.6 7.5h4.8L12 10.2z M9.2 19.6c.7-2 2.8-2.6 2.8-4.6 0 2 2.1 2.6 2.8 4.6z' fill='currentColor'/>",
-        gem: "<path d='M6 4h12l4 5-10 12L2 9z' fill='currentColor' opacity='.9'/><path d='M2 9h20M6 4l3 5 3-5 3 5 3-5M9 9l3 12 3-12' fill='none' stroke='rgba(255,255,255,.55)' stroke-width='.9'/>",
-        recover: "<path d='M19 12a7 7 0 1 1-2.05-4.95' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'/><path d='M18.5 3.5v4.5H14' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>",
-        bag: "<path d='M9 4h6l-1.5 3h-3z' fill='currentColor'/><path d='M10 7h4c4 2.5 6 6 6 9a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5c0-3 2-6.5 6-9z' fill='currentColor' opacity='.9'/>",
-        heroes: "<path d='M12 2.5 19.5 5v6.2c0 4.6-3.2 8.6-7.5 10.3C7.7 19.8 4.5 15.8 4.5 11.2V5z' fill='currentColor' opacity='.9'/><path d='M12 6v11M8 10.5h8' stroke='rgba(0,0,0,.45)' stroke-width='1.6' stroke-linecap='round'/>"
-    },
-
-    token: function(kind, value, extra, cls) {
-        return "<span class='sk-tok sk-tok-" + kind + (cls ? " " + cls : "") + "'>"
-            + (Skelos.ICONS[kind] ? "<svg class='sk-tok-ico' viewBox='0 0 24 24' aria-hidden='true'>" + Skelos.ICONS[kind] + "</svg>" : "")
-            + "<b>" + value + "</b>" + (extra ? "<small>" + extra + "</small>" : "") + "</span>";
-    },
-
     BOOSTS: ["move", "reroll", "defense", "spell"],
-
-    boostsCode: function() {
-        var st = Skelos.state, t = Skelos.t, e = Skelos.esc;
-        var cur = st.current && Skelos.slotByUid(st.current), tile = cur && Skelos.tileOf(cur);
-        var h = "<div class='sk-boosts' role='group' aria-label='" + e(t("boosts")) + "' title='" + e(t("boosts_help")) + "'><div class='sk-boost-row'>";
-        Skelos.BOOSTS.forEach(function(k) {
-            var n = st.boosts[k] || 0;
-            h += "<div class='sk-boost'><button class='sk-btn' data-act='boost' data-k='" + k + "' title='" + e(t("boost_cost_" + k)) + "'><span>" + t("boost_" + k) + "</span></button>"
-                + "<div class='sk-boost-gems' aria-label='" + n + " gemme(s)'>" + (n ? "<i class='sk-gem on'></i><b>" + n + "</b>" : "") + "</div></div>";
-        });
-        h += "</div>";
-        if (cur && tile && !Skelos.isEvent(cur) && st.phase == "overlord") {
-            var base = parseInt(tile.movement, 10) || 0;
-            h = h.replace("data-k='move' title='" + e(t("boost_cost_move")) + "'", "data-k='move' title='" + e(t("boost_ctx_short", base)) + "'");
-        }
-        return h + "</div>";
-    },
 
     // Amélioration ponctuelle : une gemme passe de l'énergie disponible à la zone d'amélioration.
     boost: function(kind) {
@@ -808,42 +776,13 @@ var Skelos = {
         Skelos.save(); Skelos.renderGame();
     },
 
-    activationSlots: function(used, max) {
-        var h = "<span class='sk-actslots'>";
-        for (var i = 0; i < max; i++) h += "<span class='sk-actslot" + (i < used ? " used" : "") + "'>" + (i < used ? "<svg viewBox='0 0 24 24' aria-hidden='true'>" + Skelos.ICONS.gem + "</svg>" : "") + "</span>";
-        return h + "</span>";
-    },
-
-    gems: function(n, cls) {
-        var h = "";
-        for (var i = 0; i < Math.min(n, 30); i++) h += "<i class='sk-gem " + cls + "'></i>";
-        return h;
-    },
-
     renderGame: function() {
         Skelos.screen = "game";
         var st = Skelos.state, t = Skelos.t, e = Skelos.esc, solo = st.mode == "solo";
         var h = "<div class='skelos-game" + (solo ? " solo" : "") + "'>";
 
-        h += "<div class='sk-board'" + (Skelos.boardBgStyle ? Skelos.boardBgStyle() : "") + ">" + (!solo ? Skelos.boostsCode() : "") + "<div class='sk-zones'>";
-        if (!solo) {
-            h += "<div class='sk-zone'><div class='sk-zone-label'>" + t("energy") + "</div><div class='sk-zone-n'>" + Skelos.token("gem", st.energy, "", "lit") + "</div><div class='sk-gems'>" + Skelos.gems(st.energy, "on") + "</div>"
-                + "<div class='sk-zone-tools'><button class='sk-btn sk-xfer' data-act='xfer' data-dir='tofatigue'" + (st.energy ? "" : " disabled") + ">" + t("to_fatigue") + "</button></div></div>";
-            h += "<div class='sk-zone sk-recov'><div class='sk-zone-label'>" + t("recovery") + "</div><div class='sk-zone-n'>" + Skelos.token("recover", st.recovery) + "</div>"
-                + "<div class='sk-zone-tools'><button class='sk-mini' data-act='adj' data-f='recovery' data-n='-1'>−</button><button class='sk-mini' data-act='adj' data-f='recovery' data-n='1'>+</button></div>"
-                + "<div class='sk-gemtotal'>" + t("gem_total", Skelos.gemTotal()) + "</div></div>";
-            h += "<div class='sk-zone'><div class='sk-zone-label'>" + t("fatigue") + "</div><div class='sk-zone-n'>" + Skelos.token("gem", st.fatigue, "", "dim") + "</div><div class='sk-gems'>" + Skelos.gems(st.fatigue, "off") + "</div>"
-                + "<div class='sk-zone-tools'><button class='sk-btn sk-xfer' data-act='xfer' data-dir='toenergy'" + (st.fatigue ? "" : " disabled") + ">" + t("to_energy") + "</button></div></div>";
-        } else {
-            h += "<div class='sk-zone'><div class='sk-zone-label'>" + t("tokens_pool") + "</div><div class='sk-zone-n'>" + Skelos.token("bag", st.pool.length) + "</div>"
-                + (st.phase == "overlord" ? "<button class='sk-btn sk-primary sk-draw' data-act='draw'>" + t("draw_token") + "</button>" : "<span class='sk-zone-hint'>" + t("draw_only_overlord") + "</span>") + "</div>";
-            h += "<div class='sk-zone'><div class='sk-zone-label'>" + t("tokens_used") + "</div><div class='sk-tokens'>"
-                + st.used.map(function(u) { var s = Skelos.slotByUid(u); return "<span class='sk-token'>" + s.token + "</span>"; }).join("") + "</div></div>";
-            h += "<div class='sk-zone sk-recov'><div class='sk-zone-label'>" + t("heroes") + "</div><div class='sk-zone-n'>" + Skelos.token("heroes", st.heroes) + "</div>"
-                + "<div class='sk-zone-tools'><button class='sk-mini' data-act='adj' data-f='heroes' data-n='-1'>−</button><button class='sk-mini' data-act='adj' data-f='heroes' data-n='1'>+</button></div></div>";
-        }
-        h += Skelos.controlsCode();
-        h += "</div>";
+        // Panneau au-dessus de la Rivière : défini par la couche d'interface (skelos_ui.js).
+        h += "<div class='sk-board'" + (Skelos.boardBgStyle ? Skelos.boardBgStyle() : "") + ">" + Skelos.panelCode();
 
         h += "<div class='sk-river'>";
         for (var i = 0; i < Skelos.RIVER_SIZE; i++) {
@@ -883,25 +822,6 @@ var Skelos = {
         Skelos.bindDrawer();
         if (Skelos.inCompanion && Skelos._lastScreen != "game") Skelos.root.scrollTop = 0;
         Skelos._lastScreen = "game";
-    },
-
-    // Commandes de partie, à droite des zones : compte-tour, phase, activations, boutons et activation de la tuile choisie.
-    controlsCode: function() {
-        var st = Skelos.state, t = Skelos.t, e = Skelos.esc, solo = st.mode == "solo";
-        var h = "<div class='sk-zone sk-ctrl'><div class='sk-ctrl-grid'>";
-        h += "<div class='sk-ctrl-c1'><div class='sk-turn'><button class='sk-mini' data-act='turnminus' aria-label='" + t("aria_turn_prev") + "'>−</button>"
-            + "<span class='sk-turn-tok' title='" + e(t("turn")) + "' aria-label='" + e(t("turn") + " " + st.turn + (st.turns ? " / " + st.turns : "")) + "'>" + Skelos.token("hourglass", st.turn, st.turns ? "/ " + st.turns : "") + "</span>"
-            + "<button class='sk-mini' data-act='turnplus' aria-label='" + t("aria_turn_next") + "'>+</button></div>"
-            + "<div class='sk-acts' title='" + e(t("activations")) + "' aria-label='" + e(t("activations") + " " + st.activations + " / " + (solo ? st.heroes : st.maxActivations)) + "'>" + Skelos.activationSlots(st.activations, solo ? st.heroes : st.maxActivations) + "</div></div>";
-        h += "<div class='sk-ctrl-c2'><div class='sk-phase " + (st.phase == "overlord" ? "ov" : "he") + "'>" + t(st.phase == "overlord" ? "phase_overlord" : st.phase == "start" ? "phase_start" : "phase_heroes") + "</div>"
-            + (st.phase == "overlord"
-                ? "<button class='sk-btn sk-primary sk-turnbtn' data-act='oend'>" + t("end_overlord_turn") + "</button>"
-                : "<button class='sk-btn sk-primary sk-turnbtn' data-act='oturn'>" + t("start_overlord_turn") + "</button>")
-            + "<div class='sk-ctrl-tools'><button class='sk-btn sk-icon' data-act='undo' aria-label='" + e(t("undo")) + "' title='" + e(t("undo")) + "'" + (Skelos.undoStack.length ? "" : " disabled") + ">↶</button>"
-            + "<button class='sk-btn sk-icon' data-act='setup' aria-label='" + e(t("setup")) + "' title='" + e(t("setup")) + "'>⚙</button></div>";
-        if (st.turns && st.turn == st.turns) h += "<div class='sk-banner'>" + t("last_turn") + "</div>";
-        if (st.turns && st.turn > st.turns) h += "<div class='sk-banner sk-danger'>" + t("game_over_short") + "</div>";
-        return h + "</div></div></div>";
     },
 
     // Pion de coût d'une case : il passe au rouge quand la tuile sélectionnée peut être activée ; un appui paie et active.
