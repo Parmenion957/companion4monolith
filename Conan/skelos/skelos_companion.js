@@ -6,6 +6,8 @@ Skelos.inCompanion = true;
 Skelos.companionInit = function()
 {
     Nav.addIcon(Skelos._i18n.menu, "skelos-icon", "skelos");
+    Nav.addAction("skelos", Skelos._i18n.xfer_export, "skelos-export-icon", "skelos-export", function() { Skelos.openExport(); });
+    Nav.addAction("skelos", Skelos._i18n.xfer_import, "skelos-import-icon", "skelos-import", function() { Skelos.openImport(); });
     Nav.addAction("skelos", Skelos._i18n.theme_toggle, "skelos-theme-icon", "theme", function() { Skelos.toggleTheme(); });
     Nav.addAction("skelos", Skelos._i18n.fullscreen, "skelos-fullscreen-icon", "fullscreen", function() { Skelos.toggleFullscreen(); });
     Nav.addAction("skelos", Skelos._i18n.settings, "skelos-settings-icon", "settings", function() { if (Skelos.root) Skelos.renderSettings(); });
