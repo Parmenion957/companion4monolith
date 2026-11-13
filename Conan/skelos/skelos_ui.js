@@ -1660,10 +1660,20 @@ S.showCardTip = function(el) {
     if (!tip) { tip = document.createElement("div"); tip.id = "sk-cardtip"; tip.className = "sk-cardtip"; tip.setAttribute("aria-hidden", "true"); S.root.appendChild(tip); }
     if (tip.dataset.card != el.dataset.card) { tip.innerHTML = html; tip.dataset.card = el.dataset.card; }
     tip.classList.add("on");
-    var b = el.getBoundingClientRect(), w = tip.offsetWidth, hg = tip.offsetHeight;
-    var left = b.right + 10; if (left + w > window.innerWidth - 8) left = Math.max(8, b.left - w - 10);
-    var top = Math.max(8, Math.min(b.top + b.height / 2 - hg / 2, window.innerHeight - hg - 8));
-    tip.style.left = left + "px"; tip.style.top = top + "px";
+    var place = function() {
+        if (tip.dataset.card != el.dataset.card || !el.isConnected) return;
+        // Hauteur attendue d'une carte même avant le chargement de son image (rapport 0,67).
+        var b = el.getBoundingClientRect(), w = tip.offsetWidth, hg = Math.max(tip.offsetHeight, Math.round(w / 0.67));
+        var bottom = window.innerHeight - 8, nb = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 2);
+        // La barre de navigation du Compagnon, en bas, ne doit pas couvrir la carte.
+        while (nb && nb != document.body && !S.root.contains(nb) && ["fixed", "absolute", "sticky"].indexOf(getComputedStyle(nb).position) < 0) nb = nb.parentElement;
+        if (nb && nb != document.body && !S.root.contains(nb)) bottom = Math.min(bottom, nb.getBoundingClientRect().top - 8);
+        var left = b.right + 10; if (left + w > window.innerWidth - 8) left = Math.max(8, b.left - w - 10);
+        var top = Math.max(8, Math.min(b.top + b.height / 2 - hg / 2, bottom - hg));
+        tip.style.left = left + "px"; tip.style.top = top + "px";
+    };
+    place();
+    tip.querySelectorAll("img").forEach(function(im) { if (!im.complete) im.addEventListener("load", place, {once: true}); });
 };
 S.hideCardTip = function() { var tip = S.root && S.root.querySelector("#sk-cardtip"); if (tip) tip.classList.remove("on"); };
 S.bindCardTips = function(root) {
