@@ -1313,3 +1313,17 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
 /* Dialogues plein écran (Réglages, fin de scénario…) : texte secondaire lisible dans les deux thèmes,
    l'ancienne valeur « grimoire » (blanc à 62 %) restait illisible en thème clair. */
 .sk-dialogscreen { --sk-muted: color-mix(in srgb, var(--body-color, #000) 62%, var(--body-bg-color, #f8f6f6) 38%); }
+
+/* Récupération : flèche vers la gauche (Fatigue → Énergie disponible) et chiffre en gros, plus lisible que l'ancien cercle.
+   Le total de gemmes est agrandi et descend en bas du cadre. */
+.sk-recovarrow { position: relative; display: block; width: 118px; max-width: 100%; aspect-ratio: 100 / 56; color: var(--main-color); }
+.sk-recovarrow svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+.sk-recovarrow b { position: absolute; left: 33%; right: 2%; top: 0; bottom: 0; display: grid; place-items: center;
+    font-family: 'Motrg', serif; font-weight: normal; font-size: 2.5rem; line-height: 1; color: var(--body-bg-color); }
+.skelos-game .sk-a-rec:not(.studio) { justify-content: space-between; }
+.skelos-game .sk-a-rec:not(.studio) .sk-pmain { padding-bottom: 0; }
+.skelos-game .sk-ptotal { font-family: 'Primary', serif; font-size: 1.05rem; line-height: 1.15; color: var(--body-color); }
+.sk-a-rec.studio .sk-recovarrow { width: 66px; } .sk-a-rec.studio .sk-recovarrow b { font-size: 1.5rem; }
+@media (max-height: 520px) and (orientation: landscape) {
+    .sk-a-rec .sk-recovarrow { width: 70px; } .sk-a-rec .sk-recovarrow b { font-size: 1.5rem; }
+}

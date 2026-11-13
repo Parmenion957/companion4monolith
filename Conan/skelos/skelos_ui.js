@@ -36,7 +36,8 @@ S.token = function(kind, value, extra, cls) {
     if (kind == "hourglass") return "<span class='sk-tokimg sk-tokround'><img src='" + S.icon("time") + "' alt=''><b>" + value + "</b>" + (extra ? "<small>" + e(extra.replace(/\s/g, "")) + "</small>" : "") + "</span>";
     if (kind == "bag") return "<span class='sk-tokimg sk-tokround'><img src='" + S.icon("tokenback") + "' alt=''><b>" + value + "</b></span>";
     if (kind == "heroes") return "<span class='sk-recovtok'><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2.5 19.5 5v6.2c0 4.6-3.2 8.6-7.5 10.3C7.7 19.8 4.5 15.8 4.5 11.2V5z' fill='currentColor'/></svg><b>" + value + "</b></span>";
-    if (kind == "recover") return "<span class='sk-recovtok'><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M19 12a7 7 0 1 1-2.05-4.95' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/><path d='M18.5 3.5v4.5H14' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg><b>" + value + "</b></span>";
+    // Récupération : une flèche vers la gauche (de la Fatigue vers l'Énergie disponible), le chiffre en gros dans la flèche.
+    if (kind == "recover") return "<span class='sk-recovarrow'><svg viewBox='0 0 100 56' aria-hidden='true'><path d='M2 28 34 2v12h64v28H34v12z' fill='currentColor' stroke-linejoin='round'/></svg><b>" + value + "</b></span>";
     return "<span class='sk-recovtok'><b>" + value + "</b></span>";
 };
 // Cercles d'activation : le pion de rang payé (Aventure) ou le jeton tiré (Coop) prend la place d'un cercle vide.
