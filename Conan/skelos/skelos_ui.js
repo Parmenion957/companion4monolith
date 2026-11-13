@@ -1292,8 +1292,17 @@ S.campaignHeadCode = function(c) {
         + (S.campaignFinished(c) ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + S.campaignDotsCode(c) + "</div>"
         + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p></div>"
         + "<div class='sk-cvp" + (vp < 0 ? " neg" : "") + "' role='img' aria-label='" + e(t("vp_n", vp)) + "'><b>" + vp + "</b><span>" + e(t("victory_points")) + "</span></div>"
-        + "<div class='sk-chead-acts'><button class='sk-btn sk-icon sk-cjournal' data-cact='journal' title='" + e(t("log")) + "' aria-label='" + e(t("log")) + "'>&#xf02d;</button>"
+        + "<div class='sk-chead-acts'><button class='sk-btn sk-icon sk-cjournal' data-cact='help' title='" + e(t("help")) + "' aria-label='" + e(t("help")) + "'>&#xf059;</button>"
+        + "<button class='sk-btn sk-icon sk-cjournal' data-cact='journal' title='" + e(t("log")) + "' aria-label='" + e(t("log")) + "'>&#xf02d;</button>"
         + "<button class='sk-btn sk-icon sk-cjournal sk-danger' data-cact='cdelete' title='" + e(t("delete_campaign")) + "' aria-label='" + e(t("delete_campaign")) + "'>&#xf2ed;</button></div></div>";
+};
+// Aide de l'écran de campagne : une section par zone de l'écran.
+S.openCampaignHelp = function() {
+    var h = "<div class='sk-journal sk-help-doc'><h1>" + e(t("chelp_title")) + "</h1><p>" + e(t("chelp_intro")) + "</p>";
+    ["head", "thread", "company", "cache", "end"].forEach(function(k) {
+        h += "<h2>" + e(t("chelp_" + k)) + "</h2><ul>" + t("chelp_" + k + "_items").split("|").map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul>";
+    });
+    Nav.dialog(e(t("help")), h + "</div>", null, []);
 };
 // Nouvelle campagne : nom et mode, puis l'écran de la campagne.
 S.newCampaign = function() {
@@ -1579,12 +1588,13 @@ S._xferAll = function() { $(".sk-xfer input[type='checkbox']").prop("checked", t
 S._xferChecked = function(kind) {
     return $(".sk-xfer input[name='skelos-" + kind + "']:checked").map(function(a, b) { return parseInt($(b).data("index"), 10); }).get();
 };
+S.xferKind = function() { return S.screen == "campaigns" ? "camp" : "sc"; };
 S.openExport = function() {
+    var kind = S._xferKind = S.xferKind();
     Nav.dialog(t("xfer_export"),
         "<div class='printcards sk-xfer'>"
-            + "<p class='hint'>" + e(t("xfer_export_hint")) + "</p>"
-            + "<h1>" + e(t("scenarios")) + "</h1>" + S.xferCardsCode("sc", S.scenarioList())
-            + "<h1>" + e(t("campaigns")) + "</h1>" + S.xferCardsCode("camp", S.campaigns())
+            + "<p class='hint'>" + e(t("xfer_export_hint_" + kind)) + "</p>"
+            + (kind == "sc" ? S.xferCardsCode("sc", S.scenarioList()) : S.xferCardsCode("camp", S.campaigns()))
         + "</div>",
         null,
         [{label: t("xfer_all"), icon: "skelos-allin", fn: "Skelos._xferAll();"}],
@@ -1594,13 +1604,18 @@ S._export = function() {
     var scs = S._xferChecked("sc"), camps = S._xferChecked("camp");
     if (!scs.length && !camps.length) { S.xferWarn(t("xfer_export_empty")); return; }
     var all = S.scenarioList(), cl = S.campaigns();
-    var data = {format: "skelos", version: 1, exported: new Date().toISOString().slice(0, 10),
-        scenarios: scs.map(function(i) { return all[i]; }), campaigns: camps.map(function(i) { return cl[i]; })};
+    var data = {format: "skelos", version: 1, exported: new Date().toISOString().slice(0, 10)};
+    if (S._xferKind == "camp") data.campaigns = camps.map(function(i) { return cl[i]; });
+    else data.scenarios = scs.map(function(i) { return all[i]; });
     Nav.closeDialog();
-    S.exportData(data, Application + "-Skelos-" + new Date().getTime() + ".json");
+    // Téléchargement direct, comme le Studio.
+    var file = new Blob([JSON.stringify(data, null, 4)], {type: "application/json"}), a = document.createElement("a"), url = URL.createObjectURL(file);
+    a.href = url; a.download = Application + "-Skelos-" + new Date().getTime() + ".json";
+    document.body.appendChild(a); a.click();
+    setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
 };
 S.openImport = function() {
-    S._xferData = null;
+    S._xferData = null; S._xferKind = S.xferKind();
     Nav.dialog(t("xfer_import"),
         "<div class='importcards printcards sk-xfer'>"
             + "<h1>" + e(t("xfer_import_hint")) + "</h1>"
@@ -1620,27 +1635,27 @@ S._importFile = function(input) {
         reader.onload = function(ev) {
             var o; S._xferData = null;
             try { o = JSON.parse(ev.target.result); } catch (x) { out.innerHTML = "<p class='hint'>" + e(t("xfer_import_error")) + "</p>"; return; }
-            var scs = (o && Array.isArray(o.scenarios)) ? o.scenarios : [], camps = (o && Array.isArray(o.campaigns)) ? o.campaigns : [];
-            if (!scs.length && !camps.length) { out.innerHTML = "<p class='hint'>" + e(t("xfer_import_empty")) + "</p>"; return; }
+            var kind = S._xferKind;
+            var scs = kind == "sc" && o && Array.isArray(o.scenarios) ? o.scenarios : [], camps = kind == "camp" && o && Array.isArray(o.campaigns) ? o.campaigns : [];
+            if (!scs.length && !camps.length) { out.innerHTML = "<p class='hint'>" + e(t("xfer_import_empty_" + kind)) + "</p>"; return; }
             S._xferData = {scenarios: scs, campaigns: camps};
             var hasSc = {}, hasC = {};
             S.scenarioList().forEach(function(x) { hasSc[x.sid] = 1; });
             S.campaigns().forEach(function(x) { hasC[x.id] = 1; });
-            out.innerHTML = "<h2>" + e(t("scenarios")) + "</h2>" + (scs.length ? S.xferCardsCode("sc", scs, function(x) { return x.sid && hasSc[x.sid]; }) : "<p>" + e(t("xfer_import_none")) + "</p>")
-                + "<h2>" + e(t("campaigns")) + "</h2>" + (camps.length ? S.xferCardsCode("camp", camps, function(x) { return x.id && hasC[x.id]; }) : "<p>" + e(t("xfer_import_none")) + "</p>");
+            out.innerHTML = kind == "sc" ? S.xferCardsCode("sc", scs, function(x) { return x.sid && hasSc[x.sid]; })
+                : S.xferCardsCode("camp", camps, function(x) { return x.id && hasC[x.id]; });
         };
         reader.readAsText(input.files[0]);
     }
     input.value = "";
 };
-// Exporter et Importer n'ont pas de sens sur l'onglet Partie : les actions du haut y sont masquées.
-var placeTabsXfer = S.placeTabs;
-S.placeTabs = function() {
-    placeTabsXfer.apply(S, arguments);
-    var tab = S.screen == "game" && S.editing ? (S.editing.cid ? "campaigns" : "scenarios") : TAB_OF[S.screen];
-    var onGame = tab == "home" || S.screen == "game" && !S.editing || S.screen == "end";
-    ["skelos-export", "skelos-import"].forEach(function(id) { if (window.Nav && Nav.hideAction) Nav[onGame ? "hideAction" : "showAction"]("skelos", id); });
+// Exporter et Importer ne s'affichent qu'à l'accueil des onglets Scénarios et Campagnes.
+S.syncXferActions = function() {
+    var on = (S.screen == "scenarios" || S.screen == "campaigns") && !S.editing;
+    ["skelos-export", "skelos-import"].forEach(function(id) { if (window.Nav && Nav.hideAction) Nav[on ? "showAction" : "hideAction"]("skelos", id); });
 };
+var placeTabsXfer = S.placeTabs;
+S.placeTabs = function() { placeTabsXfer.apply(S, arguments); S.syncXferActions(); };
 S._import = function() {
     var d = S._xferData, scs = S._xferChecked("sc"), camps = S._xferChecked("camp");
     if (!d || (!scs.length && !camps.length)) { S.xferWarn(t("xfer_import_nothing")); return; }
@@ -1709,18 +1724,13 @@ S.companyCode = function(c) {
 S.openHeroPicker = function(cid) {
     var c = S.campaign(cid), pr = S.prefs(), sel = [], free = S.companyFree(c);
     var have = {}; (c.heroes || []).forEach(function(h) { if (!h.dead) have[S.norm(h.name)] = true; });
-    if (pr.heroBox == null) pr.heroBox = "";
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-hpickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("hero_picker_title")) + "</h2>"
         + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-addsel disabled>" + e(t("add_selection", 0)) + "</button>"
         + "<button class='sk-btn' data-pclose>" + e(t("close")) + "</button></div></div>"
-        + "<div class='sk-filters'><input type='search' id='sk-hq' placeholder='" + e(t("search_hero")) + "' value='" + e(pr.heroQ || "") + "'><select id='sk-hbox'></select></div>"
+        + "<div class='sk-filters'><input type='search' id='sk-hq' placeholder='" + e(t("search_hero")) + "' value='" + e(pr.heroQ || "") + "'>" + S.scopeCode() + "</div>"
         + "<div class='sk-pickstatus' id='sk-hst' role='status'></div><div class='sk-picker sk-hpicker' id='sk-hg'></div></div>";
     ov.classList.add("on");
-    var owned = S.ownedBoxes(), boxes = owned.length ? S.allBoxes().filter(function(k) { return owned.indexOf(k) >= 0; }) : S.allBoxes();
-    if (pr.heroBox && boxes.indexOf(pr.heroBox) < 0) pr.heroBox = "";
-    ov.querySelector("#sk-hbox").innerHTML = "<option value=''>" + e(t(owned.length ? "all_my_boxes" : "all_boxes")) + "</option>"
-        + boxes.map(function(k) { return "<option value='" + k + "'" + (k == pr.heroBox ? " selected" : "") + ">" + e(S.boxName(k)) + "</option>"; }).join("");
     var cat = S.heroCatalog(), byRef = {}; cat.forEach(function(x) { byRef[x.ref] = x; });
     var status = function() {
         ov.querySelector("#sk-hst").innerHTML = "<div>" + e(t("hero_selection_count", sel.length, free)) + "</div><div class='sk-selchips'>" + sel.map(function(r, i) {
@@ -1735,10 +1745,10 @@ S.openHeroPicker = function(cid) {
         });
     };
     var draw = function() {
-        pr.heroQ = ov.querySelector("#sk-hq").value; pr.heroBox = ov.querySelector("#sk-hbox").value; S.savePrefs();
-        var q = S.norm(pr.heroQ), bx = pr.heroBox;
+        pr.heroQ = ov.querySelector("#sk-hq").value; S.savePrefs();
+        var q = S.norm(pr.heroQ);
         var out = cat.filter(function(x) {
-            if (bx ? x.origins.indexOf(bx) < 0 : owned.length && !x.origins.some(function(o) { return owned.indexOf(o) >= 0; })) return false;
+            if (!S.inScope(x.origins)) return false;
             return !q || S.norm(x.name + " " + x.sub).indexOf(q) >= 0;
         }).map(function(x) {
             var inco = have[S.norm(x.name)];
@@ -1754,7 +1764,7 @@ S.openHeroPicker = function(cid) {
     };
     var close = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; };
     ov.querySelector("#sk-hq").addEventListener("input", draw);
-    ov.querySelector("#sk-hbox").addEventListener("change", draw);
+    S.bindScope(ov, draw);
     ov.onclick = function(ev) {
         if (ev.target === ov || ev.target.closest("[data-pclose]")) { close(); return; }
         var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
