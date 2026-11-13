@@ -450,5 +450,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'confirm_delete_play': "Delete this game from the scenario history?",
     'delete_play': "Delete the game",
     'last_counts': "Last game: this is the one that counts in the total",
-    'play_scenario': "Scenario"
+    'play_scenario': "Scenario",
+    'clog_move': "{0}: {1} → {2}",
+    'start_item_of': "Starting equipment of {0}"
 });

@@ -1405,6 +1405,58 @@ S.bindThreadDrag = function(cid) {
     box.addEventListener("pointercancel", clean);
 };
 
+// ---------- Glisser-déposer des objets : cache → héros, héros → héros, héros → cache ----------
+S.bindItemDrag = function(cid) {
+    var box = S.root.querySelector(".sk-campaign"); if (!box) return;
+    var drag = null;
+    var targetAt = function(x, y) { var el = document.elementFromPoint(x, y); return el ? el.closest("[data-drophero], [data-drop='cache']") : null; };
+    var clean = function() {
+        if (!drag) return;
+        if (drag.ghost) drag.ghost.remove();
+        drag.chip.classList.remove("sk-dragging");
+        box.querySelectorAll(".sk-dropon").forEach(function(x) { x.classList.remove("sk-dropon"); });
+        document.documentElement.classList.remove("sk-itemdrag");
+        drag = null;
+    };
+    box.addEventListener("pointerdown", function(ev) {
+        if (drag || (ev.pointerType == "mouse" && ev.button != 0)) return;
+        var chip = ev.target.closest(".sk-chip[data-item]"); if (!chip) return;
+        drag = {chip: chip, item: chip.dataset.item, id: ev.pointerId, x: ev.clientX, y: ev.clientY, on: false};
+    });
+    box.addEventListener("pointermove", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) {
+            if (Math.abs(ev.clientX - drag.x) < 6 && Math.abs(ev.clientY - drag.y) < 6) return;
+            drag.on = true; S.hideCardTip();
+            try { drag.chip.setPointerCapture(ev.pointerId); } catch (x) {}
+            var r = drag.chip.getBoundingClientRect();
+            drag.dx = drag.x - r.left; drag.dy = drag.y - r.top;
+            drag.ghost = drag.chip.cloneNode(true); drag.ghost.classList.add("sk-dragghost"); drag.ghost.style.width = r.width + "px";
+            box.appendChild(drag.ghost);
+            drag.chip.classList.add("sk-dragging");
+            document.documentElement.classList.add("sk-itemdrag");
+        }
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.dx) + "px"; drag.ghost.style.top = (ev.clientY - drag.dy) + "px";
+        var tg = targetAt(ev.clientX, ev.clientY);
+        box.querySelectorAll(".sk-dropon").forEach(function(x) { if (x != tg) x.classList.remove("sk-dropon"); });
+        if (tg) tg.classList.add("sk-dropon");
+    });
+    box.addEventListener("pointerup", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) { drag = null; return; }
+        var tg = targetAt(ev.clientX, ev.clientY), item = drag.item; clean();
+        // Le clic qui suit le dépôt n'ouvre pas le menu de l'objet.
+        var stop = function(e2) { e2.stopPropagation(); e2.preventDefault(); };
+        window.addEventListener("click", stop, true); setTimeout(function() { window.removeEventListener("click", stop, true); }, 0);
+        if (!tg) return;
+        var owner = tg.dataset.drophero || null, moved = false;
+        S.updateCampaign(cid, function(x) { (x.cache || []).forEach(function(it) { if (it.uid == item) moved = S.setItemOwner(x, it, owner); }); });
+        if (moved) S.renderCampaign(cid);
+    });
+    box.addEventListener("pointercancel", clean);
+};
+
 // ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
 // On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
 var COMPANY_SIZE = 4;
@@ -1431,7 +1483,7 @@ S.heroSheetFull = function(ref) {
 S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
 S.heroSheetCode = function(c, hh) {
     var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; }), img = S.heroImage(hh);
-    return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' style='--hc:" + hh.color + "'>"
+    return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' data-drophero='" + hh.id + "' style='--hc:" + hh.color + "'>"
         + "<button class='sk-hsheet-p' data-cact='hero' data-hero='" + hh.id + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>"
         + (img ? "<img src='" + e(img) + "' alt='' loading='lazy'>" : "<span class='sk-hsheet-ini' aria-hidden='true'>" + e((hh.name || "?").charAt(0)) + "</span>") + "</button>"
         + "<div class='sk-hsheet-n'><b>" + e(hh.name) + "</b>" + (hh.sub ? "<small>" + e(hh.sub) + "</small>" : "") + "</div>"

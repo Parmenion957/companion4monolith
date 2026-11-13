@@ -246,13 +246,25 @@ S.renderCampaigns = function() {
 };
 
 S.heroColor = function(c, hid) { var hh = (c.heroes || []).filter(function(x) { return x.id == hid; })[0]; return hh ? hh.color : null; };
+// Changement de propriétaire d'un objet : l'objet de départ garde le héros d'origine, le journal note le transfert.
+S.setItemOwner = function(c, it, owner) {
+    owner = owner || null; if ((it.owner || null) == owner) return false;
+    if (it.start && !it.startHero && it.owner) it.startHero = it.owner;
+    var nm = function(id) { var h = id ? (c.heroes || []).filter(function(x) { return x.id == id; })[0] : null; return h ? h.name : t("common_cache"); };
+    S.campLog(c, t("clog_move", it.name, nm(it.owner), nm(owner)));
+    it.owner = owner; return true;
+};
+S.startLabel = function(c, it) {
+    var id = it.startHero || it.owner, h = id ? (c.heroes || []).filter(function(x) { return x.id == id; })[0] : null;
+    return h ? t("start_item_of", h.name) : t("start_item");
+};
 S.chipCode = function(c, it, opts) {
     opts = opts || {};
     var col = it.owner ? S.heroColor(c, it.owner) : null, hero = it.owner ? (c.heroes || []).filter(function(x) { return x.id == it.owner; })[0] : null;
     return "<button class='sk-chip sk-k-" + it.kind + "' data-card='" + it.kind + ":" + e(it.ref) + "'"
         + (opts.menu ? " data-act='itemmenu' data-cid='" + c.id + "' data-item='" + it.uid + "'" : "") + ">"
         + (hero && opts.initial !== false ? "<span class='sk-ini' style='--hc:" + col + "' title='" + e(hero.name) + "'>" + e(hero.name.charAt(0)) + "</span>" : "") + e(it.name)
-        + (it.start ? " <span class='sk-lock' title='" + e(t("start_item")) + "'>🔒</span>" : "") + "</button>";
+        + (it.start ? " <span class='sk-lock' title='" + e(S.startLabel(c, it)) + "'>🔒</span>" : "") + "</button>";
 };
 
 S.renderCampaign = function(cid) {
@@ -285,7 +297,7 @@ S.renderCampaign = function(cid) {
     h += "<div class='sk-blk sk-c3'><h3>" + t("company") + "</h3>" + S.companyCode(c) + "</div>";
     // Cache commune
     var cats = [["eq", "cat_eq"], ["sp", "cat_sp"], ["up", "cat_up"]];
-    h += "<div class='sk-blk sk-c2'><h3>" + t("common_cache") + "</h3><div class='sk-legend'><span><i class='sk-k-eq'></i>" + t("kind_eq") + "</span><span><i class='sk-k-sp'></i>" + t("kind_sp") + "</span><span><i class='sk-k-up'></i>" + t("kind_up") + "</span></div>";
+    h += "<div class='sk-blk sk-c2' data-drop='cache'><h3>" + t("common_cache") + "</h3><div class='sk-legend'><span><i class='sk-k-eq'></i>" + t("kind_eq") + "</span><span><i class='sk-k-sp'></i>" + t("kind_sp") + "</span><span><i class='sk-k-up'></i>" + t("kind_up") + "</span></div>";
     cats.forEach(function(k) {
         var items = (c.cache || []).filter(function(it) { return it.kind == k[0]; });
         h += "<div class='sk-cat'>" + t(k[1]) + "</div><div class='sk-chips'>" + (items.length ? items.map(function(it) { return S.chipCode(c, it, {menu: true}); }).join("") : "<span class='sk-empty-t'>—</span>") + "</div>";
@@ -294,6 +306,7 @@ S.renderCampaign = function(cid) {
     h += "<h3 class='sk-mt'>" + t("log") + "</h3><ol class='sk-clog'>" + (c.log || []).slice(0, 8).map(function(l) { return "<li>" + e(l.msg) + "</li>"; }).join("") + "</ol></div>";
     S.mount(shell("sk-campaign", h));
     if (S.bindThreadDrag) S.bindThreadDrag(c.id);
+    if (S.bindItemDrag) S.bindItemDrag(c.id);
     S.screenClick = function(ev) {
         var b = ev.target.closest("[data-cact], [data-act='heroassign'], [data-act='itemmenu']"); if (!b) return;
         if (b.dataset.act == "heroassign") { S.openAssign(c.id, b.dataset.hero); return; }
@@ -434,7 +447,7 @@ S.openAssign = function(cid, hid) {
         function(ev, close) {
             var g = ev.target.closest("[data-give]");
             if (g) {
-                S.updateCampaign(cid, function(x) { x.cache.forEach(function(it) { if (it.uid == g.dataset.give) it.owner = hid; }); });
+                S.updateCampaign(cid, function(x) { x.cache.forEach(function(it) { if (it.uid == g.dataset.give) S.setItemOwner(x, it, hid); }); });
                 g.remove(); S.toast(t("item_given", hh.name)); S.rerenderSoft = true; return;
             }
             if (ev.target.closest("[data-new]")) { close(); S.openItemPicker({title: t("assign_to", hh.name), onAdd: function(sel) { S.addItems(cid, sel, hid); S.rerender(); }}); }
@@ -452,11 +465,11 @@ S.openItemMenu = function(cid, iuid) {
         + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm>" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
             var o = ev.target.closest("[data-own]");
-            if (o) { S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) y.owner = o.dataset.own || null; }); }); close(); S.rerender(); return; }
+            if (o) { S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) S.setItemOwner(x, y, o.dataset.own); }); }); close(); S.rerender(); return; }
             if (ev.target.closest("[data-dup]")) { S.updateCampaign(cid, function(x) { x.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: null, start: false}); }); close(); S.rerender(); return; }
             if (ev.target.closest("[data-rm]")) { S.updateCampaign(cid, function(x) { x.cache = x.cache.filter(function(y) { return y.uid != iuid; }); }); close(); S.rerender(); }
         });
-    S.root.querySelector("#sk-st").addEventListener("change", function(ev) { var v = ev.target.checked; S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) y.start = v; }); }); });
+    S.root.querySelector("#sk-st").addEventListener("change", function(ev) { var v = ev.target.checked; S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) { y.start = v; y.startHero = v ? (y.startHero || y.owner || null) : null; } }); }); });
 };
 S.rerender = function() {
     if (S.screen == "campaign") S.renderCampaign(S.curCampaign);

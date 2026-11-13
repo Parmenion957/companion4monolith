@@ -1193,3 +1193,10 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-cardtip { position: fixed; z-index: 1000; width: 210px; pointer-events: none; display: none; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
 .sk-cardtip.on { display: block; }
 .sk-cardtip .sk-icard { width: 100%; margin: 0; }
+
+/* Glisser-déposer des objets entre la cache et les héros */
+.sk-campaign .sk-chip[data-item] { touch-action: none; cursor: grab; }
+.sk-chip.sk-dragging { opacity: .35; }
+.sk-dragghost { position: fixed; z-index: 1001; pointer-events: none; margin: 0; transform: rotate(-3deg); box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select: none; }
+.sk-hsheet.sk-dropon, .sk-blk.sk-dropon { outline: 3px dashed var(--highlight-color); outline-offset: -3px; }
