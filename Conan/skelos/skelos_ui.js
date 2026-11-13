@@ -187,7 +187,7 @@ S.bindGame = function() {
             case "turnsplus": S.adjustTurns(1); break;
             case "turnsminus": S.adjustTurns(-1); break;
             case "journal": S.openJournal(); break;
-            case "help": S.toast(t("coming_soon")); break;
+            case "help": S.openGameHelp(); break;
         }
     });
 };
@@ -1382,6 +1382,15 @@ S.openCampaignHelp = function() {
     var h = "<div class='sk-journal sk-help-doc'><h1>" + e(t("chelp_title")) + "</h1><p>" + e(t("chelp_intro")) + "</p>";
     ["head", "thread", "company", "cache", "end"].forEach(function(k) {
         h += "<h2>" + e(t("chelp_" + k)) + "</h2><ul>" + t("chelp_" + k + "_items").split("|").map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul>";
+    });
+    Nav.dialog(e(t("help")), h + "</div>", null, []);
+};
+// Aide de la partie : sections communes, plus celles du mode joué (Aventure ou Coop).
+S.openGameHelp = function() {
+    var solo = S.state && S.state.mode == "solo";
+    var h = "<div class='sk-journal sk-help-doc'><h1>" + e(t("ghelp_title")) + "</h1><p>" + e(t("ghelp_intro")) + "</p>";
+    ["board", solo ? "coop" : "adventure", "tiles"].concat(solo ? [] : ["gems"]).concat(["tools", "studio"]).forEach(function(k) {
+        h += "<h2>" + e(t("ghelp_" + k)) + "</h2><ul>" + t("ghelp_" + k + "_items").split("|").map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul>";
     });
     Nav.dialog(e(t("help")), h + "</div>", null, []);
 };
