@@ -623,10 +623,17 @@ var Skelos = {
         var st = Skelos.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
         var slot = st.river[i];
         Skelos.snapshot();
-        slot.dead = true;
-        if (st.mode == "classic") { st.river.splice(i, 1); st.river.push(slot); }
-        Skelos.log(Skelos.t("log_dead", Skelos.tileName(slot)));
+        Skelos.killSlot(slot);
+        if (slot.lpMax) slot.lp = 0;
         Skelos.save(); Skelos.renderGame();
+    },
+
+    // Tuile morte : en mode classique, elle passe en fin de Rivière.
+    killSlot: function(slot) {
+        var st = Skelos.state, i = st.river.indexOf(slot);
+        slot.dead = true;
+        if (st.mode == "classic" && i >= 0) { st.river.splice(i, 1); st.river.push(slot); }
+        Skelos.log(Skelos.t("log_dead", Skelos.tileName(slot)));
     },
 
     reinforce: function(uid) {
@@ -649,11 +656,19 @@ var Skelos = {
     },
 
     life: function(uid, delta) {
-        var slot = Skelos.slotByUid(uid);
+        var st = Skelos.state, slot = Skelos.slotByUid(uid); if (!slot) return;
+        var cur = slot.lp || 0, v = Math.max(0, Math.min(slot.lpMax || 99, cur + delta));
+        if (v == cur) return;
         Skelos.snapshot();
-        slot.lp = Math.max(0, Math.min(slot.lpMax || 99, (slot.lp || 0) + delta));
+        slot.lp = v;
+        // Suivi des PV dans le Journal : les appuis successifs sur la même tuile forment une seule ligne.
+        var last = st.log[0], name = Skelos.tileName(slot);
+        if (last && last.hp == uid && last.turn == st.turn) { last.msg = Skelos.t("log_hp", name, last.hpFrom, v); last.ts = Date.now(); }
+        else { Skelos.log(Skelos.t("log_hp", name, cur, v)); st.log[0].hp = uid; st.log[0].hpFrom = cur; }
+        // 0 PV : toutes les unités sont mortes ; revenir au-dessus de 0 réactive la tuile.
+        if (v == 0 && !slot.dead) Skelos.killSlot(slot);
+        else if (v > 0 && slot.dead) { slot.dead = false; Skelos.log(Skelos.t("log_reinforce", name)); }
         Skelos.save(); Skelos.renderGame();
-        if (slot.lp == 0 && delta < 0) Skelos.toast(Skelos.t("hp_zero", Skelos.tileName(slot)));
     },
 
     hpBadge: function(s) {
@@ -745,7 +760,7 @@ var Skelos = {
             if (s) {
                 h += "<div class='sk-tilebox" + (s.dead ? " dead" : "") + "' role='button' tabindex='0' data-act='select' data-uid='" + s.uid + "' aria-label='" + e(Skelos.tileName(s)) + "'>" + Skelos.tileCode(s)
                     + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-                    + (s.lpMax && !s.dead ? Skelos.hpBadge(s) : "") + "</div>";
+                    + (s.lpMax ? Skelos.hpBadge(s) : "") + "</div>";
             } else h += "<div class='sk-empty'></div>";
             h += "</div>";
         }

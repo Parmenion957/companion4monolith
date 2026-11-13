@@ -974,13 +974,10 @@ html.skelos-full nav.menu { display: none !important; }
 /* Cadre Tour : sablier et alarme ; appui long : − et + de part et d'autre */
 .sk-ppair { display: flex; width: 100%; justify-content: space-around; align-items: center; }
 .sk-ptok { position: relative; display: inline-flex; align-items: center; gap: 4px; }
-.sk-ptok [data-turnpress] { cursor: pointer; touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; border-radius: 50%; }
-.sk-ptok [data-turnpress]:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
 .sk-ptok .sk-pstep { display: none; position: absolute; top: 50%; margin-top: -20px; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
 .sk-ptok .sk-pstep:first-child { right: calc(100% + 6px); } .sk-ptok .sk-pstep:last-child { left: calc(100% + 6px); }
 .sk-ptok.editing .sk-pstep { display: grid; }
 .sk-ptok.editing { z-index: 3; }
-.sk-ptok.editing [data-turnpress] img { box-shadow: 0 0 0 3px var(--highlight-color); }
 .sk-a-tour.last { background: var(--pov); border-color: #7d1914; }
 .sk-a-tour.last .sk-ptitle { color: #fff; }
 .sk-a-tour.last .sk-tokimg b { background: #fff; color: var(--pov); }
@@ -1173,7 +1170,6 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 /* Bloc Tour en mode studio : − et + de part et d'autre de chaque jeton. */
 .sk-studio .sk-ptok { display: inline-flex; align-items: center; gap: 4px; }
 .sk-studio .sk-ptok .sk-pstep, .sk-studio .sk-ptok .sk-pstep:first-child, .sk-studio .sk-ptok .sk-pstep:last-child { position: relative; left: auto; right: auto; top: auto; margin: 0; width: 30px; height: 30px; display: grid; }
-.sk-studio .sk-ptok.editing [data-turnpress] img { box-shadow: none; }
 .sk-studio .sk-a-tour .sk-tokimg img { width: 56px; height: 56px; }
 
 /* Récupération en mode studio : jeton plus petit, − / + de la récupération puis du total de gemmes. */

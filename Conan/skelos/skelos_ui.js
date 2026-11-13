@@ -68,14 +68,14 @@ S.costToken = function(slot, i) {
 //             Jetons disponibles (1 à 3) · Héros en jeu (4-5) · Phase en cours (6-7) · Tour de l'Overlord (8)
 var title = function(k) { return "<div class='sk-ptitle'>" + e(t(k)) + "</div>"; };
 
-// Jeton du cadre Tour (sablier ou alarme) : appui long pour faire apparaître − et + de part et d'autre.
+// Jeton du cadre Tour (sablier ou alarme) : − et + de part et d'autre en mode studio seulement.
 S.turnTokenCode = function(kind) {
-    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = S._turnEdit == kind || !!S.studio;
+    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = !!S.studio;
     var minus = turn ? "turnminus" : "turnsminus", plus = turn ? "turnplus" : "turnsplus", tab = open ? 0 : -1;
     var label = turn ? t("turn") + " " + st.turn : (st.turns ? t("turn_limit") + " " + st.turns : t("turn_limit_none"));
     return "<span class='sk-ptok" + (open ? " editing" : "") + "' data-turnwrap='" + kind + "'>"
         + "<button class='sk-pstep' data-act='" + minus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_prev" : "aria_limit_minus")) + "'>−</button>"
-        + "<span class='sk-tokimg sk-tokround' data-turnpress='" + kind + "' role='button' tabindex='0' aria-label='" + e(label) + "' title='" + e(t(turn ? "turn_hint" : "turn_limit_hint")) + "'>"
+        + "<span class='sk-tokimg sk-tokround' data-turnkind='" + kind + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "'>"
         + "<img src='" + S.icon(turn ? "time" : "alarm") + "' alt=''><b>" + val + "</b></span>"
         + "<button class='sk-pstep' data-act='" + plus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_next" : "aria_limit_plus")) + "'>+</button></span>";
 };
@@ -169,38 +169,6 @@ S.adjustTurns = function(d) {
     st.turns = v; st.scenario.turns = v;
     S.save(); S.renderGame();
 };
-S.openTurnEdit = function(kind) {
-    S.closeTurnEdit();
-    S._turnEdit = kind;
-    var w = S.root.querySelector("[data-turnwrap='" + kind + "']");
-    if (w) { w.classList.add("editing"); w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = 0; }); }
-    if (navigator.vibrate) navigator.vibrate(20);
-};
-S.closeTurnEdit = function() {
-    S._turnEdit = null;
-    if (!S.root) return;
-    S.root.querySelectorAll(".sk-ptok.editing").forEach(function(w) { w.classList.remove("editing"); w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = -1; }); });
-};
-S.bindTurnPress = function(root) {
-    var timer = null, sx = 0, sy = 0;
-    root.addEventListener("pointerdown", function(ev) {
-        if (ev.pointerType == "mouse" && ev.button != 0) return;
-        var el = ev.target.closest("[data-turnpress]"); if (!el) return;
-        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
-        timer = setTimeout(function() { timer = null; S._suppressClick = true; S.openTurnEdit(el.dataset.turnpress); }, 450);
-    });
-    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; } });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); timer = null; }); });
-    root.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-turnpress]")) ev.preventDefault(); });
-    // Un appui ailleurs referme les boutons − et +.
-    root.addEventListener("click", function(ev) { if (S._turnEdit && !ev.target.closest(".sk-ptok.editing")) S.closeTurnEdit(); }, true);
-    root.addEventListener("keydown", function(ev) {
-        if (ev.key == "Escape" && S._turnEdit) { S.closeTurnEdit(); return; }
-        var el = ev.target.closest && ev.target.closest("[data-turnpress]");
-        if (el && (ev.key == "Enter" || ev.key == " ")) { ev.preventDefault(); S.openTurnEdit(el.dataset.turnpress); var b = S.root.querySelector("[data-turnwrap='" + el.dataset.turnpress + "'] .sk-pstep"); if (b) b.focus(); }
-    });
-};
-
 // Boutons propres au nouveau panneau.
 var origBindGame = S.bindGame;
 S.bindGame = function() {
@@ -221,7 +189,6 @@ var origRenderGame = S.renderGame;
 S.renderGame = function() {
     origRenderGame.apply(S, arguments);
     var st = S.state, r = S.root;
-    if (S._turnEdit) S.openTurnEdit(S._turnEdit);
     r.querySelectorAll(".sk-token").forEach(function(tk) {
         var n = parseInt(tk.textContent, 10); if (!n) return;
         tk.innerHTML = S.rankToken(n); tk.classList.add("sk-tokenimg");
@@ -556,7 +523,7 @@ S.socleName = function(c) { return (typeof Tile != "undefined" && Tile._i18n && 
 
 S.toggleStudio = function(on) {
     S.studio = on == null ? !S.studio : !!on;
-    S.closeTurnEdit(); S.closeHp(); S.selected = null;
+    S.closeHp(); S.selected = null;
     S.renderGame();
 };
 
@@ -658,12 +625,18 @@ S.bindGame = function() {
     });
 };
 
+var origRenderEndLog = S.renderEnd;
+S.renderEnd = function(keep) {
+    if (!keep && S.state && S.screen == "game") { S.log(t("log_end")); S.save(); }
+    return origRenderEndLog.apply(S, arguments);
+};
 S.restartGame = function() {
     S.ask(t("confirm_restart"), t("restart_game"), function() {
-        var camp = S.state.campaign;
+        var camp = S.state.campaign, oldLog = S.state.log.slice();
         S.draft = S.scenarioFromState(); S.live = false;
         S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
         S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
+        if (S.state) { S.state.log = S.state.log.concat(oldLog).slice(0, 500); S.log(t("log_restart")); S.save(); S.renderGame(); }
     });
 };
 S.studioLife = function(uid, d) {
@@ -776,9 +749,11 @@ S.openSaveScenario = function() {
 S.saveScenarioFromDialog = function() {
     var title = (document.getElementById("sk-savetitle").value || "").trim();
     if (!title) { document.getElementById("sk-savemsg").textContent = t("title_required"); document.getElementById("sk-savetitle").focus(); return; }
-    var st = S.state;
+    var st = S.state, before = st.scenario.title || "";
     st.scenario.title = title;
     st.scenario.notes = document.getElementById("sk-savenotes").value;
+    if (before != title) S.log(before ? t("log_title", before, title) : t("log_title_new", title));
+    S.log(t("log_saved", title));
     S.save();
     S.saveScenarioCopy(S.scenarioFromState());
     Nav.closeDialog();
@@ -958,7 +933,6 @@ var origInit = S.init;
 S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
-    S.bindTurnPress(root);
     S.bindStudioDrag(root);
     S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.

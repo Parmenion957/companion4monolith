@@ -464,5 +464,11 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'gems_total_title': "Total gemmes",
     'journal_actions': "Actions de la partie",
     'journal_turn': "Tour {0} :",
-    'journal_empty': "Aucune action pour l’instant."
+    'journal_empty': "Aucune action pour l’instant.",
+    'log_hp': "{0} : PV {1} → {2}",
+    'log_restart': "Partie recommencée",
+    'log_end': "Fin de partie",
+    'log_saved': "Enregistré comme scénario : {0}",
+    'log_title': "Titre modifié : {0} → {1}",
+    'log_title_new': "Titre : {0}"
 });
