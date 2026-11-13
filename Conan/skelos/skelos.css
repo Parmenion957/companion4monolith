@@ -381,7 +381,7 @@
 .sk-bgprev { aspect-ratio: 1.6; border-radius: 8px; border: 1px dashed rgba(226,196,138,.45); background-color: rgba(0,0,0,.3); display: grid; place-items: center; color: rgba(239,227,210,.6); background-repeat: no-repeat; }
 .sk-filebtn { align-self: flex-start; cursor: pointer; display: inline-flex; align-items: center; }
 .sk-endform { max-width: 820px; margin: 0 auto; width: 100%; }
-.sk-vpbig { font-family: 'Motrg', serif; font-size: 1.7rem; font-weight: normal; color: #f6ead8; min-width: 48px; text-align: center; }
+.sk-vpbig { font-family: 'Motrg', serif; font-size: 1.7rem; font-weight: normal; color: var(--body-color); min-width: 48px; text-align: center; }
 .sk-lootrow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(176,136,79,.2); }
 .sk-lootrow .sk-chip { justify-self: start; cursor: default; }
 /* Préparation : bandeau, gemmes et curseur de répartition */
@@ -1279,3 +1279,24 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 /* Sélecteurs plein écran (tuiles, héros, objets) : la barre du Compagnon ne recouvre plus la dernière ligne */
 html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdlg) nav.menu { display: none !important; }
 .sk-overlay .sk-pickdlg { padding-bottom: calc(var(--sk-bottom, 0px) + 32px) !important; }
+
+/* Modifier la cache : en-tête de la sélection avec « Vider », puces verrouillées de l'équipement de départ, pastille du porteur. */
+.sk-selhead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sk-selhead .sk-clear { min-height: 32px; padding: 2px 12px; }
+.sk-selchips .sk-chip.sk-locked { opacity: .6; cursor: default; }
+.sk-selchips .sk-chip.sk-locked .fa-lock { font-size: 11px; }
+.sk-chip-own { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+/* Fin du scénario : l'en-tête occupe toute la largeur (le titre n'est plus réduit à sa première lettre) et le formulaire se lit à la table. */
+.sk-dialogscreen .sk-g8 > .sk-dlghead { grid-column: 1 / -1; width: auto; margin-left: -16px !important; margin-right: -16px !important; }
+.sk-board .sk-endform { color: var(--body-color) !important; font-size: 16px !important; padding: 16px 20px !important; }
+.sk-board .sk-endform > .sk-help:first-child { font-size: 18px !important; font-weight: bold; color: var(--main-color) !important; margin: 0 0 4px; }
+.sk-board .sk-endform .sk-fl { display: block; font-size: 16px !important; font-weight: bold; color: var(--body-color) !important; margin: 16px 0 8px; }
+.sk-board .sk-endform label.sk-fl .sk-in { display: block; margin-top: 8px; font-weight: normal; }
+.sk-board .sk-endform .sk-in { font-size: 16px !important; background: var(--body-bg-color) !important; color: var(--body-color) !important; border: 1px solid var(--sk-line, rgba(128,128,128,.5)) !important; }
+.sk-board .sk-endform .sk-seg button { font-size: 16px !important; padding: 8px 18px !important; }
+.sk-board .sk-endform .sk-chips .sk-chip, .sk-board .sk-endform .sk-lootrow .sk-chip { font-size: 16px !important; padding: 6px 14px !important; }
+.sk-board .sk-endform .sk-row { align-items: center; flex-wrap: wrap; gap: 10px; }
+.sk-board .sk-endform .sk-row .sk-help { font-size: 15px !important; color: var(--body-color) !important; opacity: .8; flex: 1 1 220px; margin: 0; }
+.sk-board .sk-endform .sk-vpbig { color: var(--body-color) !important; }
+.sk-board .sk-endform .sk-actions { margin-top: 22px; flex-wrap: wrap; }
