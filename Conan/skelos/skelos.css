@@ -949,3 +949,48 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 
 /* Mode studio : le bouton du tour de l'Overlord est bloqué */
 .sk-turnbtn:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+
+/* ---------- Étape 6 — Onglet Scénarios ---------- */
+/* Place libre sous la liste : le bouton flottant ne cache jamais la dernière carte. */
+.sk-slist { margin-bottom: 96px; }
+.sk-sbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px; }
+.sk-ssearch, .sk-ssearch::placeholder { font-size: 25px !important; font-family: 'Secondary', sans-serif !important; }
+.sk-ssearch { flex: 1 1 260px; min-height: 48px; font-size: 22px !important; background: var(--body-bg-color) !important; color: var(--body-color) !important; border: 1px solid var(--main-color) !important; border-radius: 6px; padding: 0 14px !important; height: 48px; line-height: 48px; box-sizing: border-box; }
+.sk-sseg button { font-family: 'Primary', serif !important; font-size: 17px !important; min-height: 44px; padding: 6px 16px !important; border-radius: 22px !important; }
+.sk-slist { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.sk-scard { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: 8px; background: var(--sk-card, rgba(128,128,128,.12)); color: var(--body-color); box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.sk-scard-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sk-scard h3 { margin: 0; flex: 1 1 auto; font-family: 'Primary', serif; font-weight: normal; font-size: 23px; line-height: 1.2; color: var(--main-color); }
+.sk-sbadge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 16px; font-size: 19px; line-height: 1.1; font-family: 'Secondary', sans-serif; border: 1px solid var(--main-color); color: var(--main-color); white-space: nowrap; }
+.sk-sbadge i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 13px; }
+.sk-sbadge.running { background: var(--highlight-color); border-color: var(--highlight-color); color: #fff; }
+.sk-sinfo { margin: 2px 0 0; font-size: 23px; line-height: 1.25; font-family: 'Secondary', sans-serif; color: var(--body-color); }
+.sk-sdates { margin: 0; font-size: 20px; line-height: 1.2; font-family: 'Secondary', sans-serif; color: var(--body-color); opacity: .85; }
+.sk-sriver { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 6px 0 4px; }
+.sk-sslot { position: relative; aspect-ratio: 3 / 4; border-radius: 4px; overflow: visible; background: rgba(128,128,128,.18); }
+.sk-sslot img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
+.sk-sslot.dead img { filter: grayscale(1); opacity: .55; }
+.sk-sslot .sk-srank { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); width: 22px; height: 22px; padding: 1px; }
+.sk-scard-acts { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.sk-scard-acts .sk-btn { min-height: 42px; font-size: 16px; }
+.sk-scard-sp { flex: 1; }
+.sk-scact { width: 42px; height: 42px; font-size: 17px; }
+.sk-snone { font-size: 24px; font-family: 'Secondary', sans-serif; color: var(--body-color); text-align: center; margin: 30px 0; }
+.sk-sempty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 30px 16px; text-align: center; font-family: 'Primary', serif; font-size: 20px; color: var(--body-color); }
+.sk-sempty p { margin: 0; line-height: 1.5; }
+.sk-pelemele { position: relative; width: 340px; max-width: 90%; height: 190px; opacity: .55; filter: saturate(.55); -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+.sk-pelemele img { position: absolute; top: 20px; width: 112px; height: 150px; object-fit: cover; border-radius: 6px; border: 3px solid #f4efe6; box-shadow: 0 3px 8px rgba(0,0,0,.35); }
+.sk-pelemele .p0 { left: 0; transform: rotate(-16deg); top: 34px; }
+.sk-pelemele .p1 { left: 52px; transform: rotate(-7deg); top: 14px; }
+.sk-pelemele .p4 { left: 228px; transform: rotate(15deg); top: 34px; }
+.sk-pelemele .p3 { left: 176px; transform: rotate(7deg); top: 14px; }
+.sk-pelemele .p2 { left: 114px; transform: rotate(0deg); top: 4px; z-index: 2; }
+/* Bouton flottant : celui du Compagnon, au-dessus de la barre des modules. */
+ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bottom: calc(var(--sk-bottom, 0px) + 21px); }
+.sk-floatbar a.sk-fabadd::before { content: "+"; font-family: Arial, sans-serif; }
+@media (max-width: 600px) {
+    .sk-slist { grid-template-columns: 1fr; }
+    .sk-sseg { flex: 1 1 100%; }
+    .sk-sseg button { flex: 1; }
+    .sk-scard h3 { font-size: 20px; }
+}
