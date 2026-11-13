@@ -14,7 +14,7 @@ var store = function(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); r
 var today = function() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); };
 var fmtDate = function(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length == 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; };
 var shell = function(cls, inner) {
-    return "<div class='skelos-game sk-screen " + (cls || "") + "'><div class='sk-board'" + S.boardBgStyle() + "><div class='sk-g8'>" + inner + "</div></div></div>"
+    return "<div class='skelos-game sk-screen " + (cls || "") + "'><div class='sk-board'><div class='sk-g8'>" + inner + "</div></div></div>"
         + "<div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
 };
 var head = function(back, title, extra) {
@@ -604,7 +604,10 @@ S.renderEncyclopedia = function() {
 S.bg = function() { return load(KEY_BG, null); };
 S.boardBgStyle = function() {
     var b = S.bg(); if (!b || !b.img) return "";
-    return " style=\"background-image:url('" + b.img + "');background-size:" + (b.zoom || 100) + "% auto;background-position:" + (b.x == null ? 50 : b.x) + "% " + (b.y == null ? 50 : b.y) + "%;background-repeat:no-repeat\"";
+    return " data-bg style=\"--sk-bgimg:url('" + b.img + "');" + S.bgVars(b) + "\"";
+};
+S.bgVars = function(b) {
+    return "--sk-bgzoom:" + Math.max(100, b.zoom || 100) / 100 + ";--sk-bgpos:" + (b.x == null ? 50 : b.x) + "% " + (b.y == null ? 50 : b.y) + "%";
 };
 S.applyDisplayPrefs = function() {
     var pr = S.prefs();
@@ -621,7 +624,7 @@ S.renderSettings = function() {
     h += "<div class='sk-blk sk-c3'><h3>" + t("background") + "</h3><p>" + t("background_help") + "</p>"
         + "<div class='sk-bgprev'" + S.boardBgStyle() + ">" + (b.img ? "" : "<span>" + t("no_background") + "</span>") + "</div>"
         + "<label class='sk-btn sk-filebtn'>" + t("choose_photo") + "<input type='file' accept='image/*' id='sk-bgfile' hidden></label>"
-        + (b.img ? "<label class='sk-fl'>" + t("zoom") + " <output id='sk-zo'>" + (b.zoom || 100) + " %</output><input type='range' min='50' max='300' value='" + (b.zoom || 100) + "' data-bg='zoom'></label>"
+        + (b.img ? "<label class='sk-fl'>" + t("zoom") + " <output id='sk-zo'>" + Math.max(100, b.zoom || 100) + " %</output><input type='range' min='100' max='300' value='" + Math.max(100, b.zoom || 100) + "' data-bg='zoom'></label>"
             + "<label class='sk-fl'>" + t("offset_x") + "<input type='range' min='0' max='100' value='" + (b.x == null ? 50 : b.x) + "' data-bg='x'></label>"
             + "<label class='sk-fl'>" + t("offset_y") + "<input type='range' min='0' max='100' value='" + (b.y == null ? 50 : b.y) + "' data-bg='y'></label>"
             + "<button class='sk-btn' data-bgrm>" + t("remove_background") + "</button>" : "") + "</div>";
@@ -642,7 +645,7 @@ S.renderSettings = function() {
     scr.addEventListener("input", function(ev) {
         var x = ev.target; if (!x.dataset.bg) return;
         var bb = S.bg() || {}; bb[x.dataset.bg] = +x.value;
-        var pv = scr.querySelector(".sk-bgprev"); pv.style.backgroundSize = (bb.zoom || 100) + "% auto"; pv.style.backgroundPosition = (bb.x == null ? 50 : bb.x) + "% " + (bb.y == null ? 50 : bb.y) + "%";
+        var pv = scr.querySelector(".sk-bgprev"); S.bgVars(bb).split(";").forEach(function(d) { var kv = d.split(":"); pv.style.setProperty(kv[0], kv[1]); });
         if (x.dataset.bg == "zoom") scr.querySelector("#sk-zo").textContent = x.value + " %";
     });
     S.screenClick = function(ev) {
