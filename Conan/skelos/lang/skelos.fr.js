@@ -43,14 +43,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'all_modes': "Tous",
     'keyword': "Mot-clé",
     'no_upgrade': "Aucune amélioration : crée la première avec le bouton +.",
-    'custom_icons': "Icônes personnalisées",
-    'custom_icons_help': "Remplace les icônes du mouvement, de la défense active et de la relance par tes propres images. Elles restent uniquement sur cet appareil.",
-    'icon_move': "Mouvement",
-    'icon_defense': "Défense active",
-    'icon_reroll': "Relance",
-    'icon_custom': "(personnalisée)",
-    'choose_image': "Choisir une image",
-    'reset_icon': "Icône d’origine",
     'exit_fullscreen': "Quitter le plein écran",
     'theme_toggle': "Thème clair ou sombre",
     'fullscreen': "Plein écran",
@@ -431,5 +423,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'studio_locked': "Éditeur de scénario : le mode studio reste actif. Pour jouer, lancez le scénario depuis la liste.",
     'confirm_leave_editor': "Quitter l’éditeur sans enregistrer les modifications du scénario ?",
     'leave_editor_yes': "Quitter sans enregistrer",
-    'confirm_delete_official': "Retirer le scénario officiel « {0} » de votre Compagnon ?"
+    'confirm_delete_official': "Retirer le scénario officiel « {0} » de votre Compagnon ?",
+    'hp_shared': "PV partagés avec la même tuile de même couleur"
 });

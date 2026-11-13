@@ -43,14 +43,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'all_modes': "All",
     'keyword': "Keyword",
     'no_upgrade': "No improvement yet: create the first one with the + button.",
-    'custom_icons': "Custom icons",
-    'custom_icons_help': "Replace the movement, active defense and reroll icons with your own images. They stay on this device only.",
-    'icon_move': "Movement",
-    'icon_defense': "Active defense",
-    'icon_reroll': "Reroll",
-    'icon_custom': "(custom)",
-    'choose_image': "Choose an image",
-    'reset_icon': "Original icon",
     'exit_fullscreen': "Exit full screen",
     'theme_toggle': "Light or dark theme",
     'fullscreen': "Full screen",
@@ -418,5 +410,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'studio_locked': "Scenario editor: studio mode stays on. To play, launch the scenario from the list.",
     'confirm_leave_editor': "Leave the editor without saving the scenario changes?",
     'leave_editor_yes': "Leave without saving",
-    'confirm_delete_official': "Remove the official scenario “{0}” from your Companion?"
+    'confirm_delete_official': "Remove the official scenario “{0}” from your Companion?",
+    'hp_shared': "Life points shared with the same tile of the same colour"
 });

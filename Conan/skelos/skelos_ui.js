@@ -3,27 +3,26 @@
 // il utilise celles déjà chargées par le Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell).
 //
 // Interface à la charte du Compagnon : jetons du jeu, commandes au-dessus des tuiles 6 à 8, étapes du tour,
-// onglets, boîtes de dialogue plein écran, boutons − et +, descriptions des tuiles Événement, icônes personnalisées.
+// onglets, boîtes de dialogue plein écran, boutons − et +, descriptions des tuiles Événement, icônes du module.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
-var KEY_ICONS = Application + "_SkelosIcons";
 
 // ---------- Icônes et jetons ----------
-// Images du Compagnon par défaut ; l'utilisateur peut charger les siennes, gardées sur son appareil.
+// Images du Compagnon, sauf mouvement, relance et défense active : créations originales du module (img/).
 S.ICON_DEFAULTS = {
-    move: "studio/tile/img/movement.webp",
-    defense: "studio/hero_sheet/img/d_defense.webp",
-    reroll: "resources/img/dice_red_reroll.webp",
+    // Mouvement, relance et défense active : icônes originales du module (créées par l'utilisateur).
+    move: "skelos/img/icone_mouvement.webp",
+    defense: "skelos/img/icone_defense.webp",
+    reroll: "skelos/img/icone_relance.webp",
     spell: "data/skills/img/magic/spell_caster.webp",
     gem: "resources/img/gem_red.webp",
     time: "data/tokens/img/time.webp",
     alarm: "data/tokens/img/alarm.webp",
     tokenback: "data/tokens/img/marker.webp"
 };
-S.CUSTOMIZABLE = ["move", "defense", "reroll"];
-S.customIcons = function() { try { return JSON.parse(localStorage.getItem(KEY_ICONS)) || {}; } catch (x) { return {}; } };
-S.saveCustomIcons = function(o) { try { localStorage.setItem(KEY_ICONS, JSON.stringify(o)); return true; } catch (x) { S.toast(t("storage_full")); return false; } };
-S.icon = function(k) { var c = S.customIcons(); return c[k] || S.asset(S.ICON_DEFAULTS[k]); };
+S.icon = function(k) { return S.asset(S.ICON_DEFAULTS[k]); };
+// Les anciennes icônes personnalisées (mouvement, relance, défense active) sont remplacées par celles du module.
+try { localStorage.removeItem(Application + "_SkelosIcons"); } catch (x) {}
 S.marker = function(n) { return S.asset("data/tokens/img/marker-" + Math.max(1, Math.min(13, n)) + ".webp"); };
 
 S.gems = function(n, cls) {
@@ -581,35 +580,6 @@ S.renderSettings = function() {
     scr.classList.add("sk-dialogscreen");
     var hb = scr.querySelector(".sk-headblk");
     if (hb) hb.outerHTML = "<div class='sk-dlghead'><button class='sk-dlgback' data-nav='home' title='" + e(t("close")) + "' aria-label='" + e(t("close")) + "'>&#xf060;</button><h1>" + t("settings") + "</h1></div>";
-    var c = S.customIcons();
-    var h = "<div class='sk-blk sk-c8 sk-iconset'><h3>" + t("custom_icons") + "</h3><p>" + t("custom_icons_help") + "</p><div class='sk-iconrows'>"
-        + S.CUSTOMIZABLE.map(function(k) {
-            return "<div class='sk-iconrow'><img src='" + S.icon(k) + "' alt=''><span>" + t("icon_" + k) + (c[k] ? " <small>" + t("icon_custom") + "</small>" : "") + "</span>"
-                + "<label class='sk-btn sk-filebtn'>" + t("choose_image") + "<input type='file' accept='image/*' data-iconfile='" + k + "' hidden></label>"
-                + (c[k] ? "<button class='sk-btn' data-iconreset='" + k + "'>" + t("reset_icon") + "</button>" : "") + "</div>";
-        }).join("") + "</div></div>";
-    scr.querySelector(".sk-g8").insertAdjacentHTML("beforeend", h);
-    scr.addEventListener("change", function(ev) {
-        var x = ev.target; if (!x.dataset.iconfile || !x.files || !x.files[0]) return;
-        var k = x.dataset.iconfile, rd = new FileReader();
-        rd.onload = function() {
-            var img = new Image();
-            img.onload = function() {
-                var max = 128, sc = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement("canvas");
-                cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
-                cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-                var o = S.customIcons(); o[k] = cv.toDataURL("image/png");
-                if (S.saveCustomIcons(o)) S.renderSettings();
-            };
-            img.onerror = function() { S.toast(t("image_error")); };
-            img.src = rd.result;
-        };
-        rd.readAsDataURL(x.files[0]);
-    });
-    scr.addEventListener("click", function(ev) {
-        var b = ev.target.closest("[data-iconreset]"); if (!b) return;
-        var o = S.customIcons(); delete o[b.dataset.iconreset]; S.saveCustomIcons(o); S.renderSettings();
-    });
     S.syncDialogMode();
 };
 // La fin de scénario prend aussi l'allure d'un dialogue du Compagnon.
@@ -708,8 +678,8 @@ S.placeTabs = function() {
 
 // Points de vie en mode studio : les − et + fixent les PV de la tuile (ils deviennent aussi son maximum).
 S.studioHpCode = function(s) {
-    var tile = S.tileOf(s), reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), lp = s.lp || 0;
-    return "<span class='sk-hpwrap open sk-studiohp" + (reinf ? " withreinf" : "") + "'>"
+    var tile = S.tileOf(s), reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), lp = s.lp || 0, shared = S.hpGroup(s).length > 1;
+    return "<span class='sk-hpwrap open sk-studiohp" + (reinf ? " withreinf" : "") + (shared ? " shared" : "") + "'" + (shared ? " title='" + e(t("hp_shared")) + "'" : "") + ">"
         + "<button class='sk-hpbtn' data-act='studiolp' data-uid='" + s.uid + "' data-n='-1' aria-label='" + e(t("aria_hp_minus")) + "'>−</button>"
         + "<span class='sk-hp" + (lp <= 0 ? " zero" : "") + "' aria-label='" + e(t("life_points") + " " + lp) + "'>" + HEART + "<b>" + lp + "</b></span>"
         + "<button class='sk-hpbtn' data-act='studiolp' data-uid='" + s.uid + "' data-n='1' aria-label='" + e(t("aria_hp_plus")) + "'>+</button></span>";
@@ -808,13 +778,14 @@ S.studioLife = function(uid, d) {
     var v = Math.max(0, Math.min(40, (s.lp || 0) + d));
     if (v == (s.lp || 0)) return;
     S.snapshot();
-    s.lp = v || null; s.lpMax = v || null;
+    S.hpGroup(s).forEach(function(g) { g.lp = v || null; g.lpMax = v || null; });
     commit();
 };
 S.nextSocle = function(uid) {
     var s = S.slotByUid(uid), socles = S.socles(S.tileOf(s)); if (socles.length < 2) return;
     S.snapshot();
     s.color = socles[(socles.indexOf(s.color) + 1) % socles.length];
+    S.adoptSharedHp(s);
     commit();
 };
 S.studioGem = function(d) {
@@ -1151,7 +1122,7 @@ S.reinforce = function(uid) {
     if (st.energy < cost) { S.toast(t("not_enough", cost, st.energy)); return; }
     S.snapshot();
     st.energy -= cost; st.fatigue += cost;
-    s.dead = false; if (s.lpMax) s.lp = s.lpMax;
+    S.hpGroup(s).forEach(function(g) { g.dead = false; if (g.lpMax) g.lp = g.lpMax; });
     S.log(t(cost == 1 ? "log_reinforce_cost_1" : "log_reinforce_cost", S.tileName(s), cost));
     S.save(); S.renderGame();
 };
@@ -1178,4 +1149,26 @@ S.init = function(root) {
         inp.dispatchEvent(new Event("change", {bubbles: true}));
     }, true);
 };
+
+// ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------
+// La plus grande taille qui tient dans chaque case est cherchée, puis la plus petite de ces tailles est appliquée
+// partout. Recalculé à chaque rendu, au changement de taille de l'écran et quand la police du jeu a chargé.
+S.fitPhase = function() {
+    var r = S.root; if (!r) return;
+    var lis = Array.prototype.slice.call(r.querySelectorAll(".sk-a-phase li")); if (!lis.length) return;
+    var best = lis.map(function(li) {
+        var sp = li.lastElementChild;
+        var fits = function(px) { sp.style.fontSize = px + "px"; return li.scrollHeight <= li.clientHeight + 1 && sp.scrollWidth <= sp.clientWidth + 1; };
+        var lo = 7, hi = 44;
+        while (hi - lo > 0.5) { var mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
+        return Math.floor(lo * 2) / 2;
+    });
+    var px = Math.min.apply(Math, best);
+    lis.forEach(function(li) { li.lastElementChild.style.fontSize = px + "px"; });
+};
+var fitRenderGame = S.renderGame;
+S.renderGame = function() { fitRenderGame.apply(S, arguments); S.fitPhase(); };
+var fitTimer = null;
+window.addEventListener("resize", function() { clearTimeout(fitTimer); fitTimer = setTimeout(S.fitPhase, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { S.fitPhase(); });
 })();
