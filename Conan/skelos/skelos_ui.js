@@ -985,6 +985,84 @@ S.bindStudioDrag = function(root) {
     // Le glisser natif des images (souris) annulerait le nôtre.
     root.addEventListener("dragstart", function(ev) { if (S.studio && ev.target.closest(".sk-river")) ev.preventDefault(); });
 };
+// Mode Aventure, en partie : glisser une tuile au bout de la Rivière l'active, exactement comme la gemme rouge
+// (mêmes contrôles, mêmes gemmes payées, même journal). La tuile se soulève pendant le glisser et se repose
+// à sa nouvelle place, ou revient à l'ancienne si l'activation est refusée. Indépendant du réglage Animations.
+S.bindActivateDrag = function(root) {
+    var drag = null;
+    var allowed = function() { return S.screen == "game" && !S.studio && S.state && S.state.mode != "solo"; };
+    var slots = function() { return [].slice.call(root.querySelectorAll(".sk-river > .sk-slot")); };
+    var clean = function(keep) {
+        if (!drag) return;
+        if (!keep) drag.box.classList.remove("sk-dragging");
+        root.querySelectorAll(".sk-dropend").forEach(function(x) { x.classList.remove("sk-dropend"); });
+        drag = null;
+    };
+    // Bout de la Rivière : la case de la dernière tuile, une case vide après elle, ou à droite de la dernière tuile.
+    var atEnd = function(x, y) {
+        var all = slots(), n = S.state.river.length, last = all[n - 1]; if (!last) return null;
+        var el = document.elementFromPoint(x, y), slot = el && el.closest(".sk-river > .sk-slot");
+        if (slot && all.indexOf(slot) >= n - 1) return last;
+        var rc = last.getBoundingClientRect();
+        return x > rc.right && y > rc.top - rc.height * .25 && y < rc.bottom + rc.height * .25 ? last : null;
+    };
+    // La tuile soulevée se pose sur le rectangle d'arrivée, puis disparaît.
+    var settle = function(ghost, rc, done) {
+        ghost.classList.add("sk-settling");
+        ghost.style.left = rc.left + "px"; ghost.style.top = rc.top + "px"; ghost.style.width = rc.width + "px";
+        var end = function() { if (!ghost.parentNode) return; ghost.remove(); if (done) done(); };
+        ghost.addEventListener("transitionend", end); setTimeout(end, 320);
+    };
+    root.addEventListener("pointerdown", function(ev) {
+        if (!allowed() || drag) return;
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        var box = ev.target.closest(".sk-river .sk-tilebox[data-uid]");
+        if (!box || ev.target.closest("button, .sk-hpwrap, [data-hp], [data-skill]")) return;
+        drag = {box: box, uid: box.dataset.uid, x: ev.clientX, y: ev.clientY, id: ev.pointerId, on: false};
+    });
+    root.addEventListener("pointermove", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) {
+            if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) < 10) return;
+            drag.on = true;
+            var rc = drag.box.getBoundingClientRect();
+            drag.from = rc; drag.dx = drag.x - rc.left; drag.dy = drag.y - rc.top;
+            drag.ghost = drag.box.cloneNode(true);
+            drag.ghost.className = "sk-tilebox sk-ghost sk-lifted"; drag.ghost.removeAttribute("data-act"); drag.ghost.removeAttribute("tabindex");
+            drag.ghost.style.width = rc.width + "px";
+            document.body.appendChild(drag.ghost);
+            drag.box.classList.add("sk-dragging");
+            try { drag.box.setPointerCapture(ev.pointerId); } catch (x) {}
+            S.hideTip(); S.closeHp();
+        }
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.dx) + "px"; drag.ghost.style.top = (ev.clientY - drag.dy) + "px";
+        root.querySelectorAll(".sk-dropend").forEach(function(x) { x.classList.remove("sk-dropend"); });
+        var end = atEnd(ev.clientX, ev.clientY); if (end) end.classList.add("sk-dropend");
+        if (ev.clientY < 70) root.scrollTop -= 12; else if (ev.clientY > window.innerHeight - 70) root.scrollTop += 12;
+    });
+    root.addEventListener("pointerup", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) { drag = null; return; }
+        var uid = drag.uid, ghost = drag.ghost, from = drag.from, src = drag.box, end = atEnd(ev.clientX, ev.clientY);
+        clean(true);
+        S._suppressClick = true; setTimeout(function() { S._suppressClick = false; }, 60);
+        var why = end ? S.canActivate(S.slotByUid(uid)) : null;
+        if (!end || why) {
+            if (why) S.toast(why);
+            settle(ghost, from, function() { src.classList.remove("sk-dragging"); });
+            return;
+        }
+        // La vraie tuile est masquée le temps que la tuile soulevée la rejoigne au bout de la Rivière.
+        S.activate(uid);
+        var box = root.querySelector(".sk-river .sk-tilebox[data-uid='" + uid + "']");
+        if (!box) { ghost.remove(); return; }
+        box.classList.add("sk-dragging");
+        settle(ghost, box.getBoundingClientRect(), function() { box.classList.remove("sk-dragging"); });
+    });
+    root.addEventListener("pointercancel", function() { if (drag && drag.ghost) drag.ghost.remove(); clean(); });
+    root.addEventListener("dragstart", function(ev) { if (allowed() && ev.target.closest(".sk-river")) ev.preventDefault(); });
+};
 S.studioMove = function(uid, to) {
     var st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
     to = Math.min(to, st.river.length - 1);
@@ -1157,6 +1235,7 @@ S.init = function(root) {
     S.bindCardTips(root);
     S.applyItemColors(); S.fixAllHeroColors();
     S.bindStudioDrag(root);
+    S.bindActivateDrag(root);
     S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
     root.addEventListener("click", function(ev) {
