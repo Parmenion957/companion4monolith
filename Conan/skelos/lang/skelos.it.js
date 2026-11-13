@@ -485,7 +485,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'chelp_head': "Header",
     'chelp_head_items': "Tap the campaign name to change it.|The dots recall the result of each scenario of the thread (green: victory, red: defeat).|The big number is the total of victory points: only the last game of each scenario counts.|The book opens the campaign log; the bin deletes the campaign.",
     'chelp_thread': "Scenario thread",
-    'chelp_thread_items': "Add the scenarios in the order you will play them; drag them by the handle to change the order.|Choose starts a game of the scenario, even one already played: each game adds a date.|Tap a date to see the details of that game: turn reached, result, points, fallen heroes.",
+    'chelp_thread_items': "Add the scenarios in the order you will play them; drag them by the handle to change the order.|Launch starts a game of the scenario, even one already played: each game adds a date.|Prepare opens the scenario's Book of Skelos to edit it before playing: River, gems, special rules.|Choose replaces the scenario in this slot with another one: a new one, or a copy of one of your scenarios.|Tap a date to see the details of that game: turn reached, result, points, fallen heroes; that is also where you delete it.|A scenario can only be deleted (✕) once all its games have been deleted.",
     'chelp_company': "Company",
     'chelp_company_items': "Up to four living heroes, chosen from the Companion encyclopedia.|Each hero has a colour, which marks the items they carry in the cache.|A dead hero stays visible but frees their place.",
     'chelp_cache': "Shared cache",
