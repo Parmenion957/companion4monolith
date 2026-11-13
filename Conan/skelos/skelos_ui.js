@@ -223,6 +223,7 @@ S.renderGame = function() {
         if (old && old.querySelector("h3") && old.querySelector("h3").textContent == t("scenario_events")) old.outerHTML = card;
         else if (side) side.insertAdjacentHTML("afterbegin", card);
     }
+    S.placeTabs();
     S.syncFullscreenButton();
 };
 S.eventTexts = function() {
@@ -326,55 +327,48 @@ S.readForm = function() {
 };
 
 // ---------- Onglets ----------
-var TABS = [["home", "tab_partie"], ["campaigns", "tab_campaigns"], ["scenarios", "tab_scenarios"], ["upgrades", "tab_upgrades"]];
-var TAB_OF = {home: "home", free: "home", campaigns: "campaigns", campaign: "campaigns", scenarios: "scenarios", upgrades: "upgrades"};
+// Toujours visibles (plateau compris, même en plein écran), dessinés comme ceux des autres modules du Compagnon.
+var TABS = [["home", "tab_partie"], ["scenarios", "tab_scenarios"], ["campaigns", "tab_campaigns"]];
+var TAB_OF = {home: "home", game: "home", free: "home", scenarios: "scenarios", campaigns: "campaigns", campaign: "campaigns"};
 S.tabsCode = function(active) {
-    return "<nav class='sk-tabs' role='tablist'>" + TABS.map(function(x) {
+    return "<nav class='sk-tabs' role='tablist' style='--sk-ntabs:" + TABS.length + "'>" + TABS.map(function(x) {
         return "<button role='tab' class='sk-tabbtn" + (x[0] == active ? " on" : "") + "' aria-selected='" + (x[0] == active) + "' data-nav='" + x[0] + "'>" + t(x[1]) + "</button>";
     }).join("") + "</nav>";
+};
+// Pose la barre d'onglets en tête du module, hors de l'écran qui défile.
+S.placeTabs = function() {
+    if (!S.root) return;
+    var old = S.root.querySelector(":scope > .sk-tabs"); if (old) old.remove();
+    var tab = TAB_OF[S.screen]; if (!tab) return;
+    S.root.insertAdjacentHTML("afterbegin", S.tabsCode(tab));
+    var scr = S.root.querySelector(".sk-screen, .skelos-game"); if (scr) scr.classList.add("sk-tabbed");
 };
 var origMount = S.mount;
 S.mount = function(html) {
     origMount.call(S, html);
-    var tab = TAB_OF[S.screen], scr = S.root.querySelector(".sk-screen");
-    if (tab && scr) {
-        scr.classList.add("sk-tabbed");
+    var scr = S.root.querySelector(".sk-screen");
+    if (TAB_OF[S.screen] && scr) {
         var hb = scr.querySelector(".sk-headblk [data-nav='home']");
         if (hb) { var blk = hb.closest(".sk-headblk"); if (blk.querySelectorAll("*").length <= 3) blk.remove(); else hb.remove(); }
-        scr.insertAdjacentHTML("afterbegin", S.tabsCode(tab));
     }
+    S.placeTabs();
     S.syncFullscreenButton();
 };
 var origNav = S.navClick;
 S.navClick = function(ev) {
     var n = ev.target.closest("[data-nav]");
-    if (n && n.dataset.nav == "home") { S._forceTabs = false; S.renderHome(); return; }
+    if (n && n.dataset.nav == "home") { S.renderHome(); return; }
     if (n && n.dataset.nav == "scenarios") { S.renderScenarios(); return; }
-    if (n && n.dataset.nav == "upgrades") { S.renderUpgrades(); return; }
     var f = ev.target.closest("[data-fab]");
     if (f) { if (f.dataset.fab == "scenario") { S.ctx = null; S.live = false; S.draft = S.blankScenario(); S.renderSetup(); } else S.openUpgradeEditor(null, function() { S.renderUpgrades(); }); return; }
     origNav.call(S, ev);
 };
-// Onglet Partie : le plateau s'il y a une partie, sinon le lancement d'une partie.
+// Onglet Partie : directement le plateau ; sans partie en cours, une partie vide aux valeurs par défaut.
 S.renderHome = function() {
     S.live = false; S.ctx = null;
-    if (S.state && !S._forceTabs) { S.renderGame(); return; }
-    S.renderFree();
-    if (S.state) {
-        var st = S.state, g = S.root.querySelector(".sk-g8");
-        g.insertAdjacentHTML("afterbegin", "<div class='sk-blk sk-resume sk-c8'><h3>" + t("resume_game") + "</h3><p>" + e((st.scenario.title || t("tab")) + " · " + t("turn") + " " + st.turn) + "</p>"
-            + "<button class='sk-btn sk-primary sk-go' data-nav='game'>" + t("resume_short") + "</button></div>");
-    }
-};
-var origMenu = S.openGameMenu;
-S.openGameMenu = function() {
-    origMenu.apply(S, arguments);
-    var ov = S.root.querySelector("#sk-overlay"), prev = ov.onclick;
-    ov.onclick = function(ev) {
-        var b = ev.target.closest("[data-m]");
-        if (b && b.dataset.m == "home") { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; S._forceTabs = true; S.renderHome(); return; }
-        prev(ev);
-    };
+    if (S.state) { S.renderGame(); return; }
+    S.draft = S.blankScenario();
+    S.startGame("blank");
 };
 
 // Onglet Scénarios.
@@ -386,7 +380,7 @@ S.renderScenarios = function() {
             return "<button data-smode='" + m[0] + "' class='" + ((pr.scenMode || "") == m[0] ? "sk-on" : "") + "' aria-pressed='" + ((pr.scenMode || "") == m[0]) + "'>" + t(m[1]) + "</button>"; }).join("") + "</div></div><div id='sk-slist'></div></div>";
     h += "<button class='sk-fab' data-fab='scenario' title='" + e(t("new_scenario")) + "' aria-label='" + e(t("new_scenario")) + "'>&#xf067;</button>";
     origMount.call(S, "<div class='skelos-game sk-screen sk-scen'><div class='sk-board'><div class='sk-g8'>" + h + "</div></div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
-    var scr = S.root.querySelector(".sk-screen"); scr.classList.add("sk-tabbed"); scr.insertAdjacentHTML("afterbegin", S.tabsCode("scenarios"));
+    S.placeTabs();
     var draw = function() {
         var q = S.norm(pr.scenQ || ""), m = pr.scenMode || "";
         S.root.querySelector("#sk-slist").innerHTML = list.map(function(sc, i) {
@@ -407,7 +401,7 @@ S.renderScenarios = function() {
         if (b.dataset.sc == "edit") { S.draft = JSON.parse(JSON.stringify(list[i])); S.renderSetup(); }
         else if (b.dataset.sc == "play") {
             var go = function() { S.clearGame(); S.ctx = null; S.live = false; S.draft = JSON.parse(JSON.stringify(list[i])); S.startGame(true); };
-            if (S.state) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
+            if (S.state && S.state.river.length) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
         }
         else if (b.dataset.sc == "del") S.ask(t("confirm_delete"), t("delete"), function() { var l = S.scenarios(); l.splice(i, 1); S.saveScenarios(l); S.renderScenarios(); });
     };
@@ -544,6 +538,11 @@ S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
     S.bindTurnPress(root);
+    // Onglets : hors de l'écran, ils ont leur propre écoute.
+    root.addEventListener("click", function(ev) {
+        var b = ev.target.closest(".sk-tabs [data-nav]"); if (!b) return;
+        ev.stopPropagation(); S.navClick(ev);
+    });
     // Boutons − et + : modifient le champ et préviennent le formulaire.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest("[data-step]"); if (!b) return;

@@ -554,9 +554,10 @@ var Skelos = {
     startGame: function(force) {
         Skelos._hpOpen = null;
         var d = Skelos.draft;
-        if (!d.river.length) { Skelos.toast(Skelos.t("river_help")); return; }
+        // « blank » : partie vide par défaut ouverte par l'onglet Partie (Rivière sans tuile).
+        if (!d.river.length && force !== "blank") { Skelos.toast(Skelos.t("river_help")); return; }
         var saved = Skelos.loadSaved();
-        if (!force && saved && saved.river) {
+        if (!force && saved && saved.river && saved.river.length) {
             Skelos.ask(Skelos.t("confirm_new"), Skelos.t("confirm_new_yes"), function() { Skelos.startGame(true); });
             return;
         }
