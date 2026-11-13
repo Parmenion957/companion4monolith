@@ -1059,3 +1059,5 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
 .sk-bgprev span { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); font-family: 'Primary', serif; font-size: 1.1rem; }
 /* Même marge de 12 px des quatre côtés entre la tablette et ses creux (l'ancienne règle des onglets annulait celle du haut) */
 #skelos .skelos-game:not(.sk-screen) > .sk-board { padding: 12px !important; }
+/* Plein écran : la tablette descend jusqu'en bas de l'écran (sans défilement) */
+html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: border-box; min-height: calc(100dvh - var(--sk-boardtop, 50px) - 12px); }
