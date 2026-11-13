@@ -7,6 +7,7 @@
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 var KEY_CAMP = Application + "_SkelosCampaigns", KEY_UP = Application + "_SkelosUpgrades", KEY_BG = Application + "_SkelosBackground";
 var HERO_COLORS = ["#e0a43a", "#3fb6a8", "#a58be0", "#e06a5a", "#7fbf6a", "#d98bd0", "#6aa8e0"];
+S.HERO_COLORS = HERO_COLORS;
 var ARCHETYPES = ["guerrier", "voleur", "sorcier", "mercenaire"];
 var uid = function(p) { return (p || "x") + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
 var load = function(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (x) { return d; } };
@@ -238,16 +239,8 @@ S.renderCampaign = function(cid) {
         h += "</div>";
     });
     h += "</div><button class='sk-btn sk-addrow' data-cact='addsc'>+ " + t("add_scenario") + "</button></div>";
-    // Compagnie
-    h += "<div class='sk-blk sk-c3'><h3>" + t("company") + "</h3>";
-    (c.heroes || []).forEach(function(hh) {
-        var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; });
-        h += "<div class='sk-hero" + (hh.dead ? " dead" : "") + "' style='--hc:" + hh.color + "'><div class='sk-hero-h'><button class='sk-hero-n' data-cact='hero' data-hero='" + hh.id + "'>" + e(hh.name) + "</button>"
-            + (hh.archetype ? "<span class='sk-arch'>" + e(hh.archetype) + "</span>" : "") + (hh.dead ? "<span class='sk-st loss'>" + e(t("fell_at", hh.deadAt || "?")) + "</span>" : "") + "</div>"
-            + "<div class='sk-chips'>" + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false}); }).join("")
-            + "<button class='sk-chip sk-chipadd' data-act='heroassign' data-cid='" + c.id + "' data-hero='" + hh.id + "'>+ " + t("assign") + "</button></div></div>";
-    });
-    h += "<button class='sk-btn sk-addrow' data-cact='addhero'>+ " + t("add_hero") + "</button></div>";
+    // Compagnie : quatre fiches de héros
+    h += "<div class='sk-blk sk-c3'><h3>" + t("company") + "</h3>" + S.companyCode(c) + "</div>";
     // Cache commune
     var cats = [["eq", "cat_eq"], ["sp", "cat_sp"], ["up", "cat_up"]];
     h += "<div class='sk-blk sk-c2'><h3>" + t("common_cache") + "</h3><div class='sk-legend'><span><i class='sk-k-eq'></i>" + t("kind_eq") + "</span><span><i class='sk-k-sp'></i>" + t("kind_sp") + "</span><span><i class='sk-k-up'></i>" + t("kind_up") + "</span></div>";
@@ -272,7 +265,7 @@ S.renderCampaign = function(cid) {
             case "launch": S.launchCampaignScenario(c.id, i); break;
             case "date": S.editField(t("edit_date"), "date", c.scenarios[i].date || today(), function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].date = v; }); S.renderCampaign(c.id); }); break;
             case "vp": S.editField(t("edit_vp"), "number", c.scenarios[i].vp || 0, function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].vp = parseInt(v, 10) || 0; }); S.renderCampaign(c.id); }); break;
-            case "addhero": S.openHeroEditor(c.id, null); break;
+            case "addhero": S.openHeroPicker(c.id); break;
             case "hero": S.openHeroEditor(c.id, b.dataset.hero); break;
             case "addcache": S.openItemPicker({title: t("add_to_cache"), onAdd: function(sel) { S.addItems(c.id, sel, null); S.renderCampaign(c.id); }}); break;
         }

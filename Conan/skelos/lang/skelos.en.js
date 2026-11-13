@@ -435,5 +435,12 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'saved_in_campaign': "Scenario saved in the campaign",
     'saved_campaign_and_mine': "Scenario saved in the campaign and in my scenarios",
     'mode_locked': "The mode is set by the campaign.",
-    'move_scenario': "Move the scenario (drag)"
+    'move_scenario': "Move the scenario (drag)",
+    'hero_picker_title': "Choose the heroes",
+    'search_hero': "Search a hero",
+    'hero_selection_count': "{0} hero(es) selected, {1} free place(s) in the company. Tap a hero to choose them, again to remove them.",
+    'company_full': "The company already has {0} heroes.",
+    'in_company': "Already in the company",
+    'no_hero_found': "No hero matches.",
+    'hero_equipment': "Equipment"
 });

@@ -1116,3 +1116,39 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-thread .sk-sc.sk-dropafter { box-shadow: inset 0 -3px 0 var(--highlight-color); }
 .sk-savealso { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
 .sk-overlay .sk-cpickdlg .sk-fl, .sk-overlay .sk-cpickdlg p { font-family: 'Secondary', sans-serif; font-size: 21px; margin: 6px 0; color: var(--body-color); }
+
+/* Compagnie : quatre fiches de héros et sélecteur multiple */
+.sk-company { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sk-hsheet { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; padding: 0 0 8px; border-radius: 10px; overflow: hidden;
+    background: var(--body-bg-color); color: var(--body-color); border: 1px solid var(--sk-line, rgba(128,128,128,.35)); border-top: 5px solid var(--hc); box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.sk-hsheet-p { display: grid; place-items: end center; height: 170px; padding: 6px 0 0; border: 0; cursor: pointer;
+    background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--hc) 30%, transparent), transparent 70%); }
+.sk-hsheet-p { overflow: hidden; }
+.sk-hsheet-p img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: 50% 100%; display: block; }
+.sk-hsheet-ini { font-family: 'Primary', serif; font-size: 64px; color: var(--hc); align-self: center; }
+.sk-hsheet-n { padding: 0 10px; text-align: center; line-height: 1.15; }
+.sk-hsheet-n b { display: block; font-family: 'Primary', serif; font-weight: normal; font-size: 20px; color: var(--main-color); overflow-wrap: anywhere; }
+.sk-hsheet-n small { display: block; font-size: 15px; color: var(--body-color); opacity: .8; }
+.sk-hsheet .sk-st { align-self: center; }
+.sk-hsheet-eq { margin: 0 8px; padding-top: 6px; border-top: 1px dashed var(--sk-line, rgba(128,128,128,.4)); }
+.sk-hsheet-t { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--body-color); opacity: .75; margin-bottom: 4px; }
+.sk-hsheet.dead .sk-hsheet-p img { filter: grayscale(1); opacity: .5; }
+.sk-hsheet-empty { align-items: center; justify-content: center; min-height: 260px; border: 2px dashed var(--main-color); border-top-width: 2px; background: none; box-shadow: none;
+    color: var(--main-color); cursor: pointer; font: inherit; opacity: .75; }
+.sk-hsheet-empty:hover, .sk-hsheet-empty:focus-visible { opacity: 1; border-color: var(--highlight-color); color: var(--highlight-color); outline: none; }
+.sk-hsheet-empty span { font-size: 44px; line-height: 1; }
+.sk-hsheet-empty small { font-family: 'Primary', serif; font-size: 16px; }
+.sk-hpicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
+.sk-hpick { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px 8px; border-radius: 8px;
+    border: 2px solid transparent; background: var(--sk-card, rgba(128,128,128,.12)); color: var(--body-color); cursor: pointer; font: inherit; }
+.sk-hpick:hover, .sk-hpick:focus-visible { border-color: var(--highlight-color); outline: none; }
+.sk-hpick.picked { border-color: var(--highlight-color); }
+.sk-hpick-i { height: 130px; width: 100%; display: grid; place-items: end center; }
+.sk-hpick-i { overflow: hidden; }
+.sk-hpick-i img { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: 50% 100%; display: block; }
+.sk-hpick-n { text-align: center; line-height: 1.1; }
+.sk-hpick-n b { display: block; font-family: 'Primary', serif; font-weight: normal; font-size: 16px; color: var(--main-color); }
+.sk-hpick-n small { display: block; font-size: 13px; }
+.sk-hpick.sk-inco { opacity: .45; cursor: default; }
+.sk-hpick .sk-pickbadge { position: absolute; top: 4px; right: 4px; }
+@media (max-width: 700px) { .sk-hsheet-p { height: 130px; } .sk-hpicker { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } .sk-hpick-i { height: 100px; } }

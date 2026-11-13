@@ -1404,6 +1404,112 @@ S.bindThreadDrag = function(cid) {
     box.addEventListener("pointercancel", clean);
 };
 
+// ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
+// On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
+var COMPANY_SIZE = 4;
+var plain = function(s) { return String(s || "").replace(/<[^>]+>/g, "").trim(); };
+S.heroCatalog = function() {
+    return ((Encyclopedia.heroes && Encyclopedia.heroes.list) || []).map(function(x) {
+        return {ref: x.id, name: plain(x.name), sub: plain(x.subname), image: x.image || "", origins: x.origins || []};
+    }).filter(function(x) { return x.name; }).sort(function(a, b) { return (a.name + " " + a.sub).localeCompare(b.name + " " + b.sub, "fr"); });
+};
+// Image d'un héros : celle retenue au choix, sinon celle d'un héros de l'encyclopédie du même nom (anciens héros saisis à la main).
+S.heroImage = function(hh) {
+    if (hh.image) return hh.image;
+    var n = S.norm(hh.name || ""), x = S.heroCatalog().filter(function(k) { return S.norm(k.name) == n; })[0];
+    return x ? x.image : "";
+};
+S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
+S.heroSheetCode = function(c, hh) {
+    var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; }), img = S.heroImage(hh);
+    return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' style='--hc:" + hh.color + "'>"
+        + "<button class='sk-hsheet-p' data-cact='hero' data-hero='" + hh.id + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>"
+        + (img ? "<img src='" + e(img) + "' alt='' loading='lazy'>" : "<span class='sk-hsheet-ini' aria-hidden='true'>" + e((hh.name || "?").charAt(0)) + "</span>") + "</button>"
+        + "<div class='sk-hsheet-n'><b>" + e(hh.name) + "</b>" + (hh.sub ? "<small>" + e(hh.sub) + "</small>" : "") + "</div>"
+        + (hh.dead ? "<span class='sk-st loss'>" + e(t("fell_at", hh.deadAt || "?")) + "</span>" : "")
+        + "<div class='sk-hsheet-eq'><div class='sk-hsheet-t'>" + e(t("hero_equipment")) + "</div><div class='sk-chips'>"
+        + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false}); }).join("")
+        + "<button class='sk-chip sk-chipadd' data-act='heroassign' data-cid='" + c.id + "' data-hero='" + hh.id + "'>+ " + e(t("assign")) + "</button></div></div></div>";
+};
+S.companyCode = function(c) {
+    var h = "<div class='sk-company'>" + (c.heroes || []).map(function(hh) { return S.heroSheetCode(c, hh); }).join("");
+    for (var i = S.companyFree(c); i > 0; i--) h += "<button class='sk-hsheet sk-hsheet-empty' data-cact='addhero'><span aria-hidden='true'>+</span><small>" + e(t("add_hero")) + "</small></button>";
+    return h + "</div>";
+};
+// Sélection multiple des héros, sur le modèle du choix des tuiles : on touche, l'ordre s'affiche, on ajoute la sélection.
+S.openHeroPicker = function(cid) {
+    var c = S.campaign(cid), pr = S.prefs(), sel = [], free = S.companyFree(c);
+    var have = {}; (c.heroes || []).forEach(function(h) { if (!h.dead) have[S.norm(h.name)] = true; });
+    if (pr.heroBox == null) pr.heroBox = "";
+    var ov = S.root.querySelector("#sk-overlay");
+    ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-hpickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("hero_picker_title")) + "</h2>"
+        + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-addsel disabled>" + e(t("add_selection", 0)) + "</button>"
+        + "<button class='sk-btn' data-pclose>" + e(t("close")) + "</button></div></div>"
+        + "<div class='sk-filters'><input type='search' id='sk-hq' placeholder='" + e(t("search_hero")) + "' value='" + e(pr.heroQ || "") + "'><select id='sk-hbox'></select></div>"
+        + "<div class='sk-pickstatus' id='sk-hst' role='status'></div><div class='sk-picker sk-hpicker' id='sk-hg'></div></div>";
+    ov.classList.add("on");
+    var owned = S.ownedBoxes(), boxes = owned.length ? S.allBoxes().filter(function(k) { return owned.indexOf(k) >= 0; }) : S.allBoxes();
+    if (pr.heroBox && boxes.indexOf(pr.heroBox) < 0) pr.heroBox = "";
+    ov.querySelector("#sk-hbox").innerHTML = "<option value=''>" + e(t(owned.length ? "all_my_boxes" : "all_boxes")) + "</option>"
+        + boxes.map(function(k) { return "<option value='" + k + "'" + (k == pr.heroBox ? " selected" : "") + ">" + e(S.boxName(k)) + "</option>"; }).join("");
+    var cat = S.heroCatalog(), byRef = {}; cat.forEach(function(x) { byRef[x.ref] = x; });
+    var status = function() {
+        ov.querySelector("#sk-hst").innerHTML = "<div>" + e(t("hero_selection_count", sel.length, free)) + "</div><div class='sk-selchips'>" + sel.map(function(r, i) {
+            return "<button class='sk-chip' data-unsel='" + i + "' aria-label='" + e(t("unselect", byRef[r].name)) + "'><span class='sk-chip-n'>" + (i + 1) + "</span>" + e(byRef[r].name) + " <span aria-hidden='true'>✕</span></button>";
+        }).join("") + "</div>";
+        var a = ov.querySelector("[data-addsel]"); a.disabled = !sel.length; a.textContent = t("add_selection", sel.length);
+        ov.querySelectorAll(".sk-hpick[data-ref]").forEach(function(p) {
+            var k = sel.indexOf(p.dataset.ref), bd = p.querySelector(".sk-pickbadge");
+            if (k >= 0) { if (!bd) { bd = document.createElement("span"); bd.className = "sk-pickbadge"; p.appendChild(bd); } bd.textContent = k + 1; p.classList.add("picked"); }
+            else { if (bd) bd.remove(); p.classList.remove("picked"); }
+            p.setAttribute("aria-pressed", k >= 0);
+        });
+    };
+    var draw = function() {
+        pr.heroQ = ov.querySelector("#sk-hq").value; pr.heroBox = ov.querySelector("#sk-hbox").value; S.savePrefs();
+        var q = S.norm(pr.heroQ), bx = pr.heroBox;
+        var out = cat.filter(function(x) {
+            if (bx ? x.origins.indexOf(bx) < 0 : owned.length && !x.origins.some(function(o) { return owned.indexOf(o) >= 0; })) return false;
+            return !q || S.norm(x.name + " " + x.sub).indexOf(q) >= 0;
+        }).map(function(x) {
+            var inco = have[S.norm(x.name)];
+            return "<button class='sk-hpick" + (inco ? " sk-inco" : "") + "' data-ref='" + e(x.ref) + "'" + (inco ? " disabled title='" + e(t("in_company")) + "'" : "") + ">"
+                + "<span class='sk-hpick-i'>" + (x.image ? "<img src='" + e(x.image) + "' alt='' loading='lazy'>" : "") + "</span>"
+                + "<span class='sk-hpick-n'><b>" + e(x.name) + "</b>" + (x.sub ? "<small>" + e(x.sub) + "</small>" : "") + (inco ? "<small class='sk-inco-t'>" + e(t("in_company")) + "</small>" : "") + "</span></button>";
+        }).join("");
+        ov.querySelector("#sk-hg").innerHTML = out || "<p class='sk-help'>" + e(t("no_hero_found")) + "</p>";
+        status();
+    };
+    var close = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; };
+    ov.querySelector("#sk-hq").addEventListener("input", draw);
+    ov.querySelector("#sk-hbox").addEventListener("change", draw);
+    ov.onclick = function(ev) {
+        if (ev.target === ov || ev.target.closest("[data-pclose]")) { close(); return; }
+        var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
+        if (ev.target.closest("[data-addsel]")) {
+            var picked = sel.map(function(r) { return byRef[r]; });
+            S.updateCampaign(cid, function(x) {
+                x.heroes = x.heroes || [];
+                picked.forEach(function(k) {
+                    x.heroes.push({id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref: k.ref, name: k.name, sub: k.sub, image: k.image,
+                        color: S.HERO_COLORS[x.heroes.length % S.HERO_COLORS.length], dead: false});
+                    S.campLog(x, t("clog_hero", k.name));
+                });
+            });
+            close(); S.renderCampaign(cid); return;
+        }
+        var p = ev.target.closest(".sk-hpick[data-ref]"); if (!p || p.disabled) return;
+        var k = sel.indexOf(p.dataset.ref), nm = S.norm(byRef[p.dataset.ref].name);
+        var twin = sel.filter(function(r) { return S.norm(byRef[r].name) == nm; })[0];
+        if (k >= 0) sel.splice(k, 1);
+        else if (twin) { sel[sel.indexOf(twin)] = p.dataset.ref; }
+        else if (sel.length >= free) { S.toast(t("company_full", COMPANY_SIZE)); return; }
+        else { sel.push(p.dataset.ref); p.classList.remove("added"); void p.offsetWidth; p.classList.add("added"); }
+        status();
+    };
+    draw(); ov.querySelector("#sk-hq").focus();
+};
+
 // ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------
 // La plus grande taille qui tient dans chaque case est cherchée, puis la plus petite de ces tailles est appliquée
 // partout. Recalculé à chaque rendu, au changement de taille de l'écran et quand la police du jeu a chargé.
