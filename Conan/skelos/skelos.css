@@ -1245,3 +1245,7 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 .sk-jlist { list-style: none; margin: 0; padding: 0; }
 .sk-jlist li { padding: 6px 0; border-bottom: 1px solid rgba(128,128,128,.25); line-height: 1.35; }
 .sk-jtime { display: inline-block; min-width: 7.5em; margin-right: 8px; opacity: .7; font-size: .9em; }
+
+/* Cercles d'activation : pion de rang (Aventure) ou jeton tiré (Coop) */
+.sk-pacts .sk-actrank { padding: 2px; }
+.sk-pacts .sk-actmarker { border-radius: 50%; object-fit: contain; }

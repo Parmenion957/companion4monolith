@@ -40,9 +40,17 @@ S.token = function(kind, value, extra, cls) {
     if (kind == "recover") return "<span class='sk-recovtok'><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M19 12a7 7 0 1 1-2.05-4.95' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/><path d='M18.5 3.5v4.5H14' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg><b>" + value + "</b></span>";
     return "<span class='sk-recovtok'><b>" + value + "</b></span>";
 };
+// Cercles d'activation : le pion de rang payé (Aventure) ou le jeton tiré (Coop) prend la place d'un cercle vide.
 S.activationSlots = function(used, max) {
+    var st = S.state, solo = st && st.mode == "solo", marks = used ? ((st && st.actMarks) || []).slice(-used) : [];
     var h = "<span class='sk-actslots'>";
-    for (var i = 0; i < max; i++) h += i < used ? "<img class='sk-actgem' src='" + S.icon("gem") + "' alt=''>" : "<span class='sk-actempty'></span>";
+    for (var i = 0; i < max; i++) {
+        var n = i < used ? marks[i - (used - marks.length)] : null;
+        if (i >= used) h += "<span class='sk-actempty'></span>";
+        else if (!n) h += "<img class='sk-actgem' src='" + S.icon("gem") + "' alt=''>";
+        else if (solo) h += "<img class='sk-actgem sk-actmarker' src='" + S.marker(n) + "' alt='" + n + "'>";
+        else h += S.rankToken(n, "sk-actgem sk-actrank");
+    }
     return h + "</span>";
 };
 

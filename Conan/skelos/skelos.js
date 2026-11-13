@@ -553,12 +553,20 @@ var Skelos = {
         if (st.energy < cost) { Skelos.toast(Skelos.t("not_enough", cost, st.energy)); return; }
         Skelos.snapshot();
         st.energy -= cost; st.fatigue += cost; st.activations++;
+        Skelos.markActivation(cost);
         st.river.splice(i, 1); st.river.push(slot);
         st.lastEvent = Skelos.isEvent(slot);
         st.highlight = slot.uid; st.current = slot.uid;
         Skelos.selected = null;
         Skelos.log(Skelos.t("log_activate", Skelos.tileName(slot), cost));
         Skelos.save(); Skelos.renderGame();
+    },
+
+    // Pion posé dans le cercle d'activation : rang payé (Aventure) ou jeton tiré (Coop).
+    // Seules les dernières entrées comptent : autant que d'activations du tour en cours.
+    markActivation: function(n) {
+        var st = Skelos.state;
+        st.actMarks = (st.actMarks || []).concat([n]).slice(-20);
     },
 
     // Mode solo : piocher un jeton au hasard ; la tuile ne bouge pas.
@@ -576,6 +584,7 @@ var Skelos = {
         var uid = st.pool.splice(k, 1)[0];
         st.used.push(uid); st.activations++;
         var slot = Skelos.slotByUid(uid);
+        Skelos.markActivation(slot.token);
         st.highlight = uid;
         st.lastEvent = Skelos.isEvent(slot) && !slot.dead;
         Skelos.log(Skelos.t("log_activate_solo", slot.token, Skelos.tileName(slot)) + (slot.dead ? " — " + Skelos.t("activation_lost") : ""));
