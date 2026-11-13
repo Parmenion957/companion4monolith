@@ -274,7 +274,7 @@ S.renderCampaign = function(cid) {
     var h = head("campaigns", e(t("campaign_title", c.name)),
         "<span class='sk-pill'>" + t(c.mode == "solo" ? "mode_solo" : "mode_classic") + "</span><span class='sk-pill'>" + t("camp_progress", played, c.scenarios.length) + "</span>"
         + "<div class='sk-score'><b>" + S.vpTotal(c) + "</b><small>" + t("victory_points") + "<br>" + e(t("rank_is", S.rank(c))) + "</small></div>"
-        + "<button class='sk-btn sk-icon' data-cact='settings' aria-label='" + e(t("campaign_settings")) + "'>⚙</button>");
+        + "<button class='sk-btn sk-icon sk-cjournal' data-cact='journal' title='" + e(t("log")) + "' aria-label='" + e(t("log")) + "'>&#xf02d;</button>");
     // Fil des scénarios
     h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
     (c.scenarios || []).forEach(function(sc, i) {
@@ -299,11 +299,10 @@ S.renderCampaign = function(cid) {
     var cats = [["eq", "cat_eq"], ["sp", "cat_sp"], ["up", "cat_up"]];
     h += "<div class='sk-blk sk-c2' data-drop='cache'><h3>" + t("common_cache") + "</h3><div class='sk-legend'><span><i class='sk-k-eq'></i>" + t("kind_eq") + "</span><span><i class='sk-k-sp'></i>" + t("kind_sp") + "</span><span><i class='sk-k-up'></i>" + t("kind_up") + "</span></div>";
     cats.forEach(function(k) {
-        var items = (c.cache || []).filter(function(it) { return it.kind == k[0]; });
+        var items = S.sortItems((c.cache || []).filter(function(it) { return it.kind == k[0]; }));
         h += "<div class='sk-cat'>" + t(k[1]) + "</div><div class='sk-chips'>" + (items.length ? items.map(function(it) { return S.chipCode(c, it, {menu: true}); }).join("") : "<span class='sk-empty-t'>—</span>") + "</div>";
     });
-    h += "<button class='sk-btn sk-addrow' data-cact='addcache'>+ " + t("add_to_cache") + "</button>";
-    h += "<h3 class='sk-mt'>" + t("log") + "</h3><ol class='sk-clog'>" + (c.log || []).slice(0, 8).map(function(l) { return "<li>" + e(l.msg) + "</li>"; }).join("") + "</ol></div>";
+    h += "<button class='sk-btn sk-addrow' data-cact='addcache'>+ " + t("add_to_cache") + "</button></div>";
     S.mount(shell("sk-campaign", h));
     if (S.bindThreadDrag) S.bindThreadDrag(c.id);
     if (S.bindItemDrag) S.bindItemDrag(c.id);
@@ -313,7 +312,7 @@ S.renderCampaign = function(cid) {
         if (b.dataset.act == "itemmenu") { S.openItemMenu(c.id, b.dataset.item); return; }
         var i = +b.dataset.i;
         switch (b.dataset.cact) {
-            case "settings": S.openCampaignSettings(c.id); break;
+            case "journal": S.openCampaignJournal(c.id); break;
             case "addsc": case "choose": S.openChooseScenario(c.id, b.dataset.cact == "choose" ? i : null); break;
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
             case "prepare": S.openCampaignEditor(c.id, i); break;

@@ -1529,6 +1529,20 @@ S.swatchClick = function(ev) {
     return true;
 };
 
+// ---------- Écran de campagne : objets triés, bouton Journal à droite des onglets ----------
+S.sortItems = function(list) {
+    var ord = {eq: 0, sp: 1, up: 2};
+    return list.slice().sort(function(a, b) { return (ord[a.kind] - ord[b.kind]) || String(a.name).localeCompare(String(b.name), "fr", {sensitivity: "base"}); });
+};
+S.openCampaignJournal = function(cid) {
+    var c = S.campaign(cid); if (!c) return;
+    var fmt = function(d) { var p = String(d || "").split("-"); return p.length == 3 ? p[2] + "/" + p[1] + "/" + p[0] : ""; };
+    var h = "<div class='sk-journal'><h1>" + e(c.name) + "</h1>";
+    if (!(c.log || []).length) h += "<p>" + e(t("journal_empty")) + "</p>";
+    else h += "<ol class='sk-jlist'>" + c.log.map(function(l) { return "<li>" + (l.d ? "<span class='sk-jtime'>" + e(fmt(l.d)) + "</span>" : "") + e(l.msg) + "</li>"; }).join("") + "</ol>";
+    Nav.dialog(e(t("log")), h + "</div>", null, []);
+};
+
 // ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
 // On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
 var COMPANY_SIZE = 4;
@@ -1554,7 +1568,7 @@ S.heroSheetFull = function(ref) {
 };
 S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
 S.heroSheetCode = function(c, hh) {
-    var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; }), img = S.heroImage(hh);
+    var items = S.sortItems((c.cache || []).filter(function(it) { return it.owner == hh.id; })), img = S.heroImage(hh);
     return "<div class='sk-hsheet" + (hh.dead ? " dead" : "") + "' data-drophero='" + hh.id + "' style='--hc:" + hh.color + "'>"
         + "<button class='sk-hsheet-p' data-cact='hero' data-hero='" + hh.id + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>"
         + (img ? "<img src='" + e(img) + "' alt='' loading='lazy'>" : "<span class='sk-hsheet-ini' aria-hidden='true'>" + e((hh.name || "?").charAt(0)) + "</span>") + "</button>"

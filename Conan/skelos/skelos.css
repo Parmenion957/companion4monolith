@@ -1215,3 +1215,14 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 .sk-swatch.on { box-shadow: 0 0 0 3px var(--body-bg-color), 0 0 0 6px var(--highlight-color); }
 .sk-swatch:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
 .sk-itemcolors .sk-fl .sk-chip { display: inline-flex; width: auto; font-size: 16px; padding: 3px 12px; }
+
+/* Cache commune plus lisible : légende et noms d'objets en plus grand */
+.sk-campaign .sk-legend { font-size: 17px; gap: 14px; margin: 4px 0 8px; color: var(--body-color) !important; }
+.sk-campaign .sk-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sk-campaign .sk-legend i { width: 20px; height: 20px; border-radius: 6px; margin: 0; vertical-align: middle; border: 1px solid rgba(0,0,0,.35); }
+.sk-campaign .sk-cat { font-size: 17px; margin-top: 10px; margin-bottom: 4px; color: var(--main-color) !important; font-family: 'Primary', serif; }
+.sk-campaign .sk-chips { gap: 6px; }
+.sk-campaign .sk-chip[data-card] { font-size: 17px; line-height: 1.2; padding: 5px 12px; }
+.sk-campaign .sk-chip .sk-ini { width: 22px; height: 22px; font-size: 13px; }
+.sk-campaign .sk-chipadd { font-size: 16px; padding: 5px 12px; }
+.sk-btn.sk-icon.sk-cjournal { font-family: "Font Awesome 5 Free" !important; font-weight: 900 !important; font-size: 18px !important; letter-spacing: 0 !important; text-transform: none !important; }
