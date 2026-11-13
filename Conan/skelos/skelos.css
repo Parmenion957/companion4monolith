@@ -1005,27 +1005,23 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
 
 /* =====================================================================
    Étape 7 : tablette gravée. Le plateau de jeu (partie et studio) est une
-   plaque : la photo choisie dans les Réglages, sinon une pierre neutre aux
-   couleurs du thème. Chaque bloc et chaque emplacement de la Rivière y est
-   creusé (lumière venant du haut : ombre portée en haut, arête claire en bas).
+   plaque de pierre : la tablette du module (img/tablette.webp, création
+   originale), ou la photo choisie dans les Réglages. Chaque bloc et chaque
+   emplacement de la Rivière y est creusé (lumière venant du haut : ombre
+   portée en haut, arête claire en bas).
    ===================================================================== */
 .skelos-game:not(.sk-screen) > .sk-board {
-    --sk-stone: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 84%, var(--body-color, #000) 16%);
-    --sk-stone-hi: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 76%, var(--body-color, #000) 24%);
-    background-color: var(--sk-stone) !important;
-    background-image:
-        radial-gradient(60% 45% at 20% 25%, var(--sk-stone-hi), transparent 70%),
-        radial-gradient(50% 60% at 85% 75%, var(--sk-stone-hi), transparent 70%) !important;
+    --sk-stone: #3a3d3a;
     border-radius: 14px !important; padding: 12px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 4px rgba(0,0,0,.25) !important;
 }
-.skelos-game:not(.sk-screen) > .sk-board[data-bg], .sk-bgprev[data-bg] {
+.skelos-game:not(.sk-screen) > .sk-board, .sk-bgprev {
     position: relative; isolation: isolate; overflow: hidden; background-color: #3a3d3a !important; background-image: none !important;
 }
-/* Photo : couvre toujours le plateau, puis zoom et décalage des Réglages */
-.skelos-game:not(.sk-screen) > .sk-board[data-bg]::before, .sk-bgprev[data-bg]::before {
+/* Tablette ou photo : couvre toujours le plateau, puis zoom et décalage des Réglages */
+.skelos-game:not(.sk-screen) > .sk-board::before, .sk-bgprev::before {
     content: "" !important; display: block !important; position: absolute; inset: 0; width: auto; height: auto; z-index: -1; border-radius: 0; box-shadow: none;
-    background: var(--sk-bgimg) var(--sk-bgpos, 50% 50%) / cover no-repeat !important;
+    background: var(--sk-bgimg, url(img/tablette.webp)) var(--sk-bgpos, 50% 50%) / cover no-repeat !important;
     transform: scale(var(--sk-bgzoom, 1)); transform-origin: var(--sk-bgpos, 50% 50%);
 }
 /* Creux : chaque bloc du panneau ; dans la Rivière, un creux rond pour le pion et un creux rectangulaire pour la tuile */
@@ -1039,10 +1035,10 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
         0 1px 0 1px rgba(255,255,255,.28), 0 -1px 0 1px rgba(0,0,0,.28) !important;
 }
 .skelos-game:not(.sk-screen) .sk-board .sk-a-ov { border-top: 6px solid var(--pov) !important; }
-/* Avec une photo : les creux laissent deviner la pierre */
-.skelos-game:not(.sk-screen) > .sk-board[data-bg] .sk-panel { --pcard: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 72%, transparent); }
-.skelos-game:not(.sk-screen) > .sk-board[data-bg] .sk-river .sk-well,
-.skelos-game:not(.sk-screen) > .sk-board[data-bg] .sk-river .sk-cost { background: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 30%, transparent) !important; }
+/* Les creux laissent deviner la pierre */
+.skelos-game:not(.sk-screen) > .sk-board .sk-panel { --pcard: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 72%, transparent); }
+.skelos-game:not(.sk-screen) > .sk-board .sk-river .sk-well,
+.skelos-game:not(.sk-screen) > .sk-board .sk-river .sk-cost { background: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 30%, transparent) !important; }
 /* La colonne de la Rivière n'est plus un bloc : seuls ses deux creux sont gravés */
 .skelos-game:not(.sk-screen) .sk-board .sk-river .sk-slot { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important;
     display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -1058,3 +1054,6 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
 .skelos-game:not(.sk-screen) .sk-board .sk-a-phase.he { background: color-mix(in srgb, var(--phe) 70%, transparent); }
 /* Studio : la pastille du socle reste sur la tuile, sous le creux du pion */
 .skelos-game:not(.sk-screen) .sk-board .sk-river .sk-socle { top: 61px; right: 9px; }
+/* Aperçu des Réglages : mention de la tablette par défaut, posée sur la pierre */
+.sk-bgprev { border: 0 !important; }
+.sk-bgprev span { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); font-family: 'Primary', serif; font-size: 1.1rem; }

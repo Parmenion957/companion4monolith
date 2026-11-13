@@ -2119,6 +2119,7 @@ const urlsToCache = [
 	"studio/tile/lang/tile.LANGUAGE.js",
 	"studio/tile/tile.css",
 	"studio/tile/tile.js",
+	"skelos/img/tablette.webp",
 	"skelos/skelos.css",
 	"skelos/skelos.js",
 	"skelos/skelos_app.js",
