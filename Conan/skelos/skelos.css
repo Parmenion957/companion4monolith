@@ -1152,3 +1152,16 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-hpick.sk-inco { opacity: .45; cursor: default; }
 .sk-hpick .sk-pickbadge { position: absolute; top: 4px; right: 4px; }
 @media (max-width: 700px) { .sk-hsheet-p { height: 130px; } .sk-hpicker { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } .sk-hpick-i { height: 100px; } }
+/* Sélecteur : fiche complète du héros du Compagnon, mise à l'échelle de la case */
+.sk-hpicker:has(.sk-hpick-full) { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.sk-hpick.sk-hpick-full { display: block; padding: 0; border: 0; background: none; border-radius: 10px; line-height: 0; }
+.sk-hsheetscale .sheet.herosheet { display: block; line-height: normal; }
+.sk-hsheetscale { display: block; width: 100%; container-type: inline-size; pointer-events: none; }
+.sk-hsheetscale .sheet.herosheet { width: 100%; height: auto; aspect-ratio: 1.75; font-size: 7.5cqw; margin: 0 !important; }
+.sk-hpick.sk-hpick-full.picked { outline: 4px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hpick.sk-hpick-full:hover, .sk-hpick.sk-hpick-full:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hpick.sk-hpick-full .sk-pickbadge { top: 6px; right: 6px; z-index: 2; }
+.sk-hpick.sk-inco { opacity: .4; }
+.sk-hpick-full .sk-inco-t { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; padding: 4px 10px; border-radius: 6px;
+    background: var(--body-bg-color); color: var(--body-color); font-size: 15px; white-space: nowrap; }
+@media (max-width: 700px) { .sk-hpicker:has(.sk-hpick-full) { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); } }

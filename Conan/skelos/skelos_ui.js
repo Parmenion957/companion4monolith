@@ -1419,6 +1419,14 @@ S.heroImage = function(hh) {
     var n = S.norm(hh.name || ""), x = S.heroCatalog().filter(function(k) { return S.norm(k.name) == n; })[0];
     return x ? x.image : "";
 };
+// Fiche complète du héros, dessinée par le Compagnon (comme dans son encyclopédie).
+S.heroSheetFull = function(ref) {
+    try {
+        if (typeof HeroSheet == "undefined" || typeof EncyclopediaHeroes == "undefined") return null;
+        var x = (Encyclopedia.heroes.list || []).filter(function(h) { return h.id == ref; })[0];
+        return x ? HeroSheet._cardCode(EncyclopediaHeroes._convertHeroToStudio(x, false)) : null;
+    } catch (err) { return null; }
+};
 S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };
 S.heroSheetCode = function(c, hh) {
     var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; }), img = S.heroImage(hh);
@@ -1473,6 +1481,9 @@ S.openHeroPicker = function(cid) {
             return !q || S.norm(x.name + " " + x.sub).indexOf(q) >= 0;
         }).map(function(x) {
             var inco = have[S.norm(x.name)];
+            var full = S.heroSheetFull(x.ref), lbl = x.name + (x.sub ? " " + x.sub : "") + (inco ? " — " + t("in_company") : "");
+            if (full) return "<button class='sk-hpick sk-hpick-full" + (inco ? " sk-inco" : "") + "' data-ref='" + e(x.ref) + "' aria-label='" + e(lbl) + "'" + (inco ? " disabled" : "") + ">"
+                + "<span class='sk-hsheetscale'>" + full + "</span>" + (inco ? "<span class='sk-inco-t'>" + e(t("in_company")) + "</span>" : "") + "</button>";
             return "<button class='sk-hpick" + (inco ? " sk-inco" : "") + "' data-ref='" + e(x.ref) + "'" + (inco ? " disabled title='" + e(t("in_company")) + "'" : "") + ">"
                 + "<span class='sk-hpick-i'>" + (x.image ? "<img src='" + e(x.image) + "' alt='' loading='lazy'>" : "") + "</span>"
                 + "<span class='sk-hpick-n'><b>" + e(x.name) + "</b>" + (x.sub ? "<small>" + e(x.sub) + "</small>" : "") + (inco ? "<small class='sk-inco-t'>" + e(t("in_company")) + "</small>" : "") + "</span></button>";
