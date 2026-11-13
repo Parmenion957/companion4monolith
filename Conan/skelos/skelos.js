@@ -652,7 +652,7 @@ var Skelos = {
         var reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), shared = Skelos.hpGroup(s).length > 1;
         return "<span class='sk-hpwrap" + (open ? " open" : "") + (reinf ? " withreinf" : "") + (shared ? " shared" : "") + "' data-hpwrap='" + s.uid + "'>"
             + "<button class='sk-hpbtn' data-hpdelta='-1' data-uid='" + s.uid + "' aria-label='" + Skelos.t("aria_hp_minus") + "' tabindex='" + (open ? 0 : -1) + "'>−</button>"
-            + "<span class='sk-hp" + (s.lp <= 0 ? " zero" : "") + "' data-hp='" + s.uid + "' role='button' tabindex='0' aria-label='" + Skelos.esc(Skelos.t("hp_label", s.lp, s.lpMax) + (shared ? " — " + Skelos.t("hp_shared") : "")) + "' title='" + Skelos.esc(Skelos.t("hp_hint") + (shared ? "\n" + Skelos.t("hp_shared") : "")) + "'>"
+            + "<span class='sk-hp" + (s.lp <= 0 ? " zero" : "") + "' data-hp='" + s.uid + "' role='button' tabindex='0' aria-label='" + Skelos.esc(Skelos.t("hp_label", s.lp, s.lpMax) + (shared ? " — " + Skelos.t("hp_shared") : "")) + "' title='" + Skelos.esc(Skelos.t("hp_hint")) + "'>"
             + "<svg viewBox='0 0 24 22' aria-hidden='true'><path d='M12 21.2 10.6 20C5.4 15.3 2 12.2 2 8.4 2 5.3 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.3 22 8.4c0 3.8-3.4 6.9-8.6 11.6z'/></svg>"
             + "<b>" + s.lp + "</b></span>"
             + "<button class='sk-hpbtn' data-hpdelta='1' data-uid='" + s.uid + "' aria-label='" + Skelos.t("aria_hp_plus") + "' tabindex='" + (open ? 0 : -1) + "'>+</button></span>";
