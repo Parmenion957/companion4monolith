@@ -47,8 +47,13 @@ S.activationSlots = function(used, max) {
 };
 
 // Pion de coût : pion numéroté du jeu, cerclé de rouge avec une gemme quand la tuile choisie peut être payée.
+// Rang d'une case de la Rivière : gemme rouge numérotée dans un anneau (composée en CSS avec la gemme du Compagnon).
+// Les pions blancs numérotés restent pour les jetons tirés au sac et le suivi des activations.
+S.rankToken = function(n, cls) {
+    return "<span class='sk-rankgem" + (cls ? " " + cls : "") + "' role='img' aria-label='" + n + "'><img src='" + S.icon("gem") + "' alt=''><b>" + n + "</b></span>";
+};
 S.costToken = function(slot, i) {
-    var img = "<img class='sk-costimg' src='" + S.marker(i + 1) + "' alt='" + (i + 1) + "'>";
+    var img = S.rankToken(i + 1, "sk-costimg");
     if (!slot) return "<span class='sk-costtok sk-costimgwrap'>" + img + "</span>";
     var sel = slot.uid == S.selected, why = sel ? S.canActivate(slot) : null, armed = sel && !why;
     return "<span class='sk-costtok sk-costimgwrap" + (armed ? " armed" : "") + "' data-act='paycost' data-uid='" + slot.uid + "'"
@@ -65,7 +70,7 @@ var title = function(k) { return "<div class='sk-ptitle'>" + e(t(k)) + "</div>";
 
 // Jeton du cadre Tour (sablier ou alarme) : appui long pour faire apparaître − et + de part et d'autre.
 S.turnTokenCode = function(kind) {
-    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = S._turnEdit == kind;
+    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = S._turnEdit == kind || !!S.studio;
     var minus = turn ? "turnminus" : "turnsminus", plus = turn ? "turnplus" : "turnsplus", tab = open ? 0 : -1;
     var label = turn ? t("turn") + " " + st.turn : (st.turns ? t("turn_limit") + " " + st.turns : t("turn_limit_none"));
     return "<span class='sk-ptok" + (open ? " editing" : "") + "' data-turnwrap='" + kind + "'>"
@@ -91,12 +96,14 @@ S.boostBlockCode = function(k, n) {
         + "<span class='sk-pgems" + (cnt ? "" : " zero") + "'><img src='" + S.icon("gem") + "' alt=''><b>" + cnt + "</b></span></button>";
 };
 
-// Bloc des quatre boutons : Annuler, Réglages, Journal, Aide.
+// Bloc d'outils : Annuler · [Recommencer | Terminer] · Journal · Aide.
 S.toolsBlockCode = function() {
-    return "<div class='sk-p sk-a-tools'>" + [["undo", "&#xf0e2;", "undo"], ["setup", "&#xf013;", "settings"], ["journal", "&#xf02d;", "log"], ["help", "&#xf128;", "help"]].map(function(x) {
-        var off = x[0] == "undo" && !S.undoStack.length;
-        return "<button class='sk-ptool' data-act='" + x[0] + "'" + (off ? " disabled" : "") + " aria-label='" + e(t(x[0] == "setup" ? "menu_params" : x[2])) + "'><i aria-hidden='true'>" + x[1] + "</i><span>" + e(t(x[2])) + "</span></button>";
-    }).join("") + "</div>";
+    var b = function(act, icon, label, aria, off) {
+        return "<button class='sk-ptool' data-act='" + act + "'" + (off ? " disabled" : "") + " title='" + e(t(aria)) + "' aria-label='" + e(t(aria)) + "'><i aria-hidden='true'>" + icon + "</i><span>" + e(t(label)) + "</span></button>";
+    };
+    return "<div class='sk-p sk-a-tools'>" + b("undo", "&#xf0e2;", "undo", "undo", !S.undoStack.length)
+        + "<div class='sk-ptoolpair'>" + b("restart", "&#xf2f9;", "tool_restart", "restart_game") + b("end", "&#xf11e;", "tool_end", "menu_end") + "</div>"
+        + b("journal", "&#xf02d;", "log", "log") + b("help", "&#xf128;", "help", "help") + "</div>";
 };
 
 // Phase en cours : quatre étapes en grille 2×2 ; seule l'étape en cours est en gras.
@@ -106,7 +113,7 @@ S.phaseBlockCode = function() {
     return "<div class='sk-p sk-a-phase " + (ov ? "ov" : "he") + "' role='group' aria-label='" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "'>"
         + "<div class='sk-pphase-t'>" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "</div><ol>" + [1, 2, 3, 4].map(function(i) {
             return "<li" + (i == cur ? " class='cur' aria-current='step'" : "") + "><span class='sk-pnum' aria-hidden='true'>" + i + "</span><span>" + e(t(pre + i)) + "</span></li>";
-        }).join("") + "</ol></div>";
+        }).join("") + "</ol>" + (S.studio ? S.firstPlayerCode() : "") + "</div>";
 };
 
 // Tour de l'Overlord : Commencer / Terminer et emplacements d'activation.
@@ -114,7 +121,9 @@ S.overlordBlockCode = function() {
     var st = S.state, ov = st.phase == "overlord", max = st.mode == "solo" ? st.heroes : st.maxActivations;
     return "<div class='sk-p sk-a-ov'>" + title("steps_overlord_title")
         + "<button class='sk-turnbtn' data-act='" + (ov ? "oend" : "oturn") + "' title='" + e(t(ov ? "end_overlord_turn" : "start_overlord_turn")) + "'>" + e(t(ov ? "btn_end" : "btn_start")) + "</button>"
-        + "<div class='sk-pacts' role='img' aria-label='" + e(t("activations") + " " + st.activations + " / " + max) + "'>" + S.activationSlots(st.activations, max) + "</div></div>";
+        + (S.studio && st.mode != "solo" ? "<div class='sk-pctr sk-pmaxact'><button class='sk-pstep' data-act='studiomaxact' data-n='-1' aria-label='" + e(t("aria_act_minus")) + "'>−</button>" : "")
+        + "<div class='sk-pacts' role='img' aria-label='" + e(t("activations") + " " + st.activations + " / " + max) + "'>" + S.activationSlots(st.activations, max) + "</div>"
+        + (S.studio && st.mode != "solo" ? "<button class='sk-pstep' data-act='studiomaxact' data-n='1' aria-label='" + e(t("aria_act_plus")) + "'>+</button></div>" : "") + "</div>";
 };
 
 S.panelCode = function() {
@@ -125,9 +134,14 @@ S.panelCode = function() {
         h += S.toolsBlockCode();
         h += "<div class='sk-p sk-a-en'>" + title("energy") + "<div class='sk-pmain'>" + S.token("gem", st.energy) + "</div><div class='sk-gems'>" + S.gems(st.energy, "on") + "</div>"
             + "<button class='sk-pbtn' data-act='xfer' data-dir='tofatigue'" + (st.energy ? "" : " disabled") + ">" + e(t("to_fatigue")) + "</button></div>";
-        h += "<div class='sk-p sk-a-rec'>" + title("recovery") + "<div class='sk-pmain'>" + S.token("recover", st.recovery) + "</div>"
-            + "<div class='sk-prow'><button class='sk-pstep' data-act='adj' data-f='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
+        // Mode studio : − / + de la récupération, puis − / + du total de gemmes en dessous.
+        if (S.studio) h += "<div class='sk-p sk-a-rec studio'>" + title("recovery")
+            + "<div class='sk-pctr'><button class='sk-pstep' data-act='adj' data-f='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>" + S.token("recover", st.recovery)
             + "<button class='sk-pstep' data-act='adj' data-f='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div>"
+            + title("gems_total_title")
+            + "<div class='sk-pctr'><button class='sk-pstep' data-act='studiogem' data-n='-1' aria-label='" + e(t("gem_remove")) + "'>−</button>" + S.token("gem", S.gemTotal())
+            + "<button class='sk-pstep' data-act='studiogem' data-n='1' aria-label='" + e(t("gem_add")) + "'>+</button></div></div>";
+        else h += "<div class='sk-p sk-a-rec'>" + title("recovery") + "<div class='sk-pmain'>" + S.token("recover", st.recovery) + "</div>"
             + "<div class='sk-ptotal'>" + e(t("gem_total", S.gemTotal())) + "</div></div>";
         h += "<div class='sk-p sk-a-fa'>" + title("fatigue") + "<div class='sk-pmain'>" + S.token("gem", st.fatigue, "", "dim") + "</div><div class='sk-gems'>" + S.gems(st.fatigue, "off") + "</div>"
             + "<button class='sk-pbtn' data-act='xfer' data-dir='toenergy'" + (st.fatigue ? "" : " disabled") + ">" + e(t("to_energy")) + "</button></div>";
@@ -140,8 +154,8 @@ S.panelCode = function() {
         h += "<div class='sk-p sk-a-pool'>" + title("tokens_pool") + "<div class='sk-prow'>" + S.token("bag", st.pool.length)
             + (st.phase == "overlord" ? "<button class='sk-btn sk-primary sk-pdraw' data-act='draw'>" + e(t("draw_token")) + "</button>" : "<span class='sk-phint'>" + e(t("draw_only_overlord")) + "</span>") + "</div></div>";
         h += "<div class='sk-p sk-a-heroes'>" + title("heroes") + "<div class='sk-prow'>"
-            + "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='-1' aria-label='" + e(t("aria_heroes_minus")) + "'>−</button>" + S.token("heroes", st.heroes)
-            + "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='1' aria-label='" + e(t("aria_heroes_plus")) + "'>+</button></div></div>";
+            + (S.studio ? "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='-1' aria-label='" + e(t("aria_heroes_minus")) + "'>−</button>" : "") + S.token("heroes", st.heroes)
+            + (S.studio ? "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='1' aria-label='" + e(t("aria_heroes_plus")) + "'>+</button>" : "") + "</div></div>";
     }
     h += S.phaseBlockCode() + S.overlordBlockCode();
     return h + "</div>";
@@ -209,7 +223,7 @@ S.renderGame = function() {
     if (S._turnEdit) S.openTurnEdit(S._turnEdit);
     r.querySelectorAll(".sk-token").forEach(function(tk) {
         var n = parseInt(tk.textContent, 10); if (!n) return;
-        tk.innerHTML = "<img src='" + S.marker(n) + "' alt='" + n + "'>"; tk.classList.add("sk-tokenimg");
+        tk.innerHTML = S.rankToken(n); tk.classList.add("sk-tokenimg");
     });
     st.river.forEach(function(s) {
         if (!S.isEvent(s)) return;
@@ -532,12 +546,344 @@ S.syncFullscreenButton = function() {
 };
 document.addEventListener("fullscreenchange", function() { if (!document.fullscreenElement && document.documentElement.classList.contains("skelos-full")) { document.documentElement.classList.remove("skelos-full"); S.syncFullscreenButton(); } });
 
+// ---------- Mode studio : la partie se règle directement sur le plateau ----------
+// Le bouton Studio (barre des onglets) fait apparaître les − et +, le + des emplacements vides,
+// le glisser-déposer des tuiles avec corbeille, la pastille de socle, l'interrupteur Aventure / Coop et la disquette.
+// Toute modification passe par snapshot() : le bouton Annuler la défait.
+S.studio = false;
+var SOCLE = {gray: "#8a8a8a", red: "#b3161b", green: "#2e8b3e", blue: "#2a63ad", purple: "#7a3d9a", orange: "#e07a1f", black: "#222"};
+var HEART = "<svg viewBox='0 0 24 22' aria-hidden='true'><path d='M12 21.2 10.6 20C5.4 15.3 2 12.2 2 8.4 2 5.3 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.3 22 8.4c0 3.8-3.4 6.9-8.6 11.6z'/></svg>";
+var commit = function() { S.save(); S.renderGame(); };
+S.socles = function(tile) {
+    var out = [];
+    (tile && tile.colors || []).forEach(function(c) { if (SOCLE[c] && out.indexOf(c) < 0) out.push(c); });
+    return out;
+};
+S.socleName = function(c) { return (typeof Tile != "undefined" && Tile._i18n && Tile._i18n["color" + c.charAt(0).toUpperCase() + c.slice(1)]) || c; };
+
+S.toggleStudio = function(on) {
+    S.studio = on == null ? !S.studio : !!on;
+    S.closeTurnEdit(); S.closeHp(); S.selected = null;
+    S.renderGame();
+};
+
+// Barre des onglets : bouton Studio à droite ; en mode studio, Aventure / Coop et la disquette à sa gauche.
+var origPlaceTabs = S.placeTabs;
+S.placeTabs = function() {
+    origPlaceTabs.apply(S, arguments);
+    var nav = S.root && S.root.querySelector(":scope > .sk-tabs");
+    if (!nav || S.screen != "game" || !S.state) return;
+    var st = S.state, g = "<div class='sk-tabtools'>";
+    if (S.studio) {
+        g += "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
+            var on = st.mode == m[0];
+            return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
+        }).join("") + "</div>"
+            + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>";
+    }
+    g += "<button class='sk-tabico" + (S.studio ? " on" : "") + "' data-studio='toggle' aria-pressed='" + S.studio + "' title='" + e(t("studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>";
+    nav.classList.add("withtools");
+    nav.classList.toggle("studio", S.studio);
+    nav.insertAdjacentHTML("beforeend", g);
+    nav.addEventListener("click", function(ev) {
+        var b = ev.target.closest("[data-studio]"); if (!b) return;
+        ev.stopPropagation();
+        if (b.dataset.studio == "toggle") S.toggleStudio();
+        else if (b.dataset.studio == "save") S.openSaveScenario();
+        else if (b.dataset.studio == "mode") S.switchMode(b.dataset.mode);
+    });
+};
+
+// Points de vie en mode studio : les − et + fixent les PV de la tuile (ils deviennent aussi son maximum).
+S.studioHpCode = function(s) {
+    var tile = S.tileOf(s), reinf = tile && (tile.reinforcement || tile.reinforcement === "0"), lp = s.lp || 0;
+    return "<span class='sk-hpwrap open sk-studiohp" + (reinf ? " withreinf" : "") + "'>"
+        + "<button class='sk-hpbtn' data-act='studiolp' data-uid='" + s.uid + "' data-n='-1' aria-label='" + e(t("aria_hp_minus")) + "'>−</button>"
+        + "<span class='sk-hp" + (lp <= 0 ? " zero" : "") + "' aria-label='" + e(t("life_points") + " " + lp) + "'>" + HEART + "<b>" + lp + "</b></span>"
+        + "<button class='sk-hpbtn' data-act='studiolp' data-uid='" + s.uid + "' data-n='1' aria-label='" + e(t("aria_hp_plus")) + "'>+</button></span>";
+};
+
+// Signes − et + dessinés en CSS (classes sk-minus / sk-plus) : parfaitement centrés quelle que soit la police.
+S.markSteppers = function(scope) {
+    scope.querySelectorAll(".sk-pstep, .sk-hpbtn").forEach(function(b) {
+        var s = b.textContent.trim();
+        if (s == "+") b.classList.add("sk-plus"); else if (s == "−" || s == "-") b.classList.add("sk-minus");
+    });
+};
+// Rang des tuiles (pions numérotés du mode coop) : il reste attaché à la case, pas à la tuile.
+S.renumberRiver = function() { S.state.river.forEach(function(s, i) { s.token = i + 1; }); };
+
+// Après le rendu : + des emplacements vides, tuiles déplaçables, PV, pastille de socle.
+var studioRenderGame = S.renderGame;
+S.renderGame = function() {
+    studioRenderGame.apply(S, arguments);
+    var r = S.root, st = S.state, game = r.querySelector(".skelos-game");
+    if (!game) return;
+    game.classList.toggle("sk-studio", !!S.studio);
+    S.markSteppers(r);
+    if (!S.studio) return;
+    r.querySelectorAll(".sk-river > .sk-slot").forEach(function(el, i) {
+        var s = st.river[i];
+        el.setAttribute("data-si", i);
+        if (!s) {
+            var em = el.querySelector(".sk-empty");
+            if (em) em.innerHTML = "<button class='sk-studioadd' data-act='studioadd' title='" + e(t("add_tile")) + "' aria-label='" + e(t("add_tile")) + "'>+</button>";
+            return;
+        }
+        var box = el.querySelector(".sk-tilebox");
+        box.setAttribute("data-act", "studiotile");
+        box.setAttribute("aria-label", S.tileName(s) + " — " + t(S.isEvent(s) ? "event_edit_hint" : "drag_hint"));
+        var old = box.querySelector(".sk-hpwrap"); if (old) old.remove();
+        if (!S.isEvent(s) && !s.dead) box.insertAdjacentHTML("beforeend", S.studioHpCode(s));
+        var socles = S.socles(S.tileOf(s));
+        if (socles.length > 1) {
+            var c = socles.indexOf(s.color) >= 0 ? s.color : socles[0];
+            el.insertAdjacentHTML("beforeend", "<button class='sk-socle' data-act='studiosocle' data-uid='" + s.uid + "' style='--socle:" + SOCLE[c] + "'"
+                + " title='" + e(t("socle_next", S.socleName(c))) + "' aria-label='" + e(t("socle_next", S.socleName(c))) + "'></button>");
+        }
+    });
+};
+
+// Actions du plateau en mode studio, et Recommencer / Terminer du bloc d'outils.
+var studioBindGame = S.bindGame;
+S.bindGame = function() {
+    studioBindGame.apply(S, arguments);
+    S.root.querySelector(".skelos-game").addEventListener("click", function(ev) {
+        var b = ev.target.closest("[data-act]"); if (!b) return;
+        var uid = b.dataset.uid, n = +b.dataset.n;
+        switch (b.dataset.act) {
+            case "restart": S.restartGame(); break;
+            case "end": S.renderEnd(); break;
+            case "studioadd": S.studioPick(); break;
+            case "studiotile": var s = S.slotByUid(uid); if (s && S.isEvent(s)) S.editEventText(uid); break;
+            case "studiolp": S.studioLife(uid, n); break;
+            case "studiosocle": S.nextSocle(uid); break;
+            case "studiogem": S.studioGem(n); break;
+            case "studiomaxact": S.studioMaxAct(n); break;
+            case "studiofirst": S.toggleFirstPlayer(); break;
+        }
+    });
+};
+
+S.restartGame = function() {
+    S.ask(t("confirm_restart"), t("restart_game"), function() {
+        var camp = S.state.campaign;
+        S.draft = S.scenarioFromState(); S.live = false;
+        S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
+        S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
+    });
+};
+S.studioLife = function(uid, d) {
+    var s = S.slotByUid(uid); if (!s) return;
+    var v = Math.max(0, Math.min(40, (s.lp || 0) + d));
+    if (v == (s.lp || 0)) return;
+    S.snapshot();
+    s.lp = v || null; s.lpMax = v || null;
+    commit();
+};
+S.nextSocle = function(uid) {
+    var s = S.slotByUid(uid), socles = S.socles(S.tileOf(s)); if (socles.length < 2) return;
+    S.snapshot();
+    s.color = socles[(socles.indexOf(s.color) + 1) % socles.length];
+    commit();
+};
+S.studioGem = function(d) {
+    var st = S.state;
+    if (d < 0 && !st.fatigue && !st.energy) { S.toast(t("gem_none_left")); return; }
+    S.snapshot();
+    if (d > 0) st.fatigue++; else if (st.fatigue > 0) st.fatigue--; else st.energy--;
+    S.log(t(d > 0 ? "log_gem_added" : "log_gem_removed", S.gemTotal()));
+    commit();
+};
+S.studioMaxAct = function(d) {
+    var st = S.state, v = Math.max(1, Math.min(8, (st.maxActivations || 1) + d));
+    if (v == st.maxActivations) return;
+    S.snapshot();
+    st.maxActivations = v; st.scenario.maxActivations = v;
+    commit();
+};
+
+// Premier joueur : réglé dans le bloc Phase ; avant le premier tour, la phase suit.
+S.firstPlayerCode = function() {
+    var ov = S.state.scenario.firstPlayer == "overlord";
+    return "<button class='sk-pfirst' data-act='studiofirst' aria-label='" + e(t("first_player") + " : " + t(ov ? "first_overlord" : "first_heroes")) + "'>"
+        + "<span>" + e(t("first_player")) + "</span><b>" + e(t(ov ? "first_overlord" : "first_heroes")) + "</b></button>";
+};
+S.toggleFirstPlayer = function() {
+    var st = S.state, fp = st.scenario.firstPlayer == "overlord" ? "heroes" : "overlord";
+    S.snapshot();
+    st.scenario.firstPlayer = fp;
+    if (st.turn == 0 && !st.activations && st.phase != "overlord") st.phase = fp == "overlord" ? "start" : "heroes";
+    commit();
+};
+
+// Aventure (gemmes) ⟷ Coop (jetons tirés au sac) : l'Overlord repart de zéro, tuiles, PV et tour conservés.
+S.switchMode = function(mode) {
+    var st = S.state; if (!st || st.mode == mode) return;
+    var go = function() {
+        S.snapshot();
+        st.mode = mode; st.scenario.mode = mode;
+        st.activations = 0; st.highlight = null; st.current = null; st.lastEvent = false;
+        if (mode == "classic") {
+            st.energy = st.scenario.energy != null ? st.scenario.energy : 10;
+            st.fatigue = st.scenario.fatigue || 0;
+            st.recovery = st.recovery != null ? st.recovery : 5;
+            st.maxActivations = st.maxActivations || 2;
+            st.boosts = {move: 0, reroll: 0, defense: 0, spell: 0};
+        } else {
+            st.pool = st.river.map(function(s) { return s.uid; }); st.used = []; st.removed = [];
+            st.heroes = st.heroes || 4;
+        }
+        if (st.phase == "overlord") st.phase = "start";
+        S.log(t("log_mode", t(mode == "classic" ? "mode_adventure" : "mode_coop")));
+        commit();
+    };
+    var started = st.turn > 0 || st.activations > 0 || st.log.length > 1;
+    if (started) S.ask(t("confirm_mode"), t("confirm_mode_yes"), go); else go();
+};
+
+// + d'un emplacement vide : le sélecteur de tuiles, qui ajoute au bout de la Rivière.
+S.studioPick = function() {
+    S.live = true; S._pickToGame = true;
+    S.openPicker();
+    document.documentElement.classList.add("skelos-dlgopen");
+};
+
+// Texte d'une tuile Événement : appui sur la tuile en mode studio.
+S.editEventText = function(uid) {
+    var st = S.state, s = S.slotByUid(uid), pos = st.river.indexOf(s) + 1;
+    var firstEv = st.river.filter(function(x) { return S.isEvent(x); })[0] == s;
+    var usesGeneral = !s.eventText && firstEv && st.scenario.events;
+    var val = s.eventText || (usesGeneral ? st.scenario.events : "");
+    S.dialog("<h2>" + e(t("event_n", pos)) + "</h2><textarea class='sk-in' id='sk-evtext' rows='5' placeholder='" + e(t("events_placeholder")) + "'>" + e(val) + "</textarea>"
+        + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button></div>",
+        function(ev, close) {
+            if (!ev.target.closest("[data-ok]")) return;
+            var v = S.root.querySelector("#sk-evtext").value.trim(); close();
+            if (v == val.trim()) return;
+            S.snapshot();
+            s.eventText = v;
+            if (usesGeneral) st.scenario.events = "";
+            commit();
+        });
+};
+
+// Disquette : enregistre la partie comme scénario (titre et notes), dans un dialogue du Compagnon.
+S.openSaveScenario = function() {
+    var sc = S.state.scenario;
+    Nav.dialog(e(t("save_title")),
+        "<div class='sk-savedlg'><label for='sk-savetitle'>" + e(t("scenario_name")) + "</label>"
+        + "<input id='sk-savetitle' type='text' value='" + e(sc.title || "") + "' placeholder='" + e(t("scenario_name_placeholder")) + "'>"
+        + "<p class='sk-savemsg' id='sk-savemsg' role='alert'></p>"
+        + "<label for='sk-savenotes'>" + e(t("notes")) + "</label><textarea id='sk-savenotes' rows='6'>" + e(sc.notes || "") + "</textarea>"
+        + "<button type='button' class='sk-savebtn' onclick='Skelos.saveScenarioFromDialog()'>" + e(t("save_scenario")) + "</button></div>",
+        null, [{fn: "Skelos.saveScenarioFromDialog()", icon: "skelos-save-icon", label: e(t("save_scenario"))}]);
+    var inp = document.getElementById("sk-savetitle"); if (inp) { inp.focus(); inp.select(); }
+};
+S.saveScenarioFromDialog = function() {
+    var title = (document.getElementById("sk-savetitle").value || "").trim();
+    if (!title) { document.getElementById("sk-savemsg").textContent = t("title_required"); document.getElementById("sk-savetitle").focus(); return; }
+    var st = S.state;
+    st.scenario.title = title;
+    st.scenario.notes = document.getElementById("sk-savenotes").value;
+    S.save();
+    S.saveScenarioCopy(S.scenarioFromState());
+    Nav.closeDialog();
+};
+
+// Glisser-déposer des tuiles en mode studio : les autres se décalent ; la corbeille retire la tuile.
+S.bindStudioDrag = function(root) {
+    var drag = null;
+    var clean = function() {
+        if (!drag) return;
+        if (drag.ghost) drag.ghost.remove();
+        if (drag.trash) drag.trash.remove();
+        drag.box.classList.remove("sk-dragging");
+        root.querySelectorAll(".sk-droptarget").forEach(function(x) { x.classList.remove("sk-droptarget"); });
+        drag = null;
+    };
+    var targetAt = function(x, y) {
+        var el = document.elementFromPoint(x, y);
+        if (!el) return null;
+        if (el.closest(".sk-trash")) return {trash: true};
+        var slot = el.closest(".sk-studio .sk-river > .sk-slot");
+        return slot ? {slot: slot, i: +slot.getAttribute("data-si")} : null;
+    };
+    root.addEventListener("pointerdown", function(ev) {
+        if (!S.studio || S.screen != "game" || drag) return;
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        var box = ev.target.closest(".sk-studio .sk-river .sk-tilebox[data-uid]");
+        if (!box || ev.target.closest("button")) return;
+        drag = {box: box, uid: box.dataset.uid, x: ev.clientX, y: ev.clientY, id: ev.pointerId, on: false};
+    });
+    root.addEventListener("pointermove", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) {
+            if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) < 8) return;
+            drag.on = true;
+            var rc = drag.box.getBoundingClientRect();
+            drag.dx = drag.x - rc.left; drag.dy = drag.y - rc.top;
+            drag.ghost = drag.box.cloneNode(true);
+            drag.ghost.className = "sk-tilebox sk-ghost"; drag.ghost.removeAttribute("data-act"); drag.ghost.removeAttribute("tabindex");
+            drag.ghost.style.width = rc.width + "px";
+            document.body.appendChild(drag.ghost);
+            drag.box.classList.add("sk-dragging");
+            root.insertAdjacentHTML("beforeend", "<div class='sk-trash' aria-hidden='true'><i>&#xf2ed;</i><span>" + e(t("drop_remove")) + "</span></div>");
+            drag.trash = root.querySelector(".sk-trash");
+            try { drag.box.setPointerCapture(ev.pointerId); } catch (x) {}
+            S.hideTip(); S.closeHp();
+        }
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.dx) + "px"; drag.ghost.style.top = (ev.clientY - drag.dy) + "px";
+        var tg = targetAt(ev.clientX, ev.clientY);
+        root.querySelectorAll(".sk-droptarget").forEach(function(x) { x.classList.remove("sk-droptarget"); });
+        drag.trash.classList.toggle("hot", !!(tg && tg.trash));
+        if (tg && tg.slot) tg.slot.classList.add("sk-droptarget");
+        // Défilement près des bords (téléphone).
+        if (ev.clientY < 70) root.scrollTop -= 12; else if (ev.clientY > window.innerHeight - 70) root.scrollTop += 12;
+    });
+    root.addEventListener("pointerup", function(ev) {
+        if (!drag || ev.pointerId != drag.id) return;
+        if (!drag.on) { drag = null; return; }
+        var tg = targetAt(ev.clientX, ev.clientY), uid = drag.uid;
+        clean();
+        S._suppressClick = true; setTimeout(function() { S._suppressClick = false; }, 60);
+        if (!tg) return;
+        if (tg.trash) S.studioRemove(uid); else S.studioMove(uid, tg.i);
+    });
+    root.addEventListener("pointercancel", clean);
+    // Le glisser natif des images (souris) annulerait le nôtre.
+    root.addEventListener("dragstart", function(ev) { if (S.studio && ev.target.closest(".sk-river")) ev.preventDefault(); });
+};
+S.studioMove = function(uid, to) {
+    var st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
+    to = Math.min(to, st.river.length - 1);
+    if (i < 0 || to == i) return;
+    S.snapshot();
+    st.river.splice(to, 0, st.river.splice(i, 1)[0]);
+    S.renumberRiver();
+    commit();
+};
+S.studioRemove = function(uid) {
+    var st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
+    if (i < 0) return;
+    S.snapshot();
+    var gone = st.river.splice(i, 1)[0];
+    S.forgetSlot(gone);
+    st.removed = (st.removed || []).filter(function(u) { return u != uid; });
+    if (st.current == uid) st.current = null;
+    if (st.highlight == uid) st.highlight = null;
+    S.renumberRiver();
+    commit();
+};
+
 // ---------- Initialisation ----------
 var origInit = S.init;
 S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
     S.bindTurnPress(root);
+    S.bindStudioDrag(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest(".sk-tabs [data-nav]"); if (!b) return;
