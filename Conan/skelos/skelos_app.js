@@ -265,11 +265,27 @@ S.renderCampaigns = function() {
 S.heroColor = function(c, hid) { var hh = (c.heroes || []).filter(function(x) { return x.id == hid; })[0]; return hh ? hh.color : null; };
 // Changement de propriétaire d'un objet : l'objet de départ garde le héros d'origine, le journal note le transfert.
 S.setItemOwner = function(c, it, owner) {
+    if (it.kind == "up") return owner ? S.setTaker(c, it, owner, true) : false;
     owner = owner || null; if ((it.owner || null) == owner) return false;
     if (it.start && !it.startHero && it.owner) it.startHero = it.owner;
     var nm = function(id) { var h = id ? (c.heroes || []).filter(function(x) { return x.id == id; })[0] : null; return h ? h.name : t("common_cache"); };
     S.campLog(c, t("clog_move", it.name, nm(it.owner), nm(owner)));
     it.owner = owner; return true;
+};
+// Améliorations : plusieurs héros peuvent prendre la même ; elle reste toujours dans la cache (liste « takers »).
+// Équipements et sorts : un seul propriétaire (« owner »), comme avant.
+S.takers = function(it) {
+    if (it.kind != "up") return it.owner ? [it.owner] : [];
+    var l = (it.takers || []).slice(); if (it.owner && l.indexOf(it.owner) < 0) l.push(it.owner);
+    return l;
+};
+S.heldBy = function(it, hid) { return S.takers(it).indexOf(hid) >= 0; };
+S.setTaker = function(c, it, hid, on) {
+    var l = S.takers(it), has = l.indexOf(hid) >= 0; if (!hid || !!on == has) return false;
+    var h = (c.heroes || []).filter(function(x) { return x.id == hid; })[0];
+    it.takers = on ? l.concat([hid]) : l.filter(function(x) { return x != hid; }); it.owner = null;
+    S.campLog(c, t(on ? "clog_up_taken" : "clog_up_left", it.name, h ? h.name : "?"));
+    return true;
 };
 S.startLabel = function(c, it) {
     var id = it.startHero || it.owner, h = id ? (c.heroes || []).filter(function(x) { return x.id == id; })[0] : null;
@@ -277,10 +293,12 @@ S.startLabel = function(c, it) {
 };
 S.chipCode = function(c, it, opts) {
     opts = opts || {};
-    var col = it.owner ? S.heroColor(c, it.owner) : null, hero = it.owner ? (c.heroes || []).filter(function(x) { return x.id == it.owner; })[0] : null;
+    // Une pastille par héros qui possède l'objet (plusieurs pour une amélioration partagée).
+    var heroes = S.takers(it).map(function(id) { return (c.heroes || []).filter(function(x) { return x.id == id; })[0]; }).filter(Boolean);
     return "<button class='sk-chip sk-k-" + it.kind + "' data-card='" + it.kind + ":" + e(it.ref) + "'"
-        + (opts.menu ? " data-act='itemmenu' data-cid='" + c.id + "' data-item='" + it.uid + "'" : "") + ">"
-        + (hero && opts.initial !== false ? "<span class='sk-ini' style='--hc:" + col + "' title='" + e(hero.name) + "'>" + e(hero.name.charAt(0)) + "</span>" : "") + e(it.name)
+        + (opts.menu ? " data-act='itemmenu' data-cid='" + c.id + "' data-item='" + it.uid + "'" : "")
+        + (opts.hero ? " data-from='" + opts.hero + "'" : "") + ">"
+        + (opts.initial !== false ? heroes.map(function(hh) { return "<span class='sk-ini' style='--hc:" + hh.color + "' title='" + e(hh.name) + "'>" + e(hh.name.charAt(0)) + "</span>"; }).join("") : "") + e(it.name)
         + (it.start ? " <span class='sk-lock' title='" + e(S.startLabel(c, it)) + "'>🔒</span>" : "") + "</button>";
 };
 
@@ -476,7 +494,7 @@ S.openHeroEditor = function(cid, hid) {
                     S.updateCampaign(cid, function(x) { x.heroes = x.heroes.filter(function(z) { return z.id != hid; });
                         // Son équipement de départ part avec lui ; ses autres objets restent dans la cache.
                         x.cache = x.cache.filter(function(it) { return !(it.start && (it.startHero || it.owner) == hid); });
-                        x.cache.forEach(function(it) { if (it.owner == hid) it.owner = null; }); });
+                        x.cache.forEach(function(it) { if (it.owner == hid) it.owner = null; if (it.takers) it.takers = it.takers.filter(function(z) { return z != hid; }); }); });
                     S.rerender();
                 });
             }
@@ -485,12 +503,12 @@ S.openHeroEditor = function(cid, hid) {
 // Attribuer à un héros : objets libres de la cache, ou nouveaux objets.
 S.openAssign = function(cid, hid) {
     var c = S.campaign(cid), hh = c.heroes.filter(function(x) { return x.id == hid; })[0];
-    var free = (c.cache || []).filter(function(it) { return it.owner != hid; });
+    var free = (c.cache || []).filter(function(it) { return !S.heldBy(it, hid); });
     S.dialog("<h2>" + e(t("assign_to", hh.name)) + "</h2>"
         + (free.length ? "<div class='sk-fl'>" + t("from_cache") + "</div><div class='sk-chips'>" + free.map(function(it) {
-            var ow = it.owner ? (c.heroes || []).filter(function(x) { return x.id == it.owner; })[0] : null;
+            var ow = S.takers(it).map(function(id) { return (c.heroes || []).filter(function(x) { return x.id == id; })[0]; }).filter(Boolean);
             return "<button class='sk-chip sk-k-" + it.kind + "' data-card='" + it.kind + ":" + e(it.ref) + "' data-give='" + it.uid + "'>"
-                + (ow ? "<span class='sk-ini' style='--hc:" + ow.color + "' title='" + e(ow.name) + "'>" + e(ow.name.charAt(0)) + "</span>" : "") + e(it.name) + "</button>";
+                + ow.map(function(o) { return "<span class='sk-ini' style='--hc:" + o.color + "' title='" + e(o.name) + "'>" + e(o.name.charAt(0)) + "</span>"; }).join("") + e(it.name) + "</button>";
         }).join("") + "</div><small>" + t("from_cache_help") + "</small>" : "<p>" + t("cache_empty") + "</p>")
         + "<div class='sk-actions'><button class='sk-btn sk-primary' data-new>" + t("new_items") + "</button><button class='sk-btn' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
@@ -510,13 +528,29 @@ S.openAssign = function(cid, hid) {
 };
 S.openItemMenu = function(cid, iuid) {
     var c = S.campaign(cid), it = (c.cache || []).filter(function(x) { return x.uid == iuid; })[0]; if (!it) return;
-    S.dialog("<h2>" + e(it.name) + "</h2><div class='sk-fl'>" + t("owner") + "</div><div class='sk-chips'>"
-        + "<button class='sk-chip" + (!it.owner ? " sk-sel" : "") + "' data-own=''>" + t("nobody") + "</button>"
-        + c.heroes.map(function(hh) { return "<button class='sk-chip sk-own" + (it.owner == hh.id ? " sk-sel" : "") + "' style='--hc:" + hh.color + "' data-own='" + hh.id + "'>" + e(hh.name) + "</button>"; }).join("") + "</div>"
+    var up = it.kind == "up", tk = S.takers(it);
+    S.dialog("<h2>" + e(it.name) + "</h2><div class='sk-fl'>" + t(up ? "taken_by" : "owner") + "</div><div class='sk-chips'>"
+        + "<button class='sk-chip" + (!tk.length ? " sk-sel" : "") + "' data-own=''>" + t("nobody") + "</button>"
+        + c.heroes.map(function(hh) { return "<button class='sk-chip sk-own" + (tk.indexOf(hh.id) >= 0 ? " sk-sel" : "") + "' style='--hc:" + hh.color + "' data-own='" + hh.id + "'" + (up ? " aria-pressed='" + (tk.indexOf(hh.id) >= 0) + "'" : "") + ">" + e(hh.name) + "</button>"; }).join("") + "</div>"
+        + (up ? "<p class='sk-help'>" + t("up_shared_help") + "</p>" : "")
         + "<label class='sk-check'><input type='checkbox' id='sk-st'" + (it.start ? " checked" : "") + "> " + t("start_item") + "</label>"
         + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm" + (it.start ? " disabled title='" + e(t("start_item_locked")) + "'" : "") + ">" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
             var o = ev.target.closest("[data-own]");
+            if (o && up) {
+                // Amélioration : chaque héros se coche ou se décoche, « Personne » la reprend à tous ; le menu reste ouvert.
+                var who = o.dataset.own, now = [];
+                S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) {
+                    if (y.uid != iuid) return;
+                    if (!who) S.takers(y).forEach(function(h) { S.setTaker(x, y, h, false); }); else S.setTaker(x, y, who, !S.heldBy(y, who));
+                    now = S.takers(y);
+                }); });
+                o.closest(".sk-chips").querySelectorAll("[data-own]").forEach(function(b) {
+                    var on = b.dataset.own ? now.indexOf(b.dataset.own) >= 0 : !now.length;
+                    b.classList.toggle("sk-sel", on); if (b.dataset.own) b.setAttribute("aria-pressed", on);
+                });
+                return;
+            }
             if (o) { S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) S.setItemOwner(x, y, o.dataset.own); }); }); close(); S.rerender(); return; }
             if (ev.target.closest("[data-dup]")) { S.updateCampaign(cid, function(x) { x.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: null, start: false}); }); close(); S.rerender(); return; }
             // Un équipement de départ ne se retire pas de la cache : il disparaît seulement avec son héros.
@@ -525,6 +559,14 @@ S.openItemMenu = function(cid, iuid) {
         });
     S.root.querySelector("#sk-st").addEventListener("change", function(ev) { var v = ev.target.checked; S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) { y.start = v; y.startHero = v ? (y.startHero || y.owner || null) : null; } }); });
         var rm = S.root.querySelector("#sk-overlay [data-rm]"); if (rm) { rm.disabled = v; rm.title = v ? t("start_item_locked") : ""; } });
+    // Fermer le menu d'une amélioration redessine la campagne avec ses nouvelles pastilles.
+    if (up) {
+        var ov = S.root.querySelector("#sk-overlay"), prev = ov.onclick;
+        ov.onclick = function(ev) {
+            if (ev.target === ov || ev.target.closest("[data-dclose]")) { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; S.rerender(); return; }
+            prev(ev);
+        };
+    }
 };
 S.rerender = function() {
     if (S.screen == "campaign") S.renderCampaign(S.curCampaign);
@@ -537,9 +579,9 @@ S.heroesSectionCode = function(cid) {
     var c = S.campaign(cid); if (!c) return "";
     var h = "<h2>" + t("heroes_equipment") + "</h2><p class='sk-help'>" + t("heroes_equipment_help") + "</p><div class='sk-heroes-prep'>";
     (c.heroes || []).forEach(function(hh) {
-        var items = (c.cache || []).filter(function(it) { return it.owner == hh.id; });
+        var items = (c.cache || []).filter(function(it) { return S.heldBy(it, hh.id); });
         h += "<div class='sk-hero" + (hh.dead ? " dead" : "") + "' style='--hc:" + hh.color + "'><div class='sk-hero-h'><span class='sk-hero-n'>" + e(hh.name) + "</span>" + (hh.archetype ? "<span class='sk-arch'>" + e(hh.archetype) + "</span>" : "") + "</div><div class='sk-chips'>"
-            + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false}); }).join("")
+            + items.map(function(it) { return S.chipCode(c, it, {menu: true, initial: false, hero: hh.id}); }).join("")
             + "<button class='sk-chip sk-chipadd' data-act='heroassign' data-cid='" + c.id + "' data-hero='" + hh.id + "'>+ " + t("assign") + "</button></div></div>";
     });
     if (!(c.heroes || []).length) h += "<p class='sk-help'>" + t("no_hero") + "</p>";
@@ -676,7 +718,8 @@ S.showCard = function(code) {
     if (S.screen == "campaign" || S.screen == "setup" || S.screen == "end") {
         var c = S.campaign(S.curCampaign || (S.ctx && S.ctx.cid) || (S.state && S.state.campaign && S.state.campaign.cid));
         if (c) {
-            var owners = (c.cache || []).filter(function(x) { return x.kind == kind && x.ref == ref && x.owner; }).map(function(x) { return c.heroes.filter(function(hh) { return hh.id == x.owner; })[0]; }).filter(Boolean);
+            var owners = [], seenH = {};
+            (c.cache || []).filter(function(x) { return x.kind == kind && x.ref == ref; }).forEach(function(x) { S.takers(x).forEach(function(id) { var hh = c.heroes.filter(function(z) { return z.id == id; })[0]; if (hh && !seenH[id]) { seenH[id] = 1; owners.push(hh); } }); });
             if (owners.length) who = "<div class='sk-who'>" + t("assigned_to") + " " + owners.map(function(hh) { return "<span style='color:" + hh.color + "'>● " + e(hh.name) + "</span>"; }).join(", ") + "</div>";
         }
     }
@@ -889,7 +932,7 @@ S.saveEnd = function() {
                 S.syncScenario(sc); sc.notes = d.notes;
                 sc.setup = sc.setup || JSON.parse(JSON.stringify(st.scenario));
             }
-            d.loot.forEach(function(it) { c.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: it.owner || null, start: false}); });
+            d.loot.forEach(function(it) { var up = it.kind == "up"; c.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: up ? null : it.owner || null, takers: up && it.owner ? [it.owner] : undefined, start: false}); });
             d.fallen.forEach(function(hid) { c.heroes.forEach(function(hh) { if (hh.id == hid) { hh.dead = true; hh.deadAt = link.idx + 1; } }); });
             c.last = d.date;
             var title = (sc && sc.title) || st.scenario.title || "";
