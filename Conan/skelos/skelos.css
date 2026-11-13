@@ -1033,11 +1033,14 @@ html.skelos-full nav.menu { display: none !important; }
 /* Phase en cours : rouge (Overlord) ou bleu (Héros), étapes en grille 2×2 */
 .sk-a-phase { align-items: stretch; justify-content: flex-start; gap: 8px; padding: 10px 12px; color: #fff; border: 0; text-align: left; }
 .sk-a-phase.ov { background: var(--pov); } .sk-a-phase.he { background: var(--phe); }
-.sk-pphase-t { font-family: 'Primary', serif; font-size: 1.85rem; line-height: 1.05; border-bottom: 1px solid rgba(255,255,255,.4); padding-bottom: 6px; }
+.sk-pphase-t { font-family: 'Primary', serif; font-size: 1.15rem; overflow-wrap: anywhere; line-height: 1.05; border-bottom: 1px solid rgba(255,255,255,.4); padding-bottom: 6px; }
 .sk-a-phase ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; }
 .sk-a-phase li { background: rgba(255,255,255,.16); border-radius: 6px; padding: 6px 8px; font-size: 1.2rem; line-height: 1.1; display: flex; align-items: center; gap: 7px; }
 .sk-pnum { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #3a1a12; display: grid; place-items: center; font-family: 'Motrg', serif; font-size: 1rem; }
-.sk-a-phase li.cur { font-weight: bold; }
+.sk-a-phase:has(li.cur) li:not(.cur) { opacity: .55; }
+.sk-a-phase li.cur { font-weight: bold; background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.45), 0 4px 12px rgba(0,0,0,.35); transform: scale(1.04); position: relative; z-index: 1; }
+.sk-a-phase.ov li.cur { color: var(--pov); } .sk-a-phase.he li.cur { color: var(--phe); }
+.sk-a-phase.ov li.cur .sk-pnum { background: var(--pov); color: #fff; } .sk-a-phase.he li.cur .sk-pnum { background: var(--phe); color: #fff; }
 
 /* Tour de l'Overlord : libellé fixe, liseré rouge, Commencer / Terminer, emplacements d'activation 2 par ligne */
 .sk-a-ov { border-top: 6px solid var(--pov); gap: 8px; }
