@@ -40,9 +40,17 @@ S.token = function(kind, value, extra, cls) {
     if (kind == "recover") return "<span class='sk-recovtok'><svg viewBox='0 0 24 24' aria-hidden='true'><path d='M19 12a7 7 0 1 1-2.05-4.95' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'/><path d='M18.5 3.5v4.5H14' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg><b>" + value + "</b></span>";
     return "<span class='sk-recovtok'><b>" + value + "</b></span>";
 };
+// Cercles d'activation : le pion de rang payé (Aventure) ou le jeton tiré (Coop) prend la place d'un cercle vide.
 S.activationSlots = function(used, max) {
+    var st = S.state, solo = st && st.mode == "solo", marks = used ? ((st && st.actMarks) || []).slice(-used) : [];
     var h = "<span class='sk-actslots'>";
-    for (var i = 0; i < max; i++) h += i < used ? "<img class='sk-actgem' src='" + S.icon("gem") + "' alt=''>" : "<span class='sk-actempty'></span>";
+    for (var i = 0; i < max; i++) {
+        var n = i < used ? marks[i - (used - marks.length)] : null;
+        if (i >= used) h += "<span class='sk-actempty'></span>";
+        else if (!n) h += "<img class='sk-actgem' src='" + S.icon("gem") + "' alt=''>";
+        else if (solo) h += "<img class='sk-actgem sk-actmarker' src='" + S.marker(n) + "' alt='" + n + "'>";
+        else h += S.rankToken(n, "sk-actgem sk-actrank");
+    }
     return h + "</span>";
 };
 
@@ -68,14 +76,14 @@ S.costToken = function(slot, i) {
 //             Jetons disponibles (1 à 3) · Héros en jeu (4-5) · Phase en cours (6-7) · Tour de l'Overlord (8)
 var title = function(k) { return "<div class='sk-ptitle'>" + e(t(k)) + "</div>"; };
 
-// Jeton du cadre Tour (sablier ou alarme) : appui long pour faire apparaître − et + de part et d'autre.
+// Jeton du cadre Tour (sablier ou alarme) : − et + de part et d'autre en mode studio seulement.
 S.turnTokenCode = function(kind) {
-    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = S._turnEdit == kind || !!S.studio;
+    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = !!S.studio;
     var minus = turn ? "turnminus" : "turnsminus", plus = turn ? "turnplus" : "turnsplus", tab = open ? 0 : -1;
     var label = turn ? t("turn") + " " + st.turn : (st.turns ? t("turn_limit") + " " + st.turns : t("turn_limit_none"));
     return "<span class='sk-ptok" + (open ? " editing" : "") + "' data-turnwrap='" + kind + "'>"
         + "<button class='sk-pstep' data-act='" + minus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_prev" : "aria_limit_minus")) + "'>−</button>"
-        + "<span class='sk-tokimg sk-tokround' data-turnpress='" + kind + "' role='button' tabindex='0' aria-label='" + e(label) + "' title='" + e(t(turn ? "turn_hint" : "turn_limit_hint")) + "'>"
+        + "<span class='sk-tokimg sk-tokround' data-turnkind='" + kind + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "'>"
         + "<img src='" + S.icon(turn ? "time" : "alarm") + "' alt=''><b>" + val + "</b></span>"
         + "<button class='sk-pstep' data-act='" + plus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_next" : "aria_limit_plus")) + "'>+</button></span>";
 };
@@ -169,38 +177,6 @@ S.adjustTurns = function(d) {
     st.turns = v; st.scenario.turns = v;
     S.save(); S.renderGame();
 };
-S.openTurnEdit = function(kind) {
-    S.closeTurnEdit();
-    S._turnEdit = kind;
-    var w = S.root.querySelector("[data-turnwrap='" + kind + "']");
-    if (w) { w.classList.add("editing"); w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = 0; }); }
-    if (navigator.vibrate) navigator.vibrate(20);
-};
-S.closeTurnEdit = function() {
-    S._turnEdit = null;
-    if (!S.root) return;
-    S.root.querySelectorAll(".sk-ptok.editing").forEach(function(w) { w.classList.remove("editing"); w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = -1; }); });
-};
-S.bindTurnPress = function(root) {
-    var timer = null, sx = 0, sy = 0;
-    root.addEventListener("pointerdown", function(ev) {
-        if (ev.pointerType == "mouse" && ev.button != 0) return;
-        var el = ev.target.closest("[data-turnpress]"); if (!el) return;
-        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
-        timer = setTimeout(function() { timer = null; S._suppressClick = true; S.openTurnEdit(el.dataset.turnpress); }, 450);
-    });
-    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; } });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); timer = null; }); });
-    root.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-turnpress]")) ev.preventDefault(); });
-    // Un appui ailleurs referme les boutons − et +.
-    root.addEventListener("click", function(ev) { if (S._turnEdit && !ev.target.closest(".sk-ptok.editing")) S.closeTurnEdit(); }, true);
-    root.addEventListener("keydown", function(ev) {
-        if (ev.key == "Escape" && S._turnEdit) { S.closeTurnEdit(); return; }
-        var el = ev.target.closest && ev.target.closest("[data-turnpress]");
-        if (el && (ev.key == "Enter" || ev.key == " ")) { ev.preventDefault(); S.openTurnEdit(el.dataset.turnpress); var b = S.root.querySelector("[data-turnwrap='" + el.dataset.turnpress + "'] .sk-pstep"); if (b) b.focus(); }
-    });
-};
-
 // Boutons propres au nouveau panneau.
 var origBindGame = S.bindGame;
 S.bindGame = function() {
@@ -210,7 +186,8 @@ S.bindGame = function() {
         switch (b.dataset.act) {
             case "turnsplus": S.adjustTurns(1); break;
             case "turnsminus": S.adjustTurns(-1); break;
-            case "journal": case "help": S.toast(t("coming_soon")); break;
+            case "journal": S.openJournal(); break;
+            case "help": S.toast(t("coming_soon")); break;
         }
     });
 };
@@ -220,7 +197,6 @@ var origRenderGame = S.renderGame;
 S.renderGame = function() {
     origRenderGame.apply(S, arguments);
     var st = S.state, r = S.root;
-    if (S._turnEdit) S.openTurnEdit(S._turnEdit);
     r.querySelectorAll(".sk-token").forEach(function(tk) {
         var n = parseInt(tk.textContent, 10); if (!n) return;
         tk.innerHTML = S.rankToken(n); tk.classList.add("sk-tokenimg");
@@ -229,14 +205,6 @@ S.renderGame = function() {
         if (!S.isEvent(s)) return;
         var box = r.querySelector(".sk-tilebox[data-uid='" + s.uid + "']"); if (box) box.setAttribute("data-eventuid", s.uid);
     });
-    var texts = S.eventTexts();
-    if (texts.length) {
-        var side = r.querySelector(".sk-side"), old = side && side.querySelector(".sk-card");
-        var card = "<div class='sk-card" + (st.lastEvent ? " sk-alert" : "") + "'><h3>" + t("scenario_events") + "</h3>" + (st.lastEvent ? "<p class='sk-em'>" + t("event_activated") + "</p>" : "")
-            + texts.map(function(x) { return "<p class='sk-evtitle'>" + e(t("event_n", x.pos)) + "</p><ul>" + x.lines.map(function(l) { return "<li>" + e(l) + "</li>"; }).join("") + "</ul>"; }).join("") + "</div>";
-        if (old && old.querySelector("h3") && old.querySelector("h3").textContent == t("scenario_events")) old.outerHTML = card;
-        else if (side) side.insertAdjacentHTML("afterbegin", card);
-    }
     S.placeTabs();
     S.syncFullscreenButton();
 };
@@ -563,7 +531,7 @@ S.socleName = function(c) { return (typeof Tile != "undefined" && Tile._i18n && 
 
 S.toggleStudio = function(on) {
     S.studio = on == null ? !S.studio : !!on;
-    S.closeTurnEdit(); S.closeHp(); S.selected = null;
+    S.closeHp(); S.selected = null;
     S.renderGame();
 };
 
@@ -665,12 +633,30 @@ S.bindGame = function() {
     });
 };
 
+var origRenderEndLog = S.renderEnd;
+S.renderEnd = function(keep) {
+    if (!keep && S.state && S.screen == "game") { S.log(t("log_end")); S.save(); }
+    return origRenderEndLog.apply(S, arguments);
+};
 S.restartGame = function() {
     S.ask(t("confirm_restart"), t("restart_game"), function() {
-        var camp = S.state.campaign;
-        S.draft = S.scenarioFromState(); S.live = false;
-        S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
-        S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
+        var st = S.state;
+        if (st.origin) {
+            S.snapshot();
+            var o = JSON.parse(JSON.stringify(st.origin));
+            o.origin = st.origin; o.campaign = st.campaign;
+            o.scenario.title = st.scenario.title; o.scenario.notes = st.scenario.notes;
+            o.log = [];
+            S.state = o; S.selected = null; S._hpOpen = null;
+        } else {
+            // Partie commencée avant cette version : on repart du scénario d'origine connu.
+            var camp = st.campaign;
+            S.draft = JSON.parse(JSON.stringify(st.scenario)); S.live = false;
+            S.ctx = camp ? {cid: camp.cid, idx: camp.idx} : null;
+            S.clearGame(); S.startGame(S.draft.river.length ? true : "blank");
+            if (S.state) S.state.log = [];
+        }
+        if (S.state) { S.log(t("log_restart")); S.save(); S.renderGame(); }
     });
 };
 S.studioLife = function(uid, d) {
@@ -783,11 +769,15 @@ S.openSaveScenario = function() {
 S.saveScenarioFromDialog = function() {
     var title = (document.getElementById("sk-savetitle").value || "").trim();
     if (!title) { document.getElementById("sk-savemsg").textContent = t("title_required"); document.getElementById("sk-savetitle").focus(); return; }
-    var st = S.state;
+    var st = S.state, before = st.scenario.title || "";
     st.scenario.title = title;
     st.scenario.notes = document.getElementById("sk-savenotes").value;
+    if (before != title) S.log(before ? t("log_title", before, title) : t("log_title_new", title));
+    S.log(t("log_saved", title));
     S.save();
-    S.saveScenarioCopy(S.scenarioFromState());
+    var d = S.scenarioFromState();
+    d.saved = S.stateCopy(st, true);
+    S.saveScenarioCopy(d);
     Nav.closeDialog();
 };
 
@@ -877,13 +867,155 @@ S.studioRemove = function(uid) {
     commit();
 };
 
+// ---------- Menu contextuel des tuiles (appui long, ou clic droit à la souris) ----------
+// Remplace le panneau du bas : un appui simple sélectionne la tuile (activation par le pion), un appui long ouvre ses actions.
+S.openTileMenu = function(uid) {
+    var st = S.state, s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
+    var solo = st.mode == "solo", items = [];
+    if (!s.dead) items.push(["dead", t("mark_dead")]);
+    else {
+        var rc = S.reinforceCost(s);
+        items.push(["reinf", rc ? t(rc == 1 ? "reinforce_cost_1" : "reinforce_cost", t("reinforce"), rc) : t("reinforce")]);
+        if (!solo) items.push(["purge", t("purge")]);
+        if (solo && st.removed.indexOf(uid) < 0) items.push(["rmtoken", t("remove_token")]);
+    }
+    S.hideTip(); S.closeHp();
+    var ov = S.root.querySelector("#sk-overlay");
+    ov.innerHTML = "<div class='sk-dialog sk-menu sk-tilemenu' role='menu' aria-label='" + e(S.tileName(s)) + "'><h2>" + e(S.tileName(s)) + "</h2>"
+        + items.map(function(x) { return "<button class='sk-btn" + (x[0] == "purge" || x[0] == "rmtoken" ? " sk-danger" : "") + "' data-m='" + x[0] + "' role='menuitem'>" + e(x[1]) + "</button>"; }).join("") + "</div>";
+    ov.classList.add("on");
+    var shut = function() { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; };
+    ov.onkeydown = function(ev) { if (ev.key == "Escape") shut(); };
+    ov.onclick = function(ev) {
+        var b = ev.target.closest("[data-m]"); if (!b && ev.target !== ov) return;
+        shut();
+        if (!b) return;
+        switch (b.dataset.m) {
+            case "dead": S.markDead(uid); break;
+            case "reinf": S.reinforce(uid); break;
+            case "purge": S.purge(uid); break;
+            case "rmtoken": S.removeToken(uid); break;
+        }
+    };
+    if (navigator.vibrate) navigator.vibrate(20);
+    ov.querySelector("[data-m]").focus();
+};
+S.bindTileMenu = function(root) {
+    var timer = null, sx = 0, sy = 0;
+    var tileAt = function(target) {
+        if (S.studio || S.screen != "game") return null;
+        if (target.closest("[data-skill], .sk-hpwrap, [data-hp], button")) return null;
+        var box = target.closest(".sk-river .sk-tilebox[data-uid]"); if (!box) return null;
+        var s = S.slotByUid(box.dataset.uid);
+        return s && !S.isEvent(s) ? s.uid : null;
+    };
+    var stop = function() { clearTimeout(timer); timer = null; };
+    root.addEventListener("pointerdown", function(ev) {
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        var uid = tileAt(ev.target); if (!uid) return;
+        sx = ev.clientX; sy = ev.clientY; stop();
+        timer = setTimeout(function() { timer = null; S._suppressClick = true; S.openTileMenu(uid); }, 450);
+    });
+    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) stop(); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, stop); });
+    root.addEventListener("contextmenu", function(ev) {
+        var uid = tileAt(ev.target); if (!uid) return;
+        ev.preventDefault(); stop(); S.openTileMenu(uid);
+    });
+};
+
+// Activation d'une tuile Événement : l'alerte qui était sur la poignée du panneau devient un message.
+["activate", "drawToken"].forEach(function(k) {
+    var orig = S[k];
+    S[k] = function() {
+        var before = S.state && S.state.log.length;
+        orig.apply(S, arguments);
+        if (S.state && S.state.lastEvent && S.state.log.length != before) S.toast(t("event_activated"));
+    };
+});
+
+// ---------- Journal : notes du scénario, textes des Événements, puis toutes les actions ----------
+S.openJournal = function() {
+    var st = S.state, sc = st.scenario, h = "<div class='sk-journal'>";
+    if (sc.title) h += "<h1>" + e(sc.title) + "</h1>";
+    if (sc.notes) h += "<h2>" + e(t("scenario_notes")) + "</h2><p>" + e(sc.notes).replace(/\n/g, "<br>") + "</p>";
+    var texts = S.eventTexts();
+    if (texts.length) h += "<h2>" + e(t("scenario_events")) + "</h2>" + texts.map(function(x) {
+        return "<h3>" + e(t("event_n", x.pos)) + "</h3><ul>" + x.lines.map(function(l) { return "<li>" + e(l) + "</li>"; }).join("") + "</ul>";
+    }).join("");
+    h += "<h2>" + e(t("journal_actions")) + "</h2>";
+    if (!st.log.length) h += "<p>" + e(t("journal_empty")) + "</p>";
+    else h += "<ol class='sk-jlist'>" + st.log.map(function(l) {
+        var when = l.ts ? new Date(l.ts).toLocaleString(undefined, {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
+        return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + "<b>" + e(t("journal_turn", l.turn)) + "</b> " + e(l.msg) + "</li>";
+    }).join("") + "</ol>";
+    Nav.dialog(e(t("log")), h + "</div>", null, []);
+};
+
+// ---------- Sauvegarde complète, reprise et état de départ ----------
+// Copie de l'état de la partie, sans l'état de départ (et sans le Journal si keepLog est faux).
+S.stateCopy = function(st, keepLog) {
+    var c = JSON.parse(JSON.stringify(st)); delete c.origin;
+    if (!keepLog) c.log = [];
+    return c;
+};
+// Charger un scénario sauvegardé en cours de partie reprend la partie là où elle était, Journal compris.
+var origStartGame = S.startGame;
+S.startGame = function(force) {
+    var d = S.draft;
+    if (d && d.saved) {
+        var cur = S.loadSaved();
+        if (!force && cur && cur.river && cur.river.length) { S.ask(t("confirm_new"), t("confirm_new_yes"), function() { S.startGame(true); }); return; }
+        var st = JSON.parse(JSON.stringify(d.saved));
+        st.scenario.title = d.title || st.scenario.title;
+        if (d.notes != null) st.scenario.notes = d.notes;
+        st.campaign = S.ctx ? {cid: S.ctx.cid, idx: S.ctx.idx} : null;
+        st.origin = S.stateCopy(st);
+        S.undoStack = []; S._hpOpen = null; S.selected = null; S.live = false;
+        S.state = st;
+        S.log(t("log_resume", st.turn));
+        S.save();
+        if (S.onGameStart) S.onGameStart();
+        S.renderGame();
+        return;
+    }
+    origStartGame.apply(S, arguments);
+    if (S.state && !S.state.origin) { S.state.origin = S.stateCopy(S.state); S.save(); }
+};
+// Préparation en mode studio (tour 0, aucune activation) : l'état de départ suit les modifications.
+var origSave = S.save;
+S.save = function() {
+    var st = S.state;
+    if (st && S.studio && !st.turn && !st.activations && S.screen == "game") st.origin = S.stateCopy(st);
+    return origSave.apply(S, arguments);
+};
+
+// ---------- Renfort : la tuile coûte sa valeur de renfort en gemmes (Énergie → Fatigue), en mode Aventure ----------
+S.reinforceCost = function(s) {
+    if (!S.state || S.state.mode != "classic") return 0;
+    var tile = S.tileOf(s), n = tile ? parseInt(tile.reinforcement, 10) : 0;
+    return isNaN(n) ? 0 : n;
+};
+var origReinforce = S.reinforce;
+S.reinforce = function(uid) {
+    var st = S.state, s = S.slotByUid(uid); if (!s) return;
+    var cost = S.reinforceCost(s);
+    if (!cost) return origReinforce.apply(S, arguments);
+    if (st.energy < cost) { S.toast(t("not_enough", cost, st.energy)); return; }
+    S.snapshot();
+    st.energy -= cost; st.fatigue += cost;
+    s.dead = false; if (s.lpMax) s.lp = s.lpMax;
+    S.log(t(cost == 1 ? "log_reinforce_cost_1" : "log_reinforce_cost", S.tileName(s), cost));
+    S.save(); S.renderGame();
+};
+
 // ---------- Initialisation ----------
 var origInit = S.init;
 S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
-    S.bindTurnPress(root);
     S.bindStudioDrag(root);
+    S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest(".sk-tabs [data-nav]"); if (!b) return;
