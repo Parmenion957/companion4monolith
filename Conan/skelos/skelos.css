@@ -1251,3 +1251,9 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 @media (max-width: 700px) { .sk-chead .sk-cback { order: 0; } .sk-chead-t { order: 1; flex-basis: 100%; } .sk-cvp { order: 2; } .sk-chead-acts { order: 3; margin-left: auto; } }
 .sk-chead .sk-chead-row h2 { flex: none !important; width: auto !important; }
 .sk-chead .sk-sinfo { color: var(--body-color) !important; opacity: .85; }
+
+/* Titre de la campagne : le toucher ouvre ses réglages (nom) */
+.sk-ctitle { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; text-align: left; text-transform: inherit; letter-spacing: inherit; }
+.sk-ctitle i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 16px; opacity: .55; }
+.sk-ctitle:hover i, .sk-ctitle:focus-visible i { opacity: 1; color: var(--highlight-color); }
+.sk-ctitle:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 3px; border-radius: 4px; }

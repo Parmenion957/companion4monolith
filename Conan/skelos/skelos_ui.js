@@ -1178,9 +1178,8 @@ S.init = function(root) {
 // Même logique que l'onglet Scénarios : cartes, filtres, écran vide en pêle-mêle, bouton flottant.
 var campMode = function(sc) { var s = sc && sc.setup; return s ? (s.saved ? s.saved.mode : s.mode) : null; };
 S.campaignCardCode = function(c) {
-    var scs = c.scenarios || [], played = S.playedCount(c), vp = S.vpTotal(c), rank = S.rank(c);
+    var scs = c.scenarios || [], played = S.playedCount(c), vp = S.vpTotal(c);
     var info = [t("camp_progress", played, scs.length), t("vp_n", vp)];
-    if (rank) info.push(t("rank_is", rank));
     var dates = [];
     if (c.created) dates.push(t("created_on", fmtDay(c.created)));
     if (c.last) dates.push(t("last_played", fmtDay(c.last)));
@@ -1190,7 +1189,7 @@ S.campaignCardCode = function(c) {
     }).join("");
     return "<article class='sk-scard sk-ccard sk-cardlink' data-camp='" + c.id + "' tabindex='0' role='button' aria-label='" + e(t("open") + " : " + c.name) + "'>"
         + "<div class='sk-scard-head'><h3>" + e(c.name || t("untitled")) + "</h3>"
-        + (c.finished ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + "</div>"
+        + (S.campaignFinished(c) ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + "</div>"
         + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p>"
         + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
         + "<div class='sk-cheroes'>" + (heroes || "<span class='sk-sdates'>" + e(t("camp_no_hero")) + "</span>") + "</div>"
@@ -1227,7 +1226,7 @@ S.renderCampaigns = function() {
     var draw = function() {
         var q = S.norm(pr.campQ || ""), stt = pr.campState || "", sort = pr.campSort || "recent";
         var rows = list.filter(function(c) {
-            return (!q || S.norm(c.name || "").indexOf(q) >= 0) && (!stt || (stt == "done") == !!c.finished);
+            return (!q || S.norm(c.name || "").indexOf(q) >= 0) && (!stt || (stt == "done") == S.campaignFinished(c));
         });
         rows.sort(sort == "alpha"
             ? function(a, b) { return (a.name || "").localeCompare(b.name || "", undefined, {sensitivity: "base"}); }
@@ -1283,14 +1282,14 @@ S.campaignDotsCode = function(c, wrap) {
 };
 // En-tête de la campagne : titre suivi du fil, informations comme sur la carte, points de victoire en évidence, Journal et corbeille.
 S.campaignHeadCode = function(c) {
-    var scs = c.scenarios || [], rank = S.rank(c), info = [t("camp_progress", S.playedCount(c), scs.length)];
-    if (rank) info.push(t("rank_is", rank));
+    var scs = c.scenarios || [], info = [t("camp_progress", S.playedCount(c), scs.length)];
     if (c.created) info.push(t("created_on", fmtDay(c.created)));
     if (c.last) info.push(t("last_played", fmtDay(c.last)));
     var vp = S.vpTotal(c);
     return "<div class='sk-blk sk-headblk sk-chead'><button class='sk-btn sk-cback' data-nav='campaigns'>← " + e(t("campaigns")) + "</button>"
-        + "<div class='sk-chead-t'><div class='sk-chead-row'><h2>" + e(c.name || t("untitled")) + "</h2>"
-        + (c.finished ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + S.campaignDotsCode(c) + "</div>"
+        + "<div class='sk-chead-t'><div class='sk-chead-row'><h2><button class='sk-ctitle' data-cact='settings' title='" + e(t("campaign_settings")) + "'>" + e(c.name || t("untitled"))
+        + "<i aria-hidden='true'>&#xf303;</i></button></h2>"
+        + (S.campaignFinished(c) ? "<span class='sk-sbadge sk-cdone'>" + e(t("camp_done")) + "</span>" : "") + S.campaignDotsCode(c) + "</div>"
         + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p></div>"
         + "<div class='sk-cvp" + (vp < 0 ? " neg" : "") + "' role='img' aria-label='" + e(t("vp_n", vp)) + "'><b>" + vp + "</b><span>" + e(t("victory_points")) + "</span></div>"
         + "<div class='sk-chead-acts'><button class='sk-btn sk-icon sk-cjournal' data-cact='journal' title='" + e(t("log")) + "' aria-label='" + e(t("log")) + "'>&#xf02d;</button>"
@@ -1305,7 +1304,7 @@ S.newCampaign = function() {
         function(ev, close) {
             if (!ev.target.closest("[data-ok]")) return;
             var name = S.root.querySelector("#sk-cn").value.trim() || t("campaign_name_ph");
-            var c = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, tiers: S.defaultTiers(), scenarios: [], heroes: [], cache: [], log: [], created: nowIso()};
+            var c = {id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, scenarios: [], heroes: [], cache: [], log: [], created: nowIso()};
             S.campLog(c, t("clog_created"));
             var l = S.campaigns(); l.push(c); S.saveCampaigns(l);
             close(); S.renderCampaign(c.id);

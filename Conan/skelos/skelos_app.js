@@ -24,7 +24,10 @@ var head = function(back, title, extra) {
 };
 
 // ---------- Données ----------
-S.campaigns = function() { return load(KEY_CAMP, []); };
+S.campaigns = function() {
+    // Le barème des rangs et le statut « terminée » saisi à la main n'existent plus.
+    return load(KEY_CAMP, []).map(function(c) { delete c.tiers; delete c.finished; return c; });
+};
 S.saveCampaigns = function(l) { return store(KEY_CAMP, l); };
 S.campaign = function(cid) { return S.campaigns().filter(function(c) { return c.id == cid; })[0] || null; };
 S.campaignName = function(cid) { var c = S.campaign(cid); return c ? c.name : ""; };
@@ -36,12 +39,12 @@ S.upgrades = function() { return load(KEY_UP, []); };
 S.saveUpgrades = function(l) { return store(KEY_UP, l); };
 S.campLog = function(c, msg) { c.log = c.log || []; c.log.unshift({d: today(), msg: msg}); if (c.log.length > 200) c.log.pop(); };
 
-S.defaultTiers = function() { return [{min: -99, label: "0 à 6 PV"}, {min: 7, label: "7 à 10 PV"}, {min: 11, label: "11 à 14 PV"}, {min: 15, label: "15 PV et plus"}]; };
 S.vpTotal = function(c) { return (c.scenarios || []).reduce(function(a, x) { return a + (x.status && x.status != "todo" ? (parseInt(x.vp, 10) || 0) : 0); }, 0); };
-S.rank = function(c) {
-    var v = S.vpTotal(c), r = null;
-    (c.tiers || S.defaultTiers()).slice().sort(function(a, b) { return a.min - b.min; }).forEach(function(x) { if (v >= x.min) r = x; });
-    return r ? r.label : "";
+// Une campagne est terminée quand le dernier scénario de son fil a été joué et qu'aucune partie de la campagne n'est en cours.
+S.campaignFinished = function(c) {
+    var scs = (c && c.scenarios) || [], last = scs[scs.length - 1];
+    if (!last || !S.scenarioPlays(last).length) return false;
+    return !(S.state && S.state.campaign && S.state.campaign.cid == c.id);
 };
 
 // Catalogue des objets : équipements et sorts du Compagnon, améliorations locales.
@@ -224,7 +227,7 @@ S.renderCampaigns = function() {
         return "<div class='sk-li'><span class='sk-li-t'>" + e(c.name) + "<small>" + t(c.mode == "solo" ? "mode_solo" : "mode_classic") + " · " + t("camp_progress", S.playedCount(c), (c.scenarios || []).length)
             + " · " + S.vpTotal(c) + " PV" + (c.last ? " · " + t("last_played", fmtDate(c.last)) : "") + "</small></span><button class='sk-btn sk-primary' data-camp='" + c.id + "'>" + t("open") + "</button></div>";
     };
-    var cur = camps.filter(function(c) { return !c.finished; }), done = camps.filter(function(c) { return c.finished; });
+    var cur = camps.filter(function(c) { return !S.campaignFinished(c); }), done = camps.filter(function(c) { return S.campaignFinished(c); });
     h += "<div class='sk-blk sk-c5'><h3>" + t("in_progress") + "</h3>" + (cur.length ? cur.map(row).join("") : "<p>" + t("no_campaign") + "</p>")
         + (done.length ? "<h3 class='sk-mt'>" + t("finished") + "</h3>" + done.map(row).join("") : "") + "</div>";
     h += "<div class='sk-blk sk-c3'><h3>" + t("new_campaign") + "</h3>"
@@ -238,7 +241,7 @@ S.renderCampaigns = function() {
         if (m) { mode = m.dataset.mode; S.root.querySelectorAll("[data-mode]").forEach(function(x) { x.classList.toggle("sk-on", x == m); x.setAttribute("aria-pressed", x == m); }); return; }
         if (ev.target.closest("[data-newcamp]")) {
             var name = S.root.querySelector("#sk-cn").value.trim() || t("campaign_name_ph");
-            var c = {id: uid("c"), name: name, mode: mode, tiers: S.defaultTiers(), scenarios: [], heroes: [], cache: [], log: [], created: today()};
+            var c = {id: uid("c"), name: name, scenarios: [], heroes: [], cache: [], log: [], created: today()};
             S.campLog(c, t("clog_created"));
             var l = S.campaigns(); l.push(c); S.saveCampaigns(l); S.renderCampaign(c.id);
         }
@@ -311,6 +314,7 @@ S.renderCampaign = function(cid) {
         var i = +b.dataset.i;
         switch (b.dataset.cact) {
             case "journal": S.openCampaignJournal(c.id); break;
+            case "settings": S.openCampaignSettings(c.id); break;
             case "cdelete": S.deleteCampaign(c.id); break;
             case "addsc": case "choose": S.openChooseScenario(c.id, b.dataset.cact == "choose" ? i : null); break;
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
@@ -355,26 +359,17 @@ S.editField = function(label, type, value, onOk) {
         function(ev, close) { if (ev.target.closest("[data-ok]")) { var v = S.root.querySelector("#sk-ef").value; close(); onOk(v); } });
 };
 S.openCampaignSettings = function(cid) {
-    var c = S.campaign(cid);
-    var tiers = (c.tiers || S.defaultTiers()).map(function(x) { return (x.min <= -99 ? "" : x.min) + " ; " + x.label; }).join("\n");
+    var c = S.campaign(cid); if (!c) return;
     S.dialog("<h2>" + t("campaign_settings") + "</h2>"
         + "<label class='sk-fl'>" + t("name") + "<input class='sk-in' id='sk-cs-n' value='" + e(c.name) + "'></label>"
-        + "<label class='sk-fl'>" + t("tiers") + "<small>" + t("tiers_help") + "</small><textarea class='sk-in' id='sk-cs-t' rows='4'>" + e(tiers) + "</textarea></label>"
-        + "<label class='sk-check'><input type='checkbox' id='sk-cs-f'" + (c.finished ? " checked" : "") + "> " + t("campaign_finished") + "</label>"
-        + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button><button class='sk-btn sk-danger' data-del>" + t("delete_campaign") + "</button></div>",
+        + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button></div>",
         function(ev, close) {
-            if (ev.target.closest("[data-ok]")) {
-                var name = S.root.querySelector("#sk-cs-n").value.trim() || c.name, fin = S.root.querySelector("#sk-cs-f").checked;
-                var tl = S.root.querySelector("#sk-cs-t").value.split("\n").map(function(l) {
-                    var p = l.split(";"); if (!l.trim()) return null;
-                    var m = parseInt(p[0], 10); return {min: isNaN(m) ? -99 : m, label: (p[1] || p[0]).trim()};
-                }).filter(Boolean);
-                S.updateCampaign(cid, function(x) { x.name = name; x.tiers = tl.length ? tl : S.defaultTiers(); x.finished = fin; });
-                close(); S.renderCampaign(cid);
-            } else if (ev.target.closest("[data-del]")) {
-                close(); S.ask(t("confirm_delete_campaign"), t("delete"), function() { S.saveCampaigns(S.campaigns().filter(function(x) { return x.id != cid; })); S.renderCampaigns(); });
-            }
+            if (!ev.target.closest("[data-ok]")) return;
+            var name = S.root.querySelector("#sk-cs-n").value.trim() || c.name;
+            S.updateCampaign(cid, function(x) { x.name = name; });
+            close(); S.renderCampaign(cid);
         });
+    var inp = S.root.querySelector("#sk-cs-n"); if (inp) { inp.focus(); inp.select(); }
 };
 S.openChooseScenario = function(cid, idx) {
     var list = S.scenarios();
