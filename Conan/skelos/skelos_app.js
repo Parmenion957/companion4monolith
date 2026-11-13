@@ -499,10 +499,13 @@ S.openAssign = function(cid, hid) {
                 g.remove(); S.toast(t("item_given", hh.name)); S.rerenderSoft = true; return;
             }
             if (ev.target.closest("[data-new]")) { close(); S.openItemPicker({title: t("assign_to", hh.name), onAdd: function(sel) { S.addItems(cid, sel, hid); S.rerender(); }}); }
-            if (ev.target.closest("[data-dclose]")) S.rerender();
         });
+    // Fermer (bouton ou clic à côté) redessine la campagne : les objets pris dans la cache apparaissent sur la fiche du héros.
     var ov = S.root.querySelector("#sk-overlay"), prev = ov.onclick;
-    ov.onclick = function(ev) { if (ev.target === ov) { ov.classList.remove("on"); ov.innerHTML = ""; S.rerender(); return; } prev(ev); };
+    ov.onclick = function(ev) {
+        if (ev.target === ov || ev.target.closest("[data-dclose]")) { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; S.rerender(); return; }
+        prev(ev);
+    };
 };
 S.openItemMenu = function(cid, iuid) {
     var c = S.campaign(cid), it = (c.cache || []).filter(function(x) { return x.uid == iuid; })[0]; if (!it) return;
