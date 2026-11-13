@@ -455,5 +455,13 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'company_full': "La compagnie compte déjà {0} héros.",
     'in_company': "Déjà dans la compagnie",
     'no_hero_found': "Aucun héros ne correspond.",
-    'hero_equipment': "Équipement"
+    'hero_equipment': "Équipement",
+    'play_title': "Partie du {0}",
+    'play_detail': "Détail de la partie du {0}",
+    'turn_of': "{0} sur {1}",
+    'no_fallen': "Aucun",
+    'confirm_delete_play': "Supprimer cette partie de l’historique du scénario ?",
+    'delete_play': "Supprimer la partie",
+    'last_counts': "Dernière partie : c’est elle qui compte dans le total",
+    'play_scenario': "Scénario"
 });

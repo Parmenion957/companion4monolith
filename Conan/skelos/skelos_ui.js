@@ -1302,7 +1302,7 @@ S.putCampaignScenario = function(cid, idx, setup, title) {
     S.updateCampaign(cid, function(c) {
         var old = at != null ? c.scenarios[at] : null;
         var sc = {id: old ? old.id : "s" + Date.now().toString(36), title: title, status: old ? old.status : "todo", setup: setup, vp: old ? old.vp : 0, date: old ? old.date : null};
-        if (old) { sc.turnReached = old.turnReached; c.scenarios[at] = sc; } else { c.scenarios.push(sc); at = c.scenarios.length - 1; }
+        if (old) { sc.turnReached = old.turnReached; if (old.plays) sc.plays = old.plays; c.scenarios[at] = sc; } else { c.scenarios.push(sc); at = c.scenarios.length - 1; }
         S.campLog(c, t("clog_scenario", title || t("untitled")));
     });
     return at;

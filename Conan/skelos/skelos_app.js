@@ -149,6 +149,45 @@ S.onGameStart = function() {
     S.ctx = null;
 };
 
+// Parties jouées d'un scénario du fil : un scénario se rejoue ; seule la dernière partie compte pour le total.
+S.scenarioPlays = function(sc) {
+    if (sc.plays) return sc.plays;
+    return sc.status == "win" || sc.status == "loss" ? [{date: sc.date || null, result: sc.status, vp: parseInt(sc.vp, 10) || 0, turn: sc.turnReached || null,
+        turns: (sc.setup && sc.setup.turns) || null, title: sc.title || "", notes: sc.notes || "", fallen: []}] : [];
+};
+S.syncScenario = function(sc) {
+    var p = sc.plays = S.scenarioPlays(sc), last = p[p.length - 1];
+    if (last) { sc.status = last.result; sc.vp = last.vp; sc.date = last.date; sc.turnReached = last.turn; }
+    else { if (sc.status == "win" || sc.status == "loss") sc.status = "todo"; sc.vp = 0; sc.date = null; sc.turnReached = null; }
+};
+S.fmtVp = function(v) { v = parseInt(v, 10) || 0; return v > 0 ? "+" + v : v < 0 ? "\u2212" + (-v) : "0"; };
+S.openPlay = function(cid, i, k) {
+    var c = S.campaign(cid), sc = c.scenarios[i], p = S.scenarioPlays(sc)[k]; if (!p) return;
+    var fallen = (p.fallen || []).length ? p.fallen.map(function(n) { return e(n); }).join(", ") : e(t("no_fallen"));
+    S.dialog("<h2>" + e(t("play_title", fmtDate(p.date))) + "</h2><dl class='sk-playdl'>"
+        + "<dt>" + e(t("play_scenario")) + "</dt><dd>" + e(p.title || sc.title || t("untitled")) + "</dd>"
+        + "<dt>" + e(t("turn")) + "</dt><dd>" + e(t("turn_of", p.turn || "?", p.turns || "?")) + "</dd>"
+        + "<dt>" + e(t("result")) + "</dt><dd><span class='sk-pastille sk-sm " + p.result + "'>" + S.fmtVp(p.vp) + "</span> " + e(t(p.result == "win" ? "victory" : "defeat")) + "</dd>"
+        + "<dt>" + e(t("fallen_heroes")) + "</dt><dd>" + fallen + "</dd>"
+        + (p.notes ? "<dt>" + e(t("notes")) + "</dt><dd>" + e(p.notes) + "</dd>" : "") + "</dl>"
+        + "<div class='sk-playedit'><label class='sk-fl'>" + t("game_date") + "<input class='sk-in' id='sk-pd' type='date' value='" + e(p.date || "") + "'></label>"
+        + "<label class='sk-fl'>" + t("victory_points") + "<input class='sk-in' id='sk-pv' type='number' value='" + (parseInt(p.vp, 10) || 0) + "'></label></div>"
+        + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button>"
+        + "<button class='sk-btn sk-danger' data-rm>" + t("delete_play") + "</button></div>",
+        function(ev, close) {
+            if (ev.target.closest("[data-ok]")) {
+                var d = S.root.querySelector("#sk-pd").value || p.date, v = parseInt(S.root.querySelector("#sk-pv").value, 10) || 0; close();
+                S.updateCampaign(cid, function(x) { var s = x.scenarios[i]; s.plays = S.scenarioPlays(s); s.plays[k].date = d; s.plays[k].vp = v; S.syncScenario(s); });
+                S.renderCampaign(cid);
+            } else if (ev.target.closest("[data-rm]")) {
+                close(); S.ask(t("confirm_delete_play"), t("delete"), function() {
+                    S.updateCampaign(cid, function(x) { var s = x.scenarios[i]; s.plays = S.scenarioPlays(s); s.plays.splice(k, 1); S.syncScenario(s); });
+                    S.renderCampaign(cid);
+                });
+            }
+        });
+};
+
 // ---------- Accueil ----------
 S.playedCount = function(c) { return (c.scenarios || []).filter(function(x) { return x.status == "win" || x.status == "loss"; }).length; };
 
@@ -227,16 +266,19 @@ S.renderCampaign = function(cid) {
     // Fil des scénarios
     h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
     (c.scenarios || []).forEach(function(sc, i) {
-        var done = sc.status == "win" || sc.status == "loss", next = i == nextIdx;
-        h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><button class='sk-grip' data-grip='" + i + "' title='" + e(t("move_scenario")) + "' aria-label='" + e(t("move_scenario")) + "'>&#xf58e;</button><span class='sk-sc-n'>" + (i + 1) + "</span><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose"))
-            + "<small>" + (done || sc.date ? "<button class='sk-date' data-cact='date' data-i='" + i + "' aria-label='" + e(t("edit_date")) + "'>📅 " + fmtDate(sc.date) + "</button>" : "")
-            + (done && sc.turnReached ? t("turn_reached", sc.turnReached, sc.setup && sc.setup.turns || "?") : next ? t("next_scenario") : sc.setup ? "" : t("to_choose")) + "</small></span>";
-        if (done) h += "<span class='sk-st " + sc.status + "'>" + t(sc.status == "win" ? "victory" : "defeat") + "</span><button class='sk-vp" + ((parseInt(sc.vp, 10) || 0) < 0 ? " neg" : "") + "' data-cact='vp' data-i='" + i + "' aria-label='" + e(t("edit_vp")) + "'>" + ((sc.vp > 0 ? "+" : "") + (sc.vp || 0)) + "</button>";
-        else if (sc.status == "playing") h += "<span class='sk-st playing'>" + t("in_play") + "</span>" + (S.state && S.state.campaign && S.state.campaign.cid == c.id && S.state.campaign.idx == i ? "<button class='sk-btn sk-primary sk-sm' data-nav='game'>" + t("resume_short") + "</button>" : "<button class='sk-btn sk-primary sk-sm' data-cact='launch' data-i='" + i + "'>" + t("launch") + "</button>");
-        else if (sc.setup) h += "<button class='sk-btn sk-sm' data-cact='prepare' data-i='" + i + "'>" + t("prepare") + "</button><button class='sk-btn sk-primary sk-sm' data-cact='launch' data-i='" + i + "'>" + t("launch") + "</button>";
-        else h += "<button class='sk-btn sk-sm' data-cact='choose' data-i='" + i + "'>" + t("choose") + "</button>";
-        if (!done) h += "<button class='sk-btn sk-icon sk-sm' data-cact='rmsc' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button>";
-        h += "</div>";
+        var next = i == nextIdx, plays = S.scenarioPlays(sc), last = plays[plays.length - 1];
+        var running = !!(S.state && S.state.campaign && S.state.campaign.cid == c.id && S.state.campaign.idx == i);
+        var hint = running ? t("in_play") : plays.length ? "" : next && sc.setup ? t("next_scenario") : sc.setup ? t("thread_todo") : t("to_choose");
+        var acts = (running ? "<button class='sk-btn sk-primary sk-sm' data-nav='game'>" + t("resume_short") + "</button>"
+                : sc.setup ? "<button class='sk-btn sk-sm' data-cact='prepare' data-i='" + i + "'>" + t("prepare") + "</button><button class='sk-btn sk-primary sk-sm' data-cact='launch' data-i='" + i + "'>" + t("launch") + "</button>" : "")
+            + "<button class='sk-btn sk-sm' data-cact='choose' data-i='" + i + "'>" + t("choose") + "</button>"
+            + (!plays.length && !running ? "<button class='sk-btn sk-icon sk-sm' data-cact='rmsc' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button>" : "");
+        h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><button class='sk-grip' data-grip='" + i + "' title='" + e(t("move_scenario")) + "' aria-label='" + e(t("move_scenario")) + "'>&#xf58e;</button><span class='sk-sc-n'>" + (i + 1) + "</span>"
+            + "<div class='sk-sc-main'><div class='sk-sc-top'><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose")) + "</span>"
+            + (last ? "<span class='sk-pastille " + last.result + "' title='" + e(t("last_counts")) + "'>" + S.fmtVp(last.vp) + "</span>" : "") + "</div>"
+            + "<div class='sk-sc-sub'><span class='sk-sc-dates'>" + plays.map(function(p, k) {
+                return "<button class='sk-date sk-date-" + p.result + "' data-cact='play' data-i='" + i + "' data-p='" + k + "' aria-label='" + e(t("play_detail", fmtDate(p.date))) + "'>" + fmtDate(p.date) + "</button>";
+            }).join("") + (hint ? "<span class='sk-sc-hint'>" + e(hint) + "</span>" : "") + "</span><span class='sk-sc-acts'>" + acts + "</span></div></div></div>";
     });
     h += "</div><button class='sk-btn sk-addrow' data-cact='addsc'>+ " + t("add_scenario") + "</button></div>";
     // Compagnie : quatre fiches de héros
@@ -263,8 +305,7 @@ S.renderCampaign = function(cid) {
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
             case "prepare": S.openCampaignEditor(c.id, i); break;
             case "launch": S.launchCampaignScenario(c.id, i); break;
-            case "date": S.editField(t("edit_date"), "date", c.scenarios[i].date || today(), function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].date = v; }); S.renderCampaign(c.id); }); break;
-            case "vp": S.editField(t("edit_vp"), "number", c.scenarios[i].vp || 0, function(v) { S.updateCampaign(c.id, function(x) { x.scenarios[i].vp = parseInt(v, 10) || 0; }); S.renderCampaign(c.id); }); break;
+            case "play": S.openPlay(c.id, i, +b.dataset.p); break;
             case "addhero": S.openHeroPicker(c.id); break;
             case "hero": S.openHeroEditor(c.id, b.dataset.hero); break;
             case "addcache": S.openItemPicker({title: t("add_to_cache"), onAdd: function(sel) { S.addItems(c.id, sel, null); S.renderCampaign(c.id); }}); break;
@@ -770,7 +811,14 @@ S.saveEnd = function() {
     if (link) {
         S.updateCampaign(link.cid, function(c) {
             var sc = c.scenarios[link.idx];
-            if (sc) { sc.status = d.result; sc.vp = d.vp; sc.date = d.date; sc.turnReached = st.turn; sc.notes = d.notes; sc.setup = sc.setup || JSON.parse(JSON.stringify(st.scenario)); }
+            if (sc) {
+                var names = d.fallen.map(function(hid) { return ((c.heroes || []).filter(function(x) { return x.id == hid; })[0] || {}).name; }).filter(Boolean);
+                sc.plays = S.scenarioPlays(sc);
+                sc.plays.push({date: d.date, result: d.result, vp: d.vp, turn: st.turn, turns: st.scenario.turns || (sc.setup && sc.setup.turns) || null,
+                    title: sc.title || st.scenario.title || "", notes: d.notes, fallen: names});
+                S.syncScenario(sc); sc.notes = d.notes;
+                sc.setup = sc.setup || JSON.parse(JSON.stringify(st.scenario));
+            }
             d.loot.forEach(function(it) { c.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: it.owner || null, start: false}); });
             d.fallen.forEach(function(hid) { c.heroes.forEach(function(hh) { if (hh.id == hid) { hh.dead = true; hh.deadAt = link.idx + 1; } }); });
             c.last = d.date;

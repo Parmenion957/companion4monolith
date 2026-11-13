@@ -1165,3 +1165,22 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-hpick-full .sk-inco-t { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; padding: 4px 10px; border-radius: 6px;
     background: var(--body-bg-color); color: var(--body-color); font-size: 15px; white-space: nowrap; }
 @media (max-width: 700px) { .sk-hpicker:has(.sk-hpick-full) { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); } }
+
+/* Fil des scénarios : dates des parties, pastille de la dernière partie */
+.sk-thread .sk-sc { align-items: center; }
+.sk-sc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.sk-sc-top { display: flex; align-items: center; gap: 8px; }
+.sk-sc-top .sk-sc-t { flex: 1; min-width: 0; font-size: 18px; line-height: 1.2; color: var(--body-color); }
+.sk-sc-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sk-sc-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; flex: 1 1 auto; }
+.sk-sc-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.sk-sc-hint { font-size: 15px; color: var(--sk-muted); }
+.sk-thread .sk-date { display: inline-block; flex: none; width: auto; white-space: nowrap; font-size: 15px; padding: 2px 8px; margin: 0; }
+.sk-date-win { border-left: 4px solid #2e7d32 !important; } .sk-date-loss { border-left: 4px solid #b3261e !important; }
+.sk-pastille { flex: none; min-width: 40px; height: 40px; padding: 0 4px; box-sizing: border-box; border-radius: 20px; display: inline-grid; place-items: center;
+    font-family: 'Primary', serif; font-size: 18px; color: #fff; }
+.sk-pastille.win { background: #2e7d32; } .sk-pastille.loss { background: #b3261e; }
+.sk-pastille.sk-sm { min-width: 32px; height: 32px; font-size: 15px; vertical-align: middle; }
+.sk-playdl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 8px 0 12px; align-items: center; font-size: 18px; }
+.sk-playdl dt { color: var(--sk-muted); } .sk-playdl dd { margin: 0; color: var(--body-color); }
+.sk-playedit { display: flex; flex-wrap: wrap; gap: 12px; }
