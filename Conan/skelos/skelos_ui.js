@@ -1054,7 +1054,7 @@ S.bindActivateDrag = function(root) {
             return;
         }
         // La vraie tuile est masquée le temps que la tuile soulevée la rejoigne au bout de la Rivière.
-        S.activate(uid);
+        S._animSkip = uid; S.activate(uid); S._animSkip = null;
         var box = root.querySelector(".sk-river .sk-tilebox[data-uid='" + uid + "']");
         if (!box) { ghost.remove(); return; }
         box.classList.add("sk-dragging");
