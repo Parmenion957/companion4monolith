@@ -271,10 +271,7 @@ S.renderCampaign = function(cid) {
     var c = S.campaign(cid); if (!c) { S.renderCampaigns(); return; }
     S.screen = "campaign"; S.curCampaign = cid;
     var played = S.playedCount(c), nextIdx = (c.scenarios || []).findIndex(function(x) { return x.status == "todo" || x.status == "playing"; });
-    var h = head("campaigns", e(t("campaign_title", c.name)),
-        "<span class='sk-pill'>" + t(c.mode == "solo" ? "mode_solo" : "mode_classic") + "</span><span class='sk-pill'>" + t("camp_progress", played, c.scenarios.length) + "</span>"
-        + "<div class='sk-score'><b>" + S.vpTotal(c) + "</b><small>" + t("victory_points") + "<br>" + e(t("rank_is", S.rank(c))) + "</small></div>"
-        + "<button class='sk-btn sk-icon sk-cjournal' data-cact='journal' title='" + e(t("log")) + "' aria-label='" + e(t("log")) + "'>&#xf02d;</button>");
+    var h = S.campaignHeadCode(c);
     // Fil des scénarios
     h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
     (c.scenarios || []).forEach(function(sc, i) {
@@ -286,7 +283,8 @@ S.renderCampaign = function(cid) {
             + "<button class='sk-btn sk-sm' data-cact='choose' data-i='" + i + "'>" + t("choose") + "</button>"
             + (!plays.length && !running ? "<button class='sk-btn sk-icon sk-sm' data-cact='rmsc' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button>" : "");
         h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><button class='sk-grip' data-grip='" + i + "' title='" + e(t("move_scenario")) + "' aria-label='" + e(t("move_scenario")) + "'>&#xf58e;</button><span class='sk-sc-n'>" + (i + 1) + "</span>"
-            + "<div class='sk-sc-main'><div class='sk-sc-top'><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose")) + "</span>"
+            + "<div class='sk-sc-main'><div class='sk-sc-top'><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose"))
+            + (sc.setup ? " <span class='sk-smode'>" + e(t(((sc.setup.saved || sc.setup).mode) == "solo" ? "mode_solo" : "mode_classic")) + "</span>" : "") + "</span>"
             + (last ? "<span class='sk-pastille " + last.result + "' title='" + e(t("last_counts")) + "'>" + S.fmtVp(last.vp) + "</span>" : "") + "</div>"
             + "<div class='sk-sc-sub'><span class='sk-sc-dates'>" + plays.map(function(p, k) {
                 return "<button class='sk-date sk-date-" + p.result + "' data-cact='play' data-i='" + i + "' data-p='" + k + "' aria-label='" + e(t("play_detail", fmtDate(p.date))) + "'>" + fmtDate(p.date) + "</button>";
@@ -313,6 +311,7 @@ S.renderCampaign = function(cid) {
         var i = +b.dataset.i;
         switch (b.dataset.cact) {
             case "journal": S.openCampaignJournal(c.id); break;
+            case "cdelete": S.deleteCampaign(c.id); break;
             case "addsc": case "choose": S.openChooseScenario(c.id, b.dataset.cact == "choose" ? i : null); break;
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
             case "prepare": S.openCampaignEditor(c.id, i); break;

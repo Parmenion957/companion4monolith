@@ -218,7 +218,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'new_campaign': "Nouvelle campagne",
     'name': "Nom",
     'campaign_name_ph': "Les Exilés de l’Ouest",
-    'new_campaign_help': "Héros, scénarios et barème se règlent ensuite dans la campagne.",
+    'new_campaign_help': "Héros et scénarios s’ajoutent ensuite dans la campagne ; chaque scénario garde son mode (Aventure ou Coop).",
     'create': "Créer",
     'clog_created': "Campagne créée",
     'campaign_title': "Campagne : {0}",
@@ -468,5 +468,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'start_item_of': "Équipement de départ de {0}",
     'item_colors': "Couleurs des objets",
     'item_colors_help': "Chaque type d’objet a sa couleur pastel. Une couleur prise par un type n’est plus proposée aux héros : un héros qui l’avait en reçoit une autre au hasard.",
-    'hero_colors_changed': "Nouvelle couleur attribuée à {0} héros."
+    'hero_colors_changed': "Nouvelle couleur attribuée à {0} héros.",
+    'delete_scenario': "Supprimer le scénario"
 });
