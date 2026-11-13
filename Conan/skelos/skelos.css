@@ -1184,3 +1184,12 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-playdl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 8px 0 12px; align-items: center; font-size: 18px; }
 .sk-playdl dt { color: var(--sk-muted); } .sk-playdl dd { margin: 0; color: var(--body-color); }
 .sk-playedit { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Objets : le cadre suit le type (équipement, sort, amélioration), la pastille indique le propriétaire */
+.sk-chip.sk-k-eq, .sk-chip.sk-k-sp, .sk-chip.sk-k-up { border-width: 2px; border-style: solid; box-shadow: none; }
+.sk-chip.sk-k-eq { border-color: #8a6a3b !important; } .sk-chip.sk-k-sp { border-color: #7d6aa8 !important; } .sk-chip.sk-k-up { border-color: #3f8f7a !important; }
+.sk-chip .sk-ini { width: 20px; height: 20px; flex: none; font-size: 12px; font-weight: bold; color: #1b120d; background: var(--hc); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+/* Carte au survol */
+.sk-cardtip { position: fixed; z-index: 1000; width: 210px; pointer-events: none; display: none; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+.sk-cardtip.on { display: block; }
+.sk-cardtip .sk-icard { width: 100%; margin: 0; }

@@ -249,9 +249,9 @@ S.heroColor = function(c, hid) { var hh = (c.heroes || []).filter(function(x) { 
 S.chipCode = function(c, it, opts) {
     opts = opts || {};
     var col = it.owner ? S.heroColor(c, it.owner) : null, hero = it.owner ? (c.heroes || []).filter(function(x) { return x.id == it.owner; })[0] : null;
-    return "<button class='sk-chip sk-k-" + it.kind + (col ? " sk-own" : "") + "' style='" + (col ? "--hc:" + col : "") + "' data-card='" + it.kind + ":" + e(it.ref) + "'"
+    return "<button class='sk-chip sk-k-" + it.kind + "' data-card='" + it.kind + ":" + e(it.ref) + "'"
         + (opts.menu ? " data-act='itemmenu' data-cid='" + c.id + "' data-item='" + it.uid + "'" : "") + ">"
-        + (hero && opts.initial !== false ? "<span class='sk-ini'>" + e(hero.name.charAt(0)) + "</span>" : "") + e(it.name)
+        + (hero && opts.initial !== false ? "<span class='sk-ini' style='--hc:" + col + "' title='" + e(hero.name) + "'>" + e(hero.name.charAt(0)) + "</span>" : "") + e(it.name)
         + (it.start ? " <span class='sk-lock' title='" + e(t("start_item")) + "'>🔒</span>" : "") + "</button>";
 };
 
@@ -426,7 +426,9 @@ S.openAssign = function(cid, hid) {
     var free = (c.cache || []).filter(function(it) { return it.owner != hid; });
     S.dialog("<h2>" + e(t("assign_to", hh.name)) + "</h2>"
         + (free.length ? "<div class='sk-fl'>" + t("from_cache") + "</div><div class='sk-chips'>" + free.map(function(it) {
-            return "<button class='sk-chip sk-k-" + it.kind + (it.owner ? " sk-own" : "") + "' style='" + (it.owner ? "--hc:" + S.heroColor(c, it.owner) : "") + "' data-give='" + it.uid + "'>" + e(it.name) + "</button>";
+            var ow = it.owner ? (c.heroes || []).filter(function(x) { return x.id == it.owner; })[0] : null;
+            return "<button class='sk-chip sk-k-" + it.kind + "' data-card='" + it.kind + ":" + e(it.ref) + "' data-give='" + it.uid + "'>"
+                + (ow ? "<span class='sk-ini' style='--hc:" + ow.color + "' title='" + e(ow.name) + "'>" + e(ow.name.charAt(0)) + "</span>" : "") + e(it.name) + "</button>";
         }).join("") + "</div><small>" + t("from_cache_help") + "</small>" : "<p>" + t("cache_empty") + "</p>")
         + "<div class='sk-actions'><button class='sk-btn sk-primary' data-new>" + t("new_items") + "</button><button class='sk-btn' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
@@ -447,11 +449,10 @@ S.openItemMenu = function(cid, iuid) {
         + "<button class='sk-chip" + (!it.owner ? " sk-sel" : "") + "' data-own=''>" + t("nobody") + "</button>"
         + c.heroes.map(function(hh) { return "<button class='sk-chip sk-own" + (it.owner == hh.id ? " sk-sel" : "") + "' style='--hc:" + hh.color + "' data-own='" + hh.id + "'>" + e(hh.name) + "</button>"; }).join("") + "</div>"
         + "<label class='sk-check'><input type='checkbox' id='sk-st'" + (it.start ? " checked" : "") + "> " + t("start_item") + "</label>"
-        + "<div class='sk-actions'><button class='sk-btn' data-show>" + t("show_card") + "</button><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm>" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
+        + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm>" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
             var o = ev.target.closest("[data-own]");
             if (o) { S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) y.owner = o.dataset.own || null; }); }); close(); S.rerender(); return; }
-            if (ev.target.closest("[data-show]")) { close(); S.showCard(it.kind + ":" + it.ref); return; }
             if (ev.target.closest("[data-dup]")) { S.updateCampaign(cid, function(x) { x.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: null, start: false}); }); close(); S.rerender(); return; }
             if (ev.target.closest("[data-rm]")) { S.updateCampaign(cid, function(x) { x.cache = x.cache.filter(function(y) { return y.uid != iuid; }); }); close(); S.rerender(); }
         });

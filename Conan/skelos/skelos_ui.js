@@ -1136,6 +1136,7 @@ var origInit = S.init;
 S.init = function(root) {
     origInit.apply(S, arguments);
     S.bindEventTips(root);
+    S.bindCardTips(root);
     S.bindStudioDrag(root);
     S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
@@ -1519,6 +1520,37 @@ S.openHeroPicker = function(cid) {
         status();
     };
     draw(); ov.querySelector("#sk-hq").focus();
+};
+
+// ---------- Carte d'un objet au survol de la souris (équipement, sort, amélioration) ----------
+S.cardTipCode = function(code) {
+    var p = String(code).split(":"), kind = p[0], ref = p.slice(1).join(":");
+    var real = kind == "up" ? null : S.realCardCode(kind, ref);
+    if (real) return "<span class='sk-cardscale'>" + real + "</span>";
+    var it = S.catalog(kind).filter(function(x) { return x.ref == ref; })[0];
+    return it ? S.itemCardCode(it) : "";
+};
+S.showCardTip = function(el) {
+    var html = S.cardTipCode(el.dataset.card); if (!html) { S.hideCardTip(); return; }
+    var tip = S.root.querySelector("#sk-cardtip");
+    if (!tip) { tip = document.createElement("div"); tip.id = "sk-cardtip"; tip.className = "sk-cardtip"; tip.setAttribute("aria-hidden", "true"); S.root.appendChild(tip); }
+    if (tip.dataset.card != el.dataset.card) { tip.innerHTML = html; tip.dataset.card = el.dataset.card; }
+    tip.classList.add("on");
+    var b = el.getBoundingClientRect(), w = tip.offsetWidth, hg = tip.offsetHeight;
+    var left = b.right + 10; if (left + w > window.innerWidth - 8) left = Math.max(8, b.left - w - 10);
+    var top = Math.max(8, Math.min(b.top + b.height / 2 - hg / 2, window.innerHeight - hg - 8));
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+};
+S.hideCardTip = function() { var tip = S.root && S.root.querySelector("#sk-cardtip"); if (tip) tip.classList.remove("on"); };
+S.bindCardTips = function(root) {
+    root.addEventListener("mouseover", function(ev) {
+        if (S._lastPointer && S._lastPointer != "mouse") return;
+        var el = ev.target.closest(".sk-chip[data-card]");
+        if (el) S.showCardTip(el); else S.hideCardTip();
+    });
+    root.addEventListener("mouseleave", S.hideCardTip);
+    root.addEventListener("pointerdown", S.hideCardTip, true);
+    window.addEventListener("scroll", S.hideCardTip, true);
 };
 
 // ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------
