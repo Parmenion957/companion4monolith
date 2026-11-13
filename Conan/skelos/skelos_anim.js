@@ -184,11 +184,43 @@ var playTokens = function(snap) {
         var tb = r.querySelector("[data-turnkind='turn'] b");
         anim(tb, [{transform: "translateY(" + (st.turn > last.turn ? "-" : "") + "70%)", opacity: 0}, {transform: "none", opacity: 1}], {duration: 380, easing: "ease-out"});
         anim(r.querySelector("[data-turnkind='turn']"), [{filter: "drop-shadow(0 0 0 #ff7900)"}, {filter: "drop-shadow(0 0 10px #ff7900)", offset: .4}, {filter: "drop-shadow(0 0 0 #ff7900)"}], {duration: 700});
+        // Dernier tour : le gong vibre et la cloche sonne, comme au dernier tour d'une course.
+        if (st.turns && st.turn == st.turns && st.turn > last.turn) lastTurnBell(r);
         if (st.turns && st.turn > st.turns && st.turn > last.turn)
             anim(r.querySelector(".sk-a-tour"), [{transform: "none"}, {transform: "translateX(-7px)"}, {transform: "translateX(7px)"}, {transform: "translateX(-5px)"}, {transform: "translateX(5px)"}, {transform: "none"}], {duration: 500, delay: 300});
     }
     if (st.phase != last.phase)
         anim(r.querySelector(".sk-a-phase"), [{opacity: .15, transform: "translateY(8px)"}, {opacity: 1, transform: "none"}], {duration: 420, easing: "ease-out"});
+};
+
+// Cloche du dernier tour : quelques coups de cloche synthétisés (aucun fichier son), partiels inharmoniques qui s'éteignent.
+var audio = null;
+var bell = function() {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    try {
+        audio = audio || new AC();
+        if (audio.state == "suspended") audio.resume();
+        var t0 = audio.currentTime + .05, out = audio.createGain();
+        out.gain.value = .22; out.connect(audio.destination);
+        [0, .32, .64].forEach(function(at, k) {
+            [[1, 1, 1.6], [2.76, .45, 1.0], [5.4, .25, .6], [8.93, .12, .35]].forEach(function(p) {
+                var o = audio.createOscillator(), g = audio.createGain(), t = t0 + at, f = 988 * p[0];
+                o.type = "sine"; o.frequency.value = f;
+                g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(p[1] * (k == 2 ? 1 : .8), t + .006);
+                g.gain.exponentialRampToValueAtTime(.0005, t + p[2] * (k == 2 ? 1.6 : .7));
+                o.connect(g); g.connect(out); o.start(t); o.stop(t + p[2] * 1.7);
+            });
+        });
+    } catch (x) {}
+};
+var lastTurnBell = function(r) {
+    var gong = r.querySelector("[data-turnkind='turns']"), img = gong && gong.querySelector("img");
+    var frames = [{transform: "none"}];
+    for (var i = 1; i <= 9; i++) frames.push({transform: "rotate(" + ((i % 2 ? 1 : -1) * (10 - i)) + "deg) scale(" + (1 + .012 * (10 - i)) + ")"});
+    frames.push({transform: "none"});
+    anim(img, frames, {duration: 1300, easing: "ease-out", delay: 250});
+    anim(gong, [{filter: "drop-shadow(0 0 0 #ff7900)"}, {filter: "drop-shadow(0 0 12px #ff7900)", offset: .25}, {filter: "drop-shadow(0 0 0 #ff7900)"}], {duration: 1500, delay: 250});
+    setTimeout(bell, 250);
 };
 
 // ---------- Branchements ----------
