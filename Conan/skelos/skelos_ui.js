@@ -47,8 +47,13 @@ S.activationSlots = function(used, max) {
 };
 
 // Pion de coût : pion numéroté du jeu, cerclé de rouge avec une gemme quand la tuile choisie peut être payée.
+// Rang d'une case de la Rivière : gemme rouge numérotée dans un anneau (composée en CSS avec la gemme du Compagnon).
+// Les pions blancs numérotés restent pour les jetons tirés au sac et le suivi des activations.
+S.rankToken = function(n, cls) {
+    return "<span class='sk-rankgem" + (cls ? " " + cls : "") + "' role='img' aria-label='" + n + "'><img src='" + S.icon("gem") + "' alt=''><b>" + n + "</b></span>";
+};
 S.costToken = function(slot, i) {
-    var img = "<img class='sk-costimg' src='" + S.marker(i + 1) + "' alt='" + (i + 1) + "'>";
+    var img = S.rankToken(i + 1, "sk-costimg");
     if (!slot) return "<span class='sk-costtok sk-costimgwrap'>" + img + "</span>";
     var sel = slot.uid == S.selected, why = sel ? S.canActivate(slot) : null, armed = sel && !why;
     return "<span class='sk-costtok sk-costimgwrap" + (armed ? " armed" : "") + "' data-act='paycost' data-uid='" + slot.uid + "'"
@@ -218,7 +223,7 @@ S.renderGame = function() {
     if (S._turnEdit) S.openTurnEdit(S._turnEdit);
     r.querySelectorAll(".sk-token").forEach(function(tk) {
         var n = parseInt(tk.textContent, 10); if (!n) return;
-        tk.innerHTML = "<img src='" + S.marker(n) + "' alt='" + n + "'>"; tk.classList.add("sk-tokenimg");
+        tk.innerHTML = S.rankToken(n); tk.classList.add("sk-tokenimg");
     });
     st.river.forEach(function(s) {
         if (!S.isEvent(s)) return;
