@@ -427,5 +427,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'filter_mode': "Mode",
     'sort_by': "Trier",
     'sort_recent': "Récents",
-    'sort_alpha': "A → Z"
+    'sort_alpha': "A → Z",
+    'studio_locked': "Éditeur de scénario : le mode studio reste actif. Pour jouer, lancez le scénario depuis la liste.",
+    'confirm_leave_editor': "Quitter l’éditeur sans enregistrer les modifications du scénario ?",
+    'leave_editor_yes': "Quitter sans enregistrer"
 });

@@ -110,7 +110,7 @@ S.toolsBlockCode = function() {
         return "<button class='sk-ptool' data-act='" + act + "'" + (off ? " disabled" : "") + " title='" + e(t(aria)) + "' aria-label='" + e(t(aria)) + "'><i aria-hidden='true'>" + icon + "</i><span>" + e(t(label)) + "</span></button>";
     };
     return "<div class='sk-p sk-a-tools'>" + b("undo", "&#xf0e2;", "undo", "undo", !S.undoStack.length)
-        + "<div class='sk-ptoolpair'>" + b("restart", "&#xf2f9;", "tool_restart", "restart_game") + b("end", "&#xf11e;", "tool_end", "menu_end") + "</div>"
+        + "<div class='sk-ptoolpair'>" + b("restart", "&#xf2f9;", "tool_restart", "restart_game") + b("end", "&#xf11e;", "tool_end", "menu_end", !!S.editing) + "</div>"
         + b("journal", "&#xf02d;", "log", "log") + b("help", "&#xf128;", "help", "help") + "</div>";
 };
 
@@ -318,7 +318,7 @@ S.tabsCode = function(active) {
 S.placeTabs = function() {
     if (!S.root) return;
     var old = S.root.querySelector(":scope > .sk-tabs"); if (old) old.remove();
-    var tab = TAB_OF[S.screen]; if (!tab) return;
+    var tab = S.screen == "game" && S.editing ? "scenarios" : TAB_OF[S.screen]; if (!tab) return;
     S.root.insertAdjacentHTML("afterbegin", S.tabsCode(tab));
     var scr = S.root.querySelector(".sk-screen, .skelos-game"); if (scr) scr.classList.add("sk-tabbed");
 };
@@ -336,6 +336,7 @@ S.mount = function(html) {
 var origNav = S.navClick;
 S.navClick = function(ev) {
     var n = ev.target.closest("[data-nav]");
+    if (n && S.editing) { S.leaveEditor(function() { S.navClick(ev); }); return; }
     if (n && n.dataset.nav == "home") { S.renderHome(); return; }
     if (n && n.dataset.nav == "scenarios") { S.renderScenarios(); return; }
     var f = ev.target.closest("[data-fab]");
@@ -384,16 +385,15 @@ S.riverThumbCode = function(sc) {
     var st = sc.saved, river = st ? st.river : (sc.river || []), h = "<div class='sk-sriver' aria-hidden='true'>";
     for (var i = 0; i < S.RIVER_SIZE; i++) {
         var s = river[i], tile = s && S.tileOf(s);
-        h += "<span class='sk-sslot" + (s && s.dead ? " dead" : "") + "'>";
-        if (tile) h += "<img src='" + S.asset(s.img || tile.image) + "' alt='' loading='lazy'>" + S.rankToken(i + 1, "sk-srank");
-        h += "</span>";
+        h += "<span class='sk-scell'>" + (tile ? S.rankToken(i + 1, "sk-srank") : "<span class='sk-srank sk-srank-empty'></span>")
+            + "<span class='sk-sslot" + (s && s.dead ? " dead" : "") + "'>" + (tile ? "<img src='" + S.asset(s.img || tile.image) + "' alt='' loading='lazy'>" : "") + "</span></span>";
     }
     return h + "</div>";
 };
 S.scenarioCardCode = function(sc, i) {
     var st = sc.saved, river = st ? st.river : (sc.river || []), mode = st ? st.mode : sc.mode;
     var ev = river.filter(function(x) { return x.tileId == "event"; }).length, official = sc.source == "official";
-    var running = st && (st.turn > 0 || (st.log || []).length > 1);
+    var running = st && (st.turn > 0 || st.activations > 0 || st.phase == "overlord");
     var info = [t(mode == "solo" ? "mode_solo" : "mode_classic"), t("tiles_n", river.length), t("turns_n", (st ? st.turns : sc.turns) || "–")];
     if (ev) info.push(t("event_tiles_n", ev));
     var dates = [];
@@ -404,8 +404,9 @@ S.scenarioCardCode = function(sc, i) {
     };
     return "<article class='sk-scard' aria-label='" + e(sc.title || "—") + "'>"
         + "<div class='sk-scard-head'><h3>" + e(sc.title || t("untitled")) + "</h3>"
-        + "<span class='sk-sbadge " + (official ? "official" : "user") + "' title='" + e(t(official ? "source_official" : "source_user")) + "'><i aria-hidden='true'>" + (official ? "&#xf02d;" : "&#xf007;") + "</i>" + e(t(official ? "source_official" : "source_user")) + "</span>"
-        + (running ? "<span class='sk-sbadge running'><i aria-hidden='true'>&#xf254;</i>" + e(t("game_running", st.turn)) + "</span>" : "") + "</div>"
+        // Origine : l'icône seule (le libellé reste en info-bulle) ; partie en cours : sablier et « tour / limite ».
+        + (running ? "<span class='sk-sbadge running' role='img' title='" + e(t("game_running", st.turn)) + "' aria-label='" + e(t("game_running", st.turn)) + "'><img src='" + S.icon("time") + "' alt=''>" + st.turn + (st.turns ? "/" + st.turns : "") + "</span>" : "")
+        + "<span class='sk-sbadge sk-sicon " + (official ? "official" : "user") + "' role='img' title='" + e(t(official ? "source_official" : "source_user")) + "' aria-label='" + e(t(official ? "source_official" : "source_user")) + "'><i aria-hidden='true'>" + (official ? "&#xf02d;" : "&#xf007;") + "</i></span></div>"
         + "<p class='sk-sinfo'>" + e(info.join(" · ")) + "</p>"
         + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
         + S.riverThumbCode(sc)
@@ -465,8 +466,8 @@ S.renderScenarios = function() {
         var b = ev.target.closest("[data-sc]"); if (!b) return;
         var i = +b.dataset.i, sc = list[i]; if (!sc) return;
         switch (b.dataset.sc) {
-            case "play": S.playScenario(sc, false); break;
-            case "edit": S.playScenario(sc, true); break;
+            case "play": S.playScenario(sc); break;
+            case "edit": S.openEditor(sc); break;
             case "dup":
                 var c = JSON.parse(JSON.stringify(sc)), now = nowIso();
                 c.sid = newSid(); c.source = "user"; c.created = now; c.updated = now;
@@ -482,27 +483,54 @@ S.renderScenarios = function() {
         }
     };
 };
-// Jouer (ou modifier, en ouvrant le mode studio) : le scénario devient la partie en cours.
-S.playScenario = function(sc, studio) {
+// Jouer : le scénario devient la partie en cours (confirmation s'il y en a une).
+S.playScenario = function(sc) {
     var go = function() {
         S.clearGame(); S.ctx = null;
         S.draft = JSON.parse(JSON.stringify(sc));
         S.startGame(true);
         if (S.state) { S.state.scenario.sid = sc.sid; S.save(); }
-        if (studio && S.state) S.toggleStudio(true);
     };
     if (S.state && (S.state.river.length || S.state.log.length > 1)) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
 };
-// Nouveau scénario : plateau vide en mode studio, la disquette l'enregistre.
-S.newScenario = function() {
-    var go = function() {
-        S.clearGame(); S.ctx = null;
-        S.draft = S.blankScenario();
-        S.startGame("blank");
-        if (S.state) S.toggleStudio(true);
-    };
-    if (S.state && (S.state.river.length || S.state.log.length > 1)) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
+
+// ---------- Éditeur de scénario ----------
+// Même plateau, dans l'onglet Scénarios, en mode studio verrouillé. La partie en cours est mise de côté
+// et n'est jamais touchée : rien n'est écrit dans la sauvegarde de la partie tant que l'éditeur est ouvert.
+S.editing = null;
+S.openEditor = function(sc) {
+    if (!S.editing) S._gameBackup = {state: S.state, undo: S.undoStack, selected: S.selected};
+    S.editing = {sid: sc ? sc.sid : null, dirty: false};
+    S.ctx = null; S.selected = null;
+    S.draft = sc ? JSON.parse(JSON.stringify(sc)) : S.blankScenario();
+    S.studio = true;
+    S.startGame(S.draft.river.length || S.draft.saved ? true : "blank");
+    if (S.state && sc) S.state.scenario.sid = sc.sid;
+    S.editing.dirty = false;
+    S.renderGame();
 };
+S.closeEditor = function() {
+    var b = S._gameBackup || {};
+    S.state = b.state || null; S.undoStack = b.undo || []; S.selected = b.selected || null;
+    S.editing = null; S._gameBackup = null; S.studio = false; S._hpOpen = null;
+};
+// Quitter l'éditeur (changement d'onglet) : confirmation si des modifications ne sont pas enregistrées.
+S.leaveEditor = function(next) {
+    var go = function() { S.closeEditor(); next(); };
+    if (S.editing && S.editing.dirty) S.ask(t("confirm_leave_editor"), t("leave_editor_yes"), go); else go();
+};
+var origSaveEd = S.save;
+S.save = function() {
+    var st = S.state;
+    if (S.editing) {
+        if (st && !st.turn && !st.activations) st.origin = S.stateCopy(st);
+        S.editing.dirty = true;
+        return;
+    }
+    return origSaveEd.apply(S, arguments);
+};
+// Nouveau scénario : éditeur sur un plateau vide.
+S.newScenario = function() { S.openEditor(null); };
 
 // Onglet Améliorations : l'encyclopédie locale, avec le panneau de filtres du Compagnon.
 S.renderUpgrades = function() {
@@ -645,6 +673,7 @@ S.socles = function(tile) {
 S.socleName = function(c) { return (typeof Tile != "undefined" && Tile._i18n && Tile._i18n["color" + c.charAt(0).toUpperCase() + c.slice(1)]) || c; };
 
 S.toggleStudio = function(on) {
+    if (S.editing && on !== true) return;  // éditeur de scénario : on ne sort pas du mode studio
     S.studio = on == null ? !S.studio : !!on;
     S.closeHp(); S.selected = null;
     S.renderGame();
@@ -664,7 +693,8 @@ S.placeTabs = function() {
         }).join("") + "</div>"
             + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>";
     }
-    g += "<button class='sk-tabico" + (S.studio ? " on" : "") + "' data-studio='toggle' aria-pressed='" + S.studio + "' title='" + e(t("studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>";
+    g += "<button class='sk-tabico" + (S.studio ? " on" : "") + "' data-studio='toggle' aria-pressed='" + S.studio + "'" + (S.editing ? " disabled" : "")
+        + " title='" + e(t(S.editing ? "studio_locked" : "studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>";
     nav.classList.add("withtools");
     nav.classList.toggle("studio", S.studio);
     nav.insertAdjacentHTML("beforeend", g);
@@ -893,6 +923,7 @@ S.saveScenarioFromDialog = function() {
     var d = S.scenarioFromState();
     d.saved = S.stateCopy(st, true);
     S.saveScenarioCopy(d);
+    if (S.editing) { S.editing.dirty = false; S.editing.sid = st.scenario.sid; }  // éditeur : tout est enregistré
     Nav.closeDialog();
 };
 
@@ -1088,7 +1119,7 @@ S.startGame = function(force) {
         st.origin = S.stateCopy(st);
         S.undoStack = []; S._hpOpen = null; S.selected = null;
         S.state = st;
-        S.log(t("log_resume", st.turn));
+        if (!S.editing) S.log(t("log_resume", st.turn));
         S.save();
         if (S.onGameStart) S.onGameStart();
         S.renderGame();

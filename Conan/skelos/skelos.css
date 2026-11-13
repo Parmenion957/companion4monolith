@@ -963,14 +963,20 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 .sk-scard h3 { margin: 0; flex: 1 1 auto; font-family: 'Primary', serif; font-weight: normal; font-size: 23px; line-height: 1.2; color: var(--main-color); }
 .sk-sbadge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 16px; font-size: 19px; line-height: 1.1; font-family: 'Secondary', sans-serif; border: 1px solid var(--main-color); color: var(--main-color); white-space: nowrap; }
 .sk-sbadge i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 13px; }
-.sk-sbadge.running { background: var(--highlight-color); border-color: var(--highlight-color); color: #fff; }
+.sk-sbadge.running { background: var(--highlight-color); border-color: var(--highlight-color); color: #fff; font-family: 'Primary', serif; font-size: 17px; padding: 2px 10px 2px 3px; gap: 4px; }
+.sk-sbadge.running img { width: 24px; height: 24px; border-radius: 50%; }
+.sk-sbadge.sk-sicon { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 50%; }
+.sk-sbadge.sk-sicon i { font-size: 14px; }
 .sk-sinfo { margin: 2px 0 0; font-size: 23px; line-height: 1.25; font-family: 'Secondary', sans-serif; color: var(--body-color); }
 .sk-sdates { margin: 0; font-size: 20px; line-height: 1.2; font-family: 'Secondary', sans-serif; color: var(--body-color); opacity: .85; }
-.sk-sriver { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 6px 0 4px; }
-.sk-sslot { position: relative; aspect-ratio: 3 / 4; border-radius: 4px; overflow: visible; background: rgba(128,128,128,.18); }
-.sk-sslot img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
+.sk-sriver { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 4px 0; }
+.sk-sslot { position: relative; display: block; aspect-ratio: 3 / 4; border-radius: 4px; overflow: hidden; background: rgba(128,128,128,.18); }
+.sk-sslot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .sk-sslot.dead img { filter: grayscale(1); opacity: .55; }
-.sk-sslot .sk-srank { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); width: 22px; height: 22px; padding: 1px; }
+.sk-scell { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.sk-scell .sk-sslot { width: 100%; }
+.sk-scell .sk-srank { width: 20px; height: 20px; padding: 1px; flex: none; }
+.sk-srank-empty { display: block; }
 .sk-scard-acts { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .sk-scard-acts .sk-btn { min-height: 42px; font-size: 16px; }
 .sk-scard-sp { flex: 1; }
@@ -994,3 +1000,5 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
     .sk-sseg button { flex: 1; }
     .sk-scard h3 { font-size: 20px; }
 }
+/* Éditeur de scénario : bouton Studio verrouillé */
+.sk-tabico:disabled { cursor: not-allowed; opacity: .8; }
