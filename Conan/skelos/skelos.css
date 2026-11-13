@@ -1257,3 +1257,22 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 .sk-ctitle i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 16px; opacity: .55; }
 .sk-ctitle:hover i, .sk-ctitle:focus-visible i { opacity: 1; color: var(--highlight-color); }
 .sk-ctitle:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 3px; border-radius: 4px; }
+
+/* Export et import des scénarios et des campagnes : mêmes icônes et mêmes cartes cochables que le Studio */
+.skelos-export-icon:before { font-family: "Font Awesome 5 Free"; font-weight: 900; content: "\f019"; font-size: 24px; }
+.skelos-import-icon:before { font-family: "Font Awesome 5 Free"; font-weight: 900; content: "\f093"; font-size: 24px; }
+.skelos-allin:before { content: "\f560"; font-weight: 900; font-family: 'Font Awesome 5 Free'; }
+.dialog .sk-xfer .sk-xlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 12px; text-align: left; }
+.dialog .sk-xfer input[name^=skelos-] { position: absolute; top: -5000px; }
+.dialog .sk-xfer input[name^=skelos-] + label { position: relative; display: block; cursor: pointer; }
+.dialog .sk-xfer input[name^=skelos-] + label > * { pointer-events: none; }
+.dialog .sk-xfer input[name^=skelos-] + label:before { position: absolute; content: " "; z-index: 1; top: 0; left: 0; right: 0; bottom: 0; background-color: #000000; opacity: 0.2; border-radius: 8px; }
+.dialog .sk-xfer input[name^=skelos-] + label:after { position: absolute; content: "\f057"; font-family: 'Font Awesome 5 Free'; font-weight: 900; font-size: 40px; left: -7px; top: -7px; color: red; z-index: 2; line-height: 1; }
+.dialog .sk-xfer input[name^=skelos-]:checked + label:before { display: none; }
+.dialog .sk-xfer input[name^=skelos-]:checked + label:after { content: "\f058"; color: green; }
+.dialog .sk-xfer input[name^=skelos-]:focus-visible + label { outline: 2px solid var(--highlight-color); outline-offset: 2px; border-radius: 8px; }
+.dialog .sk-xfer .sk-scard { height: 100%; box-sizing: border-box; }
+.dialog .sk-xfer .sk-scard-acts { display: none; }
+.dialog .sk-xfer .sk-xexists { position: absolute; z-index: 2; right: 10px; top: -9px; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; background: var(--main-color); color: var(--body-bg-color); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.dialog .sk-xfer h2 { font-family: 'Primary', serif; text-align: left; margin: .6em 0 .4em; }
+.dialog .sk-xfer .nocards { font-style: italic; opacity: .8; text-align: left; margin-bottom: 12px; }

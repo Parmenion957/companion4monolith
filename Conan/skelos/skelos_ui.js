@@ -1563,6 +1563,100 @@ S.openCampaignJournal = function(cid) {
     Nav.dialog(e(t("log")), h + "</div>", null, []);
 };
 
+// ---------- Export et import des scénarios et des campagnes, à la manière du Studio du Compagnon ----------
+// Mêmes dialogues : cartes cochables (croix rouge / coche verte), « La totale ! » à gauche, l'action à droite.
+S.xferCardsCode = function(kind, list, exists) {
+    if (!list.length) return "<div class='nocards'>" + e(t(kind == "sc" ? "xfer_none_sc" : "xfer_none_camp")) + "</div>";
+    return "<div class='sk-xlist'>" + list.map(function(x, i) {
+        var id = "sk-x-" + kind + "-" + i, ex = exists && exists(x);
+        var card = kind == "sc" ? S.scenarioCardCode(x, i) : S.campaignCardCode(x);
+        return "<input type='checkbox' id='" + id + "' name='skelos-" + kind + "' data-index='" + i + "'" + (exists && !ex ? " checked='checked'" : "") + "/>"
+            + "<label for='" + id + "' class='sk-xitem'>" + card + (ex ? "<span class='sk-xexists'>" + e(t("xfer_exists")) + "</span>" : "") + "</label>";
+    }).join("") + "</div>";
+};
+S.xferWarn = function(msg) { if (window.About && About.warnToast) About.warnToast(msg); else S.toast(msg); };
+S._xferAll = function() { $(".sk-xfer input[type='checkbox']").prop("checked", true); };
+S._xferChecked = function(kind) {
+    return $(".sk-xfer input[name='skelos-" + kind + "']:checked").map(function(a, b) { return parseInt($(b).data("index"), 10); }).get();
+};
+S.openExport = function() {
+    Nav.dialog(t("xfer_export"),
+        "<div class='printcards sk-xfer'>"
+            + "<p class='hint'>" + e(t("xfer_export_hint")) + "</p>"
+            + "<h1>" + e(t("scenarios")) + "</h1>" + S.xferCardsCode("sc", S.scenarioList())
+            + "<h1>" + e(t("campaigns")) + "</h1>" + S.xferCardsCode("camp", S.campaigns())
+        + "</div>",
+        null,
+        [{label: t("xfer_all"), icon: "skelos-allin", fn: "Skelos._xferAll();"}],
+        [{icon: "skelos-export-icon", label: t("xfer_export"), fn: "Skelos._export()"}]);
+};
+S._export = function() {
+    var scs = S._xferChecked("sc"), camps = S._xferChecked("camp");
+    if (!scs.length && !camps.length) { S.xferWarn(t("xfer_export_empty")); return; }
+    var all = S.scenarioList(), cl = S.campaigns();
+    var data = {format: "skelos", version: 1, exported: new Date().toISOString().slice(0, 10),
+        scenarios: scs.map(function(i) { return all[i]; }), campaigns: camps.map(function(i) { return cl[i]; })};
+    Nav.closeDialog();
+    S.exportData(data, Application + "-Skelos-" + new Date().getTime() + ".json");
+};
+S.openImport = function() {
+    S._xferData = null;
+    Nav.dialog(t("xfer_import"),
+        "<div class='importcards printcards sk-xfer'>"
+            + "<h1>" + e(t("xfer_import_hint")) + "</h1>"
+            + "<p class='hint'><label><button type='button' onclick='this.nextSibling.click()'>" + e(t("xfer_choose")) + "</button><input type='file' accept='.json,application/json' onchange='Skelos._importFile(this)'/></label></p>"
+            + "<h1>" + e(t("xfer_import_hint2")) + "</h1>"
+            + "<div id='sk-xresult'><p class='hint'>" + e(t("xfer_import_todo")) + "</p></div>"
+            + "<h1>" + e(t("xfer_import_hint3")) + "</h1>"
+        + "</div>",
+        null,
+        [{label: t("xfer_all"), icon: "skelos-allin", fn: "Skelos._xferAll();"}],
+        [{icon: "skelos-import-icon", label: t("xfer_import"), fn: "Skelos._import()"}]);
+};
+S._importFile = function(input) {
+    var out = document.getElementById("sk-xresult");
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            var o; S._xferData = null;
+            try { o = JSON.parse(ev.target.result); } catch (x) { out.innerHTML = "<p class='hint'>" + e(t("xfer_import_error")) + "</p>"; return; }
+            var scs = (o && Array.isArray(o.scenarios)) ? o.scenarios : [], camps = (o && Array.isArray(o.campaigns)) ? o.campaigns : [];
+            if (!scs.length && !camps.length) { out.innerHTML = "<p class='hint'>" + e(t("xfer_import_empty")) + "</p>"; return; }
+            S._xferData = {scenarios: scs, campaigns: camps};
+            var hasSc = {}, hasC = {};
+            S.scenarioList().forEach(function(x) { hasSc[x.sid] = 1; });
+            S.campaigns().forEach(function(x) { hasC[x.id] = 1; });
+            out.innerHTML = "<h2>" + e(t("scenarios")) + "</h2>" + (scs.length ? S.xferCardsCode("sc", scs, function(x) { return x.sid && hasSc[x.sid]; }) : "<p>" + e(t("xfer_import_none")) + "</p>")
+                + "<h2>" + e(t("campaigns")) + "</h2>" + (camps.length ? S.xferCardsCode("camp", camps, function(x) { return x.id && hasC[x.id]; }) : "<p>" + e(t("xfer_import_none")) + "</p>");
+        };
+        reader.readAsText(input.files[0]);
+    }
+    input.value = "";
+};
+S._import = function() {
+    var d = S._xferData, scs = S._xferChecked("sc"), camps = S._xferChecked("camp");
+    if (!d || (!scs.length && !camps.length)) { S.xferWarn(t("xfer_import_nothing")); return; }
+    // Même identifiant : l'élément importé remplace l'existant ; sinon il s'ajoute.
+    var merge = function(list, items, key, mk) {
+        items.forEach(function(it) {
+            it = JSON.parse(JSON.stringify(it)); delete it.prechecked;
+            if (!it[key]) it[key] = mk();
+            var k = list.findIndex(function(x) { return x[key] == it[key]; });
+            if (k >= 0) list[k] = it; else list.push(it);
+        });
+        return list;
+    };
+    if (scs.length) S.saveScenarios(merge(S.scenarioList(), scs.map(function(i) { return d.scenarios[i]; }), "sid", newSid));
+    if (camps.length) S.saveCampaigns(merge(S.campaigns(), camps.map(function(i) { return d.campaigns[i]; }), "id", function() { return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }));
+    Nav.closeDialog();
+    S.toast(t("xfer_import_done", scs.length + camps.length));
+    if (!S.root) return;
+    if (S.screen == "scenarios") S.renderScenarios();
+    else if (S.screen == "campaigns") S.renderCampaigns();
+    else if (S.screen == "campaign" && S.curCampaign) S.renderCampaign(S.curCampaign);
+    else if (S.screen == "home") S.renderHome();
+};
+
 // ---------- Compagnie : héros choisis dans l'encyclopédie du Compagnon, présentés en quatre fiches ----------
 // On ne garde du héros que son nom et son image ; la fiche accueillera son équipement.
 var COMPANY_SIZE = 4;
