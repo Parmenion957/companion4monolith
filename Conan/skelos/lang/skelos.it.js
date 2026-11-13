@@ -448,5 +448,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'drop_remove': "Remove from the River",
     'drag_hint': "drag to move",
     'event_edit_hint': "tap to write the Event",
-    'gems_total_title': "Total gems"
+    'gems_total_title': "Total gems",
+    'journal_actions': "Game actions",
+    'journal_turn': "Turn {0}:",
+    'journal_empty': "No action yet."
 });

@@ -126,72 +126,20 @@ var Skelos = {
     },
 
     log: function(msg) {
-        Skelos.state.log.unshift({turn: Skelos.state.turn, msg: msg});
-        if (Skelos.state.log.length > 200) Skelos.state.log.pop();
+        Skelos.state.log.unshift({turn: Skelos.state.turn, msg: msg, ts: Date.now()});
+        if (Skelos.state.log.length > 500) Skelos.state.log.pop();
     },
 
-    // Réglages d'affichage (panneau du bas) mémorisés sur l'appareil.
+    // Réglages d'affichage mémorisés sur l'appareil.
     prefs: function() {
         if (!Skelos._prefs) {
             try { Skelos._prefs = JSON.parse(localStorage.getItem(Application + "_SkelosPrefs")) || {}; } catch (e) { Skelos._prefs = {}; }
-            if (!Skelos._prefs.drawerHeight) Skelos._prefs.drawerHeight = Math.round(window.innerHeight * 0.38);
-            if (Skelos._prefs.collapsed == null) Skelos._prefs.collapsed = true;
         }
         return Skelos._prefs;
     },
 
     savePrefs: function() {
         try { localStorage.setItem(Application + "_SkelosPrefs", JSON.stringify(Skelos._prefs)); } catch (e) {}
-    },
-
-    setDrawer: function(collapsed, height) {
-        var pr = Skelos.prefs(), r = Skelos.root;
-        if (height != null) pr.drawerHeight = Math.max(120, Math.min(Math.round(window.innerHeight * 0.85), Math.round(height)));
-        pr.collapsed = collapsed;
-        var dh = collapsed ? 0 : pr.drawerHeight;
-        var d = r.querySelector(".sk-drawer"); if (!d) return;
-        d.classList.toggle("collapsed", collapsed);
-        r.querySelector(".sk-drawer-body").style.height = dh + "px";
-        r.querySelector(".sk-drawer-spacer").style.height = (dh + 30) + "px";
-        var hd = r.querySelector(".sk-handle"); hd.setAttribute("aria-expanded", !collapsed);
-        r.querySelector(".sk-chev").textContent = collapsed ? "▲" : "▼";
-        Skelos.savePrefs();
-    },
-
-    // Poignée : un appui replie ou déplie, un glissé redimensionne.
-    bindDrawer: function() {
-        var r = Skelos.root, hd = r.querySelector(".sk-handle"), body = r.querySelector(".sk-drawer-body");
-        if (!hd) return;
-        var startY = 0, startH = 0, moved = false, dragging = false;
-        hd.addEventListener("pointerdown", function(ev) {
-            dragging = true; moved = false; startY = ev.clientY;
-            startH = Skelos.prefs().collapsed ? 0 : body.getBoundingClientRect().height;
-            hd.setPointerCapture(ev.pointerId);
-            body.style.transition = "none";
-        });
-        hd.addEventListener("pointermove", function(ev) {
-            if (!dragging) return;
-            var dy = startY - ev.clientY;
-            if (Math.abs(dy) > 6) moved = true;
-            if (!moved) return;
-            var hgt = Math.max(0, Math.min(window.innerHeight * 0.85, startH + dy));
-            body.style.height = hgt + "px";
-            r.querySelector(".sk-drawer").classList.toggle("collapsed", hgt < 40);
-        });
-        var end = function(ev) {
-            if (!dragging) return;
-            dragging = false; body.style.transition = "";
-            if (!moved) { Skelos.setDrawer(!Skelos.prefs().collapsed); return; }
-            var hgt = body.getBoundingClientRect().height;
-            if (hgt < 80) Skelos.setDrawer(true); else Skelos.setDrawer(false, hgt);
-        };
-        hd.addEventListener("pointerup", end);
-        hd.addEventListener("pointercancel", end);
-        hd.addEventListener("keydown", function(ev) {
-            if (ev.key == "Enter" || ev.key == " ") { ev.preventDefault(); Skelos.setDrawer(!Skelos.prefs().collapsed); }
-            else if (ev.key == "ArrowUp") { ev.preventDefault(); Skelos.setDrawer(false, Skelos.prefs().drawerHeight + 40); }
-            else if (ev.key == "ArrowDown") { ev.preventDefault(); Skelos.setDrawer(false, Skelos.prefs().drawerHeight - 40); }
-        });
     },
 
     migrate: function(st) {
@@ -804,27 +752,11 @@ var Skelos = {
         h += "</div>";
         h += "</div>";
 
-        var pr = Skelos.prefs();
-        var dh = pr.collapsed ? 0 : pr.drawerHeight;
-        h += "<div class='sk-drawer-spacer' style='height:" + (dh + 30) + "px'></div>";
-        h += "<section class='sk-drawer" + (pr.collapsed ? " collapsed" : "") + "' aria-label='" + e(t("drawer_title")) + "'>"
-            + "<div class='sk-handle' role='button' tabindex='0' aria-expanded='" + (!pr.collapsed) + "' title='" + e(t("drawer_hint")) + "'>"
-            + "<span class='sk-grip' aria-hidden='true'></span>"
-            + (st.lastEvent ? "<span class='sk-handle-badge' aria-label='" + e(t("event_activated")) + "'></span>" : "")
-            + "<span class='sk-chev' aria-hidden='true'>" + (pr.collapsed ? "▲" : "▼") + "</span></div>"
-            + "<div class='sk-drawer-body' style='height:" + dh + "px'>";
-        h += "<div class='sk-lower'><div class='sk-detail'>" + Skelos.detailCode() + "</div><div class='sk-side'>";
-        var evs = (st.scenario.events || "").split("\n").map(function(x) { return x.trim(); }).filter(Boolean);
-        if (evs.length) h += "<div class='sk-card" + (st.lastEvent ? " sk-alert" : "") + "'><h3>" + t("scenario_events") + "</h3>"
-            + (st.lastEvent ? "<p class='sk-em'>" + t("event_activated") + "</p>" : "") + "<ul>" + evs.map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul></div>";
-        if (st.scenario.notes) h += "<div class='sk-card'><h3>" + t("scenario_notes") + "</h3><p>" + e(st.scenario.notes).replace(/\n/g, "<br>") + "</p></div>";
-        h += "<div class='sk-card'><h3>" + t("log") + "</h3><ol class='sk-log'>" + st.log.slice(0, 12).map(function(l) {
-            return "<li><b>" + l.turn + "</b> " + e(l.msg) + "</li>"; }).join("") + "</ol></div>";
-        h += "</div></div></div></section></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
+        // Plus de panneau du bas : détails et actions des tuiles par appui long (menu contextuel), notes et actions dans le Journal.
+        h += "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
 
         Skelos.root.innerHTML = h;
         Skelos.bindGame();
-        Skelos.bindDrawer();
         if (Skelos.inCompanion && Skelos._lastScreen != "game") Skelos.root.scrollTop = 0;
         Skelos._lastScreen = "game";
     },
@@ -845,40 +777,6 @@ var Skelos = {
         return "<span class='sk-costtok" + (armed ? " armed" : "") + "' data-act='paycost' data-uid='" + slot.uid + "'"
             + (sel ? " role='button' tabindex='0' aria-label='" + e(armed ? t("activate_named", Skelos.tileName(slot), i + 1) : why) + "'" : "") + ">"
             + "<span>" + (i + 1) + "</span>" + (armed ? "<i class='sk-costgem' aria-hidden='true'></i>" : "") + "</span>";
-    },
-
-    detailCode: function() {
-        var st = Skelos.state, t = Skelos.t, e = Skelos.esc;
-        var slot = Skelos.selected && Skelos.slotByUid(Skelos.selected);
-        if (!slot) return "<p class='sk-help sk-pad'>" + t("detail_hint") + "</p>";
-        var tile = Skelos.tileOf(slot), solo = st.mode == "solo";
-        var idx = st.river.indexOf(slot), cost = idx + 1;
-        var h = "<div class='sk-detail-in'><div class='sk-detail-tile'>" + Skelos.tileCode(slot) + "</div><div class='sk-detail-body'>";
-        h += "<h2>" + e(Skelos.tileName(slot)) + "</h2>";
-        if (!Skelos.isEvent(slot)) {
-            h += "<div class='sk-stats'><span>" + t("movement") + " <b>" + (tile.movement || "–") + "</b></span><span>" + t("armor") + " <b>" + (tile.defense || "–") + "</b></span>"
-                + (tile.reinforcement ? "<span>" + t("reinforcement_cost") + " <b>" + tile.reinforcement + "</b></span>" : "") + "</div>";
-        }
-        if (slot.lpMax) h += "<div class='sk-lpbar'><span>" + t("life_points") + "</span><button class='sk-mini' data-act='lp' data-uid='" + slot.uid + "' data-n='-1' aria-label='" + Skelos.t("aria_hp_minus") + "'>−</button><b>" + slot.lp + " / " + slot.lpMax + "</b><button class='sk-mini' data-act='lp' data-uid='" + slot.uid + "' data-n='1' aria-label='" + Skelos.t("aria_hp_plus") + "'>+</button></div>";
-        h += "<div class='sk-detail-actions'>";
-        if (!solo) h += "<button class='sk-btn sk-primary' data-act='activate' data-uid='" + slot.uid + "'" + (st.phase != "overlord" ? " aria-disabled='true'" : "") + ">" + t("activate_for", cost) + "</button>";
-        if (!Skelos.isEvent(slot)) {
-            if (!slot.dead) h += "<button class='sk-btn' data-act='dead' data-uid='" + slot.uid + "'>" + t("mark_dead") + "</button>";
-            else h += "<button class='sk-btn' data-act='reinf' data-uid='" + slot.uid + "'>" + t("reinforce") + "</button>";
-            if (!solo && slot.dead) h += "<button class='sk-btn' data-act='purge' data-uid='" + slot.uid + "'>" + t("purge") + "</button>";
-            if (solo && slot.dead && st.removed.indexOf(slot.uid) < 0) h += "<button class='sk-btn' data-act='rmtoken' data-uid='" + slot.uid + "'>" + t("remove_token") + "</button>";
-        }
-        h += "</div>";
-        var skills = [0, 1, 2, 3].map(function(k) { return tile.skills && tile.skills[k]; }).filter(function(k) { return k && k != "none" && k != "space"; });
-        if (skills.length) {
-            h += "<h3>" + t("skills") + "</h3>";
-            skills.forEach(function(code) {
-                var sk = Skelos.skillById(code); if (!sk) return;
-                h += "<div class='sk-skill'><img src='" + Skelos.asset(sk.image) + "' alt=''><div><b>" + e(sk.title) + "</b><p>" + e(Skelos.fixDice(sk.text)) + "</p>"
-                    + (solo && sk.clarification ? "<p class='sk-solo'>" + e(Skelos.fixDice(sk.clarification)) + "</p>" : "") + "</div></div>";
-            });
-        }
-        return h + "</div></div>";
     },
 
     fixDice: function(s) {

@@ -210,7 +210,8 @@ S.bindGame = function() {
         switch (b.dataset.act) {
             case "turnsplus": S.adjustTurns(1); break;
             case "turnsminus": S.adjustTurns(-1); break;
-            case "journal": case "help": S.toast(t("coming_soon")); break;
+            case "journal": S.openJournal(); break;
+            case "help": S.toast(t("coming_soon")); break;
         }
     });
 };
@@ -229,14 +230,6 @@ S.renderGame = function() {
         if (!S.isEvent(s)) return;
         var box = r.querySelector(".sk-tilebox[data-uid='" + s.uid + "']"); if (box) box.setAttribute("data-eventuid", s.uid);
     });
-    var texts = S.eventTexts();
-    if (texts.length) {
-        var side = r.querySelector(".sk-side"), old = side && side.querySelector(".sk-card");
-        var card = "<div class='sk-card" + (st.lastEvent ? " sk-alert" : "") + "'><h3>" + t("scenario_events") + "</h3>" + (st.lastEvent ? "<p class='sk-em'>" + t("event_activated") + "</p>" : "")
-            + texts.map(function(x) { return "<p class='sk-evtitle'>" + e(t("event_n", x.pos)) + "</p><ul>" + x.lines.map(function(l) { return "<li>" + e(l) + "</li>"; }).join("") + "</ul>"; }).join("") + "</div>";
-        if (old && old.querySelector("h3") && old.querySelector("h3").textContent == t("scenario_events")) old.outerHTML = card;
-        else if (side) side.insertAdjacentHTML("afterbegin", card);
-    }
     S.placeTabs();
     S.syncFullscreenButton();
 };
@@ -877,6 +870,89 @@ S.studioRemove = function(uid) {
     commit();
 };
 
+// ---------- Menu contextuel des tuiles (appui long, ou clic droit à la souris) ----------
+// Remplace le panneau du bas : un appui simple sélectionne la tuile (activation par le pion), un appui long ouvre ses actions.
+S.openTileMenu = function(uid) {
+    var st = S.state, s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
+    var solo = st.mode == "solo", items = [];
+    if (!s.dead) items.push(["dead", "mark_dead"]);
+    else {
+        items.push(["reinf", "reinforce"]);
+        if (!solo) items.push(["purge", "purge"]);
+        if (solo && st.removed.indexOf(uid) < 0) items.push(["rmtoken", "remove_token"]);
+    }
+    S.hideTip(); S.closeHp();
+    var ov = S.root.querySelector("#sk-overlay");
+    ov.innerHTML = "<div class='sk-dialog sk-menu sk-tilemenu' role='menu' aria-label='" + e(S.tileName(s)) + "'><h2>" + e(S.tileName(s)) + "</h2>"
+        + items.map(function(x) { return "<button class='sk-btn" + (x[0] == "purge" || x[0] == "rmtoken" ? " sk-danger" : "") + "' data-m='" + x[0] + "' role='menuitem'>" + e(t(x[1])) + "</button>"; }).join("")
+        + "<button class='sk-btn' data-m='close' role='menuitem'>" + e(t("close")) + "</button></div>";
+    ov.classList.add("on");
+    ov.onclick = function(ev) {
+        var b = ev.target.closest("[data-m]"); if (!b && ev.target !== ov) return;
+        ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null;
+        if (!b) return;
+        switch (b.dataset.m) {
+            case "dead": S.markDead(uid); break;
+            case "reinf": S.reinforce(uid); break;
+            case "purge": S.purge(uid); break;
+            case "rmtoken": S.removeToken(uid); break;
+        }
+    };
+    if (navigator.vibrate) navigator.vibrate(20);
+    ov.querySelector("[data-m]").focus();
+};
+S.bindTileMenu = function(root) {
+    var timer = null, sx = 0, sy = 0;
+    var tileAt = function(target) {
+        if (S.studio || S.screen != "game") return null;
+        if (target.closest("[data-skill], .sk-hpwrap, [data-hp], button")) return null;
+        var box = target.closest(".sk-river .sk-tilebox[data-uid]"); if (!box) return null;
+        var s = S.slotByUid(box.dataset.uid);
+        return s && !S.isEvent(s) ? s.uid : null;
+    };
+    var stop = function() { clearTimeout(timer); timer = null; };
+    root.addEventListener("pointerdown", function(ev) {
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        var uid = tileAt(ev.target); if (!uid) return;
+        sx = ev.clientX; sy = ev.clientY; stop();
+        timer = setTimeout(function() { timer = null; S._suppressClick = true; S.openTileMenu(uid); }, 450);
+    });
+    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) stop(); });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, stop); });
+    root.addEventListener("contextmenu", function(ev) {
+        var uid = tileAt(ev.target); if (!uid) return;
+        ev.preventDefault(); stop(); S.openTileMenu(uid);
+    });
+};
+
+// Activation d'une tuile Événement : l'alerte qui était sur la poignée du panneau devient un message.
+["activate", "drawToken"].forEach(function(k) {
+    var orig = S[k];
+    S[k] = function() {
+        var before = S.state && S.state.log.length;
+        orig.apply(S, arguments);
+        if (S.state && S.state.lastEvent && S.state.log.length != before) S.toast(t("event_activated"));
+    };
+});
+
+// ---------- Journal : notes du scénario, textes des Événements, puis toutes les actions ----------
+S.openJournal = function() {
+    var st = S.state, sc = st.scenario, h = "<div class='sk-journal'>";
+    if (sc.title) h += "<h1>" + e(sc.title) + "</h1>";
+    if (sc.notes) h += "<h2>" + e(t("scenario_notes")) + "</h2><p>" + e(sc.notes).replace(/\n/g, "<br>") + "</p>";
+    var texts = S.eventTexts();
+    if (texts.length) h += "<h2>" + e(t("scenario_events")) + "</h2>" + texts.map(function(x) {
+        return "<h3>" + e(t("event_n", x.pos)) + "</h3><ul>" + x.lines.map(function(l) { return "<li>" + e(l) + "</li>"; }).join("") + "</ul>";
+    }).join("");
+    h += "<h2>" + e(t("journal_actions")) + "</h2>";
+    if (!st.log.length) h += "<p>" + e(t("journal_empty")) + "</p>";
+    else h += "<ol class='sk-jlist'>" + st.log.map(function(l) {
+        var when = l.ts ? new Date(l.ts).toLocaleString(undefined, {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
+        return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + "<b>" + e(t("journal_turn", l.turn)) + "</b> " + e(l.msg) + "</li>";
+    }).join("") + "</ol>";
+    Nav.dialog(e(t("log")), h + "</div>", null, []);
+};
+
 // ---------- Initialisation ----------
 var origInit = S.init;
 S.init = function(root) {
@@ -884,6 +960,7 @@ S.init = function(root) {
     S.bindEventTips(root);
     S.bindTurnPress(root);
     S.bindStudioDrag(root);
+    S.bindTileMenu(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest(".sk-tabs [data-nav]"); if (!b) return;

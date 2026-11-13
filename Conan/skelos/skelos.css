@@ -1238,3 +1238,14 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
     color: #000; text-shadow: none; }
 .sk-tokenimg .sk-rankgem { width: 34px; height: 34px; }
 .sk-token.gone .sk-rankgem { opacity: .3; }
+
+/* ---------- Étape 4 — Panneau du bas supprimé, menu contextuel des tuiles, Journal ---------- */
+.sk-tilemenu h2 { margin: 0 0 6px; font-family: 'Primary', serif; font-weight: normal; font-size: 1.2rem; color: var(--main-color); }
+.sk-journal { max-width: 760px; margin: 0 auto; }
+.sk-journal h1 { font-family: 'Primary', serif; font-weight: normal; font-size: 1.4rem; margin: 0 0 8px; }
+.sk-journal h2 { font-family: 'Primary', serif; font-weight: normal; font-size: 1.15rem; margin: 18px 0 6px; color: var(--highlight-color); }
+.dialog .sk-journal h3 { font-family: inherit; font-size: 1.05rem; font-weight: bold; margin: 10px 0 4px; }
+.sk-journal ul { margin: 0 0 6px; padding-left: 20px; }
+.sk-jlist { list-style: none; margin: 0; padding: 0; }
+.sk-jlist li { padding: 6px 0; border-bottom: 1px solid rgba(128,128,128,.25); line-height: 1.35; }
+.sk-jtime { display: inline-block; min-width: 7.5em; margin-right: 8px; opacity: .7; font-size: .9em; }
