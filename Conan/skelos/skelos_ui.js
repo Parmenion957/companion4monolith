@@ -1150,17 +1150,21 @@ S.init = function(root) {
     }, true);
 };
 
-// ---------- Bloc Phase : chaque étape écrite aussi grand que sa case le permet ----------
-// Taille calculée case par case, à chaque rendu, au changement de taille de l'écran et quand la police du jeu a chargé.
+// ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------
+// La plus grande taille qui tient dans chaque case est cherchée, puis la plus petite de ces tailles est appliquée
+// partout. Recalculé à chaque rendu, au changement de taille de l'écran et quand la police du jeu a chargé.
 S.fitPhase = function() {
     var r = S.root; if (!r) return;
-    r.querySelectorAll(".sk-a-phase li").forEach(function(li) {
+    var lis = Array.prototype.slice.call(r.querySelectorAll(".sk-a-phase li")); if (!lis.length) return;
+    var best = lis.map(function(li) {
         var sp = li.lastElementChild;
         var fits = function(px) { sp.style.fontSize = px + "px"; return li.scrollHeight <= li.clientHeight + 1 && sp.scrollWidth <= sp.clientWidth + 1; };
-        var lo = 8, hi = 44;
+        var lo = 7, hi = 44;
         while (hi - lo > 0.5) { var mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
-        fits(Math.floor(lo * 2) / 2);
+        return Math.floor(lo * 2) / 2;
     });
+    var px = Math.min.apply(Math, best);
+    lis.forEach(function(li) { li.lastElementChild.style.fontSize = px + "px"; });
 };
 var fitRenderGame = S.renderGame;
 S.renderGame = function() { fitRenderGame.apply(S, arguments); S.fitPhase(); };

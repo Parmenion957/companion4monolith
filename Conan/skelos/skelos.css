@@ -1067,9 +1067,9 @@ html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: 
 .sk-pboost .sk-pgems { margin-top: auto; }
 @media (max-width: 420px) { .sk-pboostimg { height: 42px; } }
 @media (max-height: 520px) and (orientation: landscape) { .sk-pboostimg { height: 34px; } }
-/* Bloc Phase : étapes dans la police du jeu ; la taille est calculée pour remplir chaque case (S.fitPhase) */
+/* Bloc Phase : étapes dans la police du jeu ; taille commune calculée pour tenir dans chaque case (S.fitPhase) */
 .sk-a-phase ol { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; }
-.sk-a-phase li { font-family: 'Primary', serif; line-height: 1.05; min-height: 0; min-width: 0; overflow: hidden; letter-spacing: .02em; }
+.sk-a-phase li { font-family: 'Primary', serif; line-height: 1.05; min-height: 0; min-width: 0; overflow: hidden; letter-spacing: 0; }
 .sk-a-phase li > span:last-child { min-width: 0; flex: 1; overflow-wrap: normal; word-break: normal; hyphens: none; }
 .sk-a-phase li.cur { font-weight: normal; }
 .skelos-game .sk-a-phase li { padding: 4px 6px; gap: 5px; }
