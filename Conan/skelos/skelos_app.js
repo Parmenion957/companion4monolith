@@ -325,6 +325,7 @@ S.renderCampaign = function(cid) {
         var i = +b.dataset.i;
         switch (b.dataset.cact) {
             case "journal": S.openCampaignJournal(c.id); break;
+            case "help": S.openCampaignHelp(); break;
             case "settings": S.openCampaignSettings(c.id); break;
             case "cdelete": S.deleteCampaign(c.id); break;
             case "addsc": case "choose": S.openChooseScenario(c.id, b.dataset.cact == "choose" ? i : null); break;

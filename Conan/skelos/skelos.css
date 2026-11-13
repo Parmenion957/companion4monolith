@@ -1275,3 +1275,7 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 
 /* Portée des recherches (tuiles, héros, objets) : « Mes boîtes » ou « Tout » */
 .sk-filters .sk-scope { flex: none; }
+
+/* Sélecteurs plein écran (tuiles, héros, objets) : la barre du Compagnon ne recouvre plus la dernière ligne */
+html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdlg) nav.menu { display: none !important; }
+.sk-overlay .sk-pickdlg { padding-bottom: calc(var(--sk-bottom, 0px) + 32px) !important; }
