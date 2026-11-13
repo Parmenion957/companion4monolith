@@ -433,7 +433,10 @@ S.openHeroEditor = function(cid, hid) {
                 close(); S.rerender();
             } else if (ev.target.closest("[data-rm]")) {
                 close(); S.ask(t("confirm_rm_hero"), t("delete"), function() {
-                    S.updateCampaign(cid, function(x) { x.heroes = x.heroes.filter(function(z) { return z.id != hid; }); x.cache.forEach(function(it) { if (it.owner == hid) it.owner = null; }); });
+                    S.updateCampaign(cid, function(x) { x.heroes = x.heroes.filter(function(z) { return z.id != hid; });
+                        // Son équipement de départ part avec lui ; ses autres objets restent dans la cache.
+                        x.cache = x.cache.filter(function(it) { return !(it.start && (it.startHero || it.owner) == hid); });
+                        x.cache.forEach(function(it) { if (it.owner == hid) it.owner = null; }); });
                     S.rerender();
                 });
             }
@@ -468,14 +471,17 @@ S.openItemMenu = function(cid, iuid) {
         + "<button class='sk-chip" + (!it.owner ? " sk-sel" : "") + "' data-own=''>" + t("nobody") + "</button>"
         + c.heroes.map(function(hh) { return "<button class='sk-chip sk-own" + (it.owner == hh.id ? " sk-sel" : "") + "' style='--hc:" + hh.color + "' data-own='" + hh.id + "'>" + e(hh.name) + "</button>"; }).join("") + "</div>"
         + "<label class='sk-check'><input type='checkbox' id='sk-st'" + (it.start ? " checked" : "") + "> " + t("start_item") + "</label>"
-        + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm>" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
+        + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm" + (it.start ? " disabled title='" + e(t("start_item_locked")) + "'" : "") + ">" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
             var o = ev.target.closest("[data-own]");
             if (o) { S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) S.setItemOwner(x, y, o.dataset.own); }); }); close(); S.rerender(); return; }
             if (ev.target.closest("[data-dup]")) { S.updateCampaign(cid, function(x) { x.cache.push({uid: uid("i"), kind: it.kind, ref: it.ref, name: it.name, owner: null, start: false}); }); close(); S.rerender(); return; }
-            if (ev.target.closest("[data-rm]")) { S.updateCampaign(cid, function(x) { x.cache = x.cache.filter(function(y) { return y.uid != iuid; }); }); close(); S.rerender(); }
+            // Un équipement de départ ne se retire pas de la cache : il disparaît seulement avec son héros.
+            var rm = ev.target.closest("[data-rm]");
+            if (rm && !rm.disabled) { S.updateCampaign(cid, function(x) { x.cache = x.cache.filter(function(y) { return y.uid != iuid || y.start; }); }); close(); S.rerender(); }
         });
-    S.root.querySelector("#sk-st").addEventListener("change", function(ev) { var v = ev.target.checked; S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) { y.start = v; y.startHero = v ? (y.startHero || y.owner || null) : null; } }); }); });
+    S.root.querySelector("#sk-st").addEventListener("change", function(ev) { var v = ev.target.checked; S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) { y.start = v; y.startHero = v ? (y.startHero || y.owner || null) : null; } }); });
+        var rm = S.root.querySelector("#sk-overlay [data-rm]"); if (rm) { rm.disabled = v; rm.title = v ? t("start_item_locked") : ""; } });
 };
 S.rerender = function() {
     if (S.screen == "campaign") S.renderCampaign(S.curCampaign);
