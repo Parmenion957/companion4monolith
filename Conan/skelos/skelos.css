@@ -1309,3 +1309,7 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
 .sk-noanim .sk-ghost.sk-lifted { animation: sk-lift .15s ease-out both !important; }
 .sk-noanim .sk-ghost.sk-settling { animation: none !important; transition: left .25s ease-out, top .25s ease-out, width .25s ease-out, transform .25s ease-out, box-shadow .25s ease-out !important; }
 .sk-river > .sk-slot.sk-dropend { outline: 3px dashed var(--highlight-color); outline-offset: 3px; border-radius: 6px; }
+
+/* Dialogues plein écran (Réglages, fin de scénario…) : texte secondaire lisible dans les deux thèmes,
+   l'ancienne valeur « grimoire » (blanc à 62 %) restait illisible en thème clair. */
+.sk-dialogscreen { --sk-muted: color-mix(in srgb, var(--body-color, #000) 62%, var(--body-bg-color, #f8f6f6) 38%); }

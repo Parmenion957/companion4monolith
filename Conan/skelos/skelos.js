@@ -825,10 +825,15 @@ var Skelos = {
         tip.innerHTML = "<b>" + Skelos.esc(sk.title) + "</b><p>" + Skelos.esc(Skelos.fixDice(sk.text)) + "</p>"
             + (solo && sk.clarification ? "<p class='sk-solo'>" + Skelos.esc(Skelos.fixDice(sk.clarification)) + "</p>" : "");
         tip.classList.add("on");
-        // Zone libre : entre la barre du haut et la barre de navigation du Compagnon, qui ne doivent pas couper le texte.
-        var area = Skelos.freeArea(), b = el.getBoundingClientRect(), W = window.innerWidth, w = Math.min(360, W - 16);
-        tip.style.width = w + "px"; tip.style.maxHeight = (area.bottom - area.top) + "px"; tip.style.overflowY = "auto";
-        var h = tip.offsetHeight, left, top;
+        // Zone libre : la partie visible du module, sans les barres du Compagnon (en-tête, onglets, navigation du bas).
+        // Les textes longs (Poison en solo / coop…) élargissent la bulle, puis réduisent sa police, pour tenir sans défilement.
+        var area = Skelos.freeArea(), b = el.getBoundingClientRect(), W = window.innerWidth, H = area.bottom - area.top;
+        var widths = [360, 480, 600, 760, Math.round(W * 0.94)].filter(function(x, i, l) { return x <= W - 16 || i == l.length - 1; });
+        tip.style.fontSize = ""; tip.style.maxHeight = H + "px"; tip.style.overflowY = "auto";
+        var w = Math.min(360, W - 16), fs = 17;
+        for (var i = 0; i < widths.length; i++) { w = Math.min(widths[i], W - 16); tip.style.width = w + "px"; if (tip.scrollHeight <= H) break; }
+        while (tip.scrollHeight > H && fs > 12) { fs--; tip.style.fontSize = fs + "px"; }
+        var h = Math.min(tip.offsetHeight, H), left, top;
         if (b.right + 8 + w <= W - 8) left = b.right + 8;          // à droite de la compétence
         else if (b.left - 8 - w >= 8) left = b.left - 8 - w;        // sinon à gauche
         else left = null;                                         // sinon au-dessus ou en dessous
@@ -837,20 +842,20 @@ var Skelos = {
             left = Math.max(8, Math.min(b.left + b.width / 2 - w / 2, W - w - 8));
             top = b.bottom + 8 + h <= area.bottom ? b.bottom + 8 : b.top - 8 - h >= area.top ? b.top - 8 - h : Math.max(area.top, area.bottom - h);
         }
+        top = Math.max(area.top, Math.min(top, area.bottom - h));
         tip.style.left = left + "px"; tip.style.top = top + "px";
     },
 
-    // Partie visible de l'écran, sans les barres fixes du Compagnon (en-tête en haut, navigation en bas).
+    // Partie visible de l'écran pour le module : le cadre de défilement du module, sans les barres du Compagnon
+    // (la navigation du bas n'est pas toujours fixe, on ne peut donc pas se contenter de chercher des barres fixes).
     freeArea: function() {
-        var top = 8, bottom = window.innerHeight - 8, root = Skelos.root;
-        var bar = function(y) {
-            var n = document.elementFromPoint(window.innerWidth / 2, y);
-            while (n && n != document.body && !(root && root.contains(n)) && ["fixed", "sticky"].indexOf(getComputedStyle(n).position) < 0) n = n.parentElement;
-            return n && n != document.body && !(root && root.contains(n)) ? n.getBoundingClientRect() : null;
-        };
-        var tb = bar(2), bb = bar(window.innerHeight - 2);
-        if (tb && tb.bottom < window.innerHeight / 3) top = Math.max(top, tb.bottom + 8);
-        if (bb && bb.top > window.innerHeight * 2 / 3) bottom = Math.min(bottom, bb.top - 8);
+        var vv = window.visualViewport, vh = vv ? vv.height : window.innerHeight;
+        var top = 8, bottom = vh - 8, root = Skelos.root;
+        var host = root && (root.closest(".skelos-host") || root.parentElement || root);
+        if (host) {
+            var r = host.getBoundingClientRect();
+            if (r.bottom - r.top > 120) { top = Math.max(top, r.top + 8); bottom = Math.min(bottom, r.bottom - 8); }
+        }
         return {top: top, bottom: bottom};
     },
 
