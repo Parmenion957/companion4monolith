@@ -380,7 +380,7 @@ S.saveScenarioCopy = function(d) {
     if (idx >= 0) list[idx] = copy; else list.push(copy);
     S.saveScenarios(list); S.toast(t("scenario_saved"));
 };
-var fmtDay = function(iso) { try { return new Date(iso).toLocaleDateString(undefined, {day: "2-digit", month: "2-digit", year: "numeric"}); } catch (x) { return ""; } };
+var fmtDay = function(iso) { return S.fmtDay(iso); };
 
 // Miniature de la Rivière : les 8 cases, l'illustration de chaque tuile sous son jeton de rang.
 S.riverThumbCode = function(sc) {
@@ -1086,7 +1086,7 @@ S.openJournal = function() {
     h += "<h2>" + e(t("journal_actions")) + "</h2>";
     if (!st.log.length) h += "<p>" + e(t("journal_empty")) + "</p>";
     else h += "<ol class='sk-jlist'>" + st.log.map(function(l) {
-        var when = l.ts ? new Date(l.ts).toLocaleString(undefined, {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
+        var when = l.ts ? new Date(l.ts).toLocaleString(S.locale(), {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
         return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + "<b>" + e(t("journal_turn", l.turn)) + "</b> " + e(l.msg) + "</li>";
     }).join("") + "</ol>";
     Nav.dialog(e(t("log")), h + "</div>", null, []);
@@ -1556,7 +1556,7 @@ S.sortItems = function(list) {
 };
 S.openCampaignJournal = function(cid) {
     var c = S.campaign(cid); if (!c) return;
-    var fmt = function(d) { var p = String(d || "").split("-"); return p.length == 3 ? p[2] + "/" + p[1] + "/" + p[0] : ""; };
+    var fmt = S.fmtDay;
     var h = "<div class='sk-journal'><h1>" + e(c.name) + "</h1>";
     if (!(c.log || []).length) h += "<p>" + e(t("journal_empty")) + "</p>";
     else h += "<ol class='sk-jlist'>" + c.log.map(function(l) { return "<li>" + (l.d ? "<span class='sk-jtime'>" + e(fmt(l.d)) + "</span>" : "") + e(l.msg) + "</li>"; }).join("") + "</ol>";
@@ -1632,6 +1632,14 @@ S._importFile = function(input) {
         reader.readAsText(input.files[0]);
     }
     input.value = "";
+};
+// Exporter et Importer n'ont pas de sens sur l'onglet Partie : les actions du haut y sont masquées.
+var placeTabsXfer = S.placeTabs;
+S.placeTabs = function() {
+    placeTabsXfer.apply(S, arguments);
+    var tab = S.screen == "game" && S.editing ? (S.editing.cid ? "campaigns" : "scenarios") : TAB_OF[S.screen];
+    var onGame = tab == "home" || S.screen == "game" && !S.editing || S.screen == "end";
+    ["skelos-export", "skelos-import"].forEach(function(id) { if (window.Nav && Nav.hideAction) Nav[onGame ? "hideAction" : "showAction"]("skelos", id); });
 };
 S._import = function() {
     var d = S._xferData, scs = S._xferChecked("sc"), camps = S._xferChecked("camp");

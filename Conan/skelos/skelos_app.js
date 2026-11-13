@@ -13,7 +13,16 @@ var uid = function(p) { return (p || "x") + Date.now().toString(36) + Math.rando
 var load = function(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (x) { return d; } };
 var store = function(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (x) { S.toast(t("storage_full")); return false; } };
 var today = function() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); };
-var fmtDate = function(iso) { if (!iso) return "—"; var p = iso.split("-"); return p.length == 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso; };
+// Dates au format de la langue choisie dans le Compagnon (et non celle du navigateur).
+S.locale = function() { return (typeof Language != "undefined" && Language) || undefined; };
+S.fmtDay = function(iso) {
+    if (!iso) return "";
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+    var d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(iso);
+    if (isNaN(d)) return String(iso);
+    try { return d.toLocaleDateString(S.locale(), {day: "2-digit", month: "2-digit", year: "numeric"}); } catch (x) { return d.toLocaleDateString(); }
+};
+var fmtDate = function(iso) { return iso ? S.fmtDay(iso) : "—"; };
 var shell = function(cls, inner) {
     return "<div class='skelos-game sk-screen " + (cls || "") + "'><div class='sk-board'><div class='sk-g8'>" + inner + "</div></div></div>"
         + "<div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
