@@ -225,6 +225,9 @@ S.navClick = function(ev) {
         else if (v == "campaign") S.renderCampaign(n.dataset.cid);
         return;
     }
+    // Le bouton Dupliquer d'une carte de campagne ne l'ouvre pas.
+    var d = ev.target.closest("[data-cdup]");
+    if (d) { S.duplicateCampaign(d.dataset.cdup, true); return; }
     var c = ev.target.closest("[data-camp]");
     if (c) { S.renderCampaign(c.dataset.camp); return; }
     if (S.screenClick) S.screenClick(ev);
@@ -374,11 +377,8 @@ S.openCampaignSettings = function(cid) {
     var c = S.campaign(cid); if (!c) return;
     S.dialog("<h2>" + t("campaign_settings") + "</h2>"
         + "<label class='sk-fl'>" + t("name") + "<input class='sk-in' id='sk-cs-n' value='" + e(c.name) + "'></label>"
-        + "<div class='sk-fl'>" + t("replay_campaign") + "</div><p class='sk-help'>" + t("duplicate_campaign_help") + "</p>"
-        + "<button class='sk-btn' data-cdup>" + t("duplicate_campaign") + "</button>"
         + "<div class='sk-actions'><button class='sk-btn sk-primary' data-ok>" + t("validate") + "</button><button class='sk-btn' data-dclose>" + t("cancel") + "</button></div>",
         function(ev, close) {
-            if (ev.target.closest("[data-cdup]")) { close(); S.duplicateCampaign(cid); return; }
             if (!ev.target.closest("[data-ok]")) return;
             var name = S.root.querySelector("#sk-cs-n").value.trim() || c.name;
             S.updateCampaign(cid, function(x) { x.name = name; });
@@ -387,8 +387,8 @@ S.openCampaignSettings = function(cid) {
     var inp = S.root.querySelector("#sk-cs-n"); if (inp) { inp.focus(); inp.select(); }
 };
 // Rejouer une campagne : copie avec la même compagnie (tous vivants), les mêmes scénarios à rejouer et la même cache ;
-// les parties jouées, le journal et les morts ne sont pas repris.
-S.duplicateCampaign = function(cid) {
+// les parties jouées, le journal et les morts ne sont pas repris. Depuis l'accueil (« stay »), on reste sur la liste.
+S.duplicateCampaign = function(cid, stay) {
     var src = S.campaign(cid); if (!src) return;
     var c = JSON.parse(JSON.stringify(src));
     c.id = uid("c"); c.name = t("campaign_copy_name", src.name || t("untitled")); c.created = new Date().toISOString(); c.last = null; c.log = [];
@@ -397,7 +397,8 @@ S.duplicateCampaign = function(cid) {
     (c.cache || []).forEach(function(it) { it.uid = uid("i"); });
     S.campLog(c, t("clog_duplicated", src.name || t("untitled")));
     var l = S.campaigns(); l.push(c); S.saveCampaigns(l);
-    S.toast(t("campaign_duplicated")); S.renderCampaign(c.id);
+    S.toast(t("campaign_duplicated"));
+    if (stay) S.renderCampaigns(); else S.renderCampaign(c.id);
 };
 
 // Modifier la cache : le sélecteur s'ouvre avec les objets de la cache déjà sélectionnés.

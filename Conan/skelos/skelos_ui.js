@@ -1194,6 +1194,8 @@ S.campaignCardCode = function(c) {
         + (dates.length ? "<p class='sk-sdates'>" + e(dates.join(" · ")) + "</p>" : "")
         + "<div class='sk-cheroes'>" + (heroes || "<span class='sk-sdates'>" + e(t("camp_no_hero")) + "</span>") + "</div>"
         + (dots || "<div class='sk-cthread'><span class='sk-sdates'>" + e(t("camp_no_scenario")) + "</span></div>")
+        // Dupliquer pour rejouer, comme sur les cartes de scénario.
+        + "<div class='sk-scard-acts'><span class='sk-scard-sp'></span><button class='sk-iconbtn sk-scact' data-cdup='" + c.id + "' title='" + e(t("duplicate_campaign")) + "' aria-label='" + e(t("duplicate_campaign") + " : " + (c.name || "—")) + "'>&#xf0c5;</button></div>"
         + "</article>";
 };
 // Écran vide : pêle-mêle de cartes de scénario (les vôtres s'il y en a, sinon l'exemple).
