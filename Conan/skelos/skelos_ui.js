@@ -1887,7 +1887,7 @@ S.openHeroPicker = function(cid) {
         else { sel.push(p.dataset.ref); p.classList.remove("added"); void p.offsetWidth; p.classList.add("added"); }
         status();
     };
-    draw(); ov.querySelector("#sk-hq").focus();
+    draw(); S.softFocus(ov.querySelector("#sk-hq"));
 };
 
 // ---------- Carte d'un objet au survol de la souris (équipement, sort, amélioration) ----------
