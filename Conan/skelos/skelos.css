@@ -1332,3 +1332,8 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
 .sk-hpick.sk-inco { opacity: 1; }
 .sk-hpick.sk-inco .sk-hsheetscale, .sk-hpick.sk-inco .sk-hpick-i { opacity: .4; }
 .sk-hpick-full .sk-inco-t { font-size: 17px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+
+/* Safari / Chrome sur iPad (WebKit) : un bouton en display:block ne donne aucune largeur à un enfant « container-type »,
+   la fiche du héros mesurait 0 de haut et la liste paraissait vide. En grille, la fiche prend toute la largeur. */
+.sk-hpick.sk-hpick-full { display: grid; grid-template-columns: 100%; }
+.sk-icard.sk-real, .sk-pick { display: grid; grid-template-columns: 100%; }
