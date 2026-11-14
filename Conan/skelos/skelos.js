@@ -430,7 +430,7 @@ var Skelos = {
             p.classList.remove("added"); void p.offsetWidth; p.classList.add("added");
             status();
         };
-        document.getElementById("sk-q").focus();
+        Skelos.softFocus(document.getElementById("sk-q"));
     },
 
     boxName: function(id) {

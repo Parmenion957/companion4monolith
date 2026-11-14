@@ -645,7 +645,12 @@ S.syncFullscreenButton = function() {
         document.getElementById("sk-exitfull").addEventListener("click", function() { S.toggleFullscreen(false); });
     } else if (!on && b) b.remove();
 };
-document.addEventListener("fullscreenchange", function() { if (!document.fullscreenElement && document.documentElement.classList.contains("skelos-full")) { document.documentElement.classList.remove("skelos-full"); S.syncFullscreenButton(); } });
+// Sur tablette, iOS quitte le plein écran du navigateur au moindre glissement vers le bas : le mode Skelos
+// (barres du Compagnon masquées) reste alors en place, on n'en sort que par son bouton. À la souris, Échap le quitte aussi.
+document.addEventListener("fullscreenchange", function() {
+    if (window.matchMedia && matchMedia("(pointer: coarse)").matches) return;
+    if (!document.fullscreenElement && document.documentElement.classList.contains("skelos-full")) { document.documentElement.classList.remove("skelos-full"); S.syncFullscreenButton(); }
+});
 
 // ---------- Mode studio : la partie se règle directement sur le plateau ----------
 // Le bouton Studio (barre des onglets) fait apparaître les − et +, le + des emplacements vides,
@@ -1887,7 +1892,7 @@ S.openHeroPicker = function(cid) {
         else { sel.push(p.dataset.ref); p.classList.remove("added"); void p.offsetWidth; p.classList.add("added"); }
         status();
     };
-    draw(); ov.querySelector("#sk-hq").focus();
+    draw(); S.softFocus(ov.querySelector("#sk-hq"));
 };
 
 // ---------- Carte d'un objet au survol de la souris (équipement, sort, amélioration) ----------

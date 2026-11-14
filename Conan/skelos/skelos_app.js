@@ -5,6 +5,16 @@
 // L'utilisateur reste maître des règles : l'app propose des valeurs, tout reste modifiable.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
+// Sur tablette, placer le curseur dans la recherche d'un sélecteur ouvre le clavier : iOS remonte alors la page
+// et l'en-tête du sélecteur (Valider, Fermer) reste en partie hors de l'écran. Le curseur ne s'y place qu'à la souris.
+S.softFocus = function(el) {
+    if (!el || (window.matchMedia && matchMedia("(pointer: coarse)").matches)) return;
+    try { el.focus({preventScroll: true}); } catch (x) { el.focus(); }
+};
+// Quand le clavier d'iOS se referme, la page reste parfois décalée vers le haut : on la remet en place.
+document.addEventListener("focusout", function() {
+    setTimeout(function() { if (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); } }, 120);
+});
 var KEY_CAMP = Application + "_SkelosCampaigns", KEY_UP = Application + "_SkelosUpgrades", KEY_BG = Application + "_SkelosBackground";
 var HERO_COLORS = ["#e0a43a", "#3fb6a8", "#a58be0", "#e06a5a", "#7fbf6a", "#d98bd0", "#6aa8e0"];
 S.HERO_COLORS = HERO_COLORS;
@@ -677,7 +687,7 @@ S.openItemPicker = function(opts) {
         c.classList.remove("added"); void c.offsetWidth; c.classList.add("added");
         status();
     };
-    draw(); q.focus();
+    draw(); S.softFocus(q);
 };
 S.openUpgradeEditor = function(id, done) {
     var list = S.upgrades(), u = id ? list.filter(function(x) { return x.id == id; })[0] : null;
