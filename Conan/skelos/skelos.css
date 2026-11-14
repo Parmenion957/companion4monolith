@@ -1347,3 +1347,7 @@ html:has(.sk-overlay.on .sk-pickdlg) .contents, html.skelos-dlgopen .contents { 
 html:has(.sk-overlay.on) #skelos.skelos-host, html.skelos-dlgopen #skelos.skelos-host { overflow: hidden !important; }
 html:has(.sk-overlay.on) #skelos > .sk-tabs, html.skelos-dlgopen #skelos > .sk-tabs { visibility: hidden; }
 .sk-overlay, .sk-dialogscreen, .sk-overlay .sk-pickdlg { overscroll-behavior: contain; }
+
+/* Plein écran Skelos sur tablette : plus de rebond en haut ni en bas de la page, ce rebond faisait sortir du plein écran. */
+html.skelos-full, html.skelos-full body, html.skelos-full #skelos.skelos-host, html.skelos-full .sk-overlay, html.skelos-full .sk-dialogscreen,
+html.skelos-full .sk-overlay .sk-pickdlg { overscroll-behavior: none; }
