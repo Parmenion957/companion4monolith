@@ -830,7 +830,7 @@ html.skelos-full nav.menu { display: none !important; }
 
 /* Le Compagnon masque le débordement des modules (.contents > div) : #skelos défile lui-même
    (indispensable sur téléphone, où le plateau dépasse la hauteur de l'écran). */
-#skelos.skelos-host { overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+#skelos.skelos-host { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 
 /* ---------- Étape 3 — Mode studio ---------- */
 /* Barre des onglets : bouton Studio à droite ; en mode studio, Aventure / Coop et la disquette à sa gauche. */
@@ -1337,3 +1337,13 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
    la fiche du héros mesurait 0 de haut et la liste paraissait vide. En grille, la fiche prend toute la largeur. */
 .sk-hpick.sk-hpick-full { display: grid; grid-template-columns: 100%; }
 .sk-icard.sk-real, .sk-pick { display: grid; grid-template-columns: 100%; }
+
+/* iPad (Safari et Chrome) : un dialogue ou un sélecteur plein écran ouvert dans #skelos ne passe pas
+   devant la barre du Compagnon, qui recouvrait l'en-tête (Valider, Fermer) et laissait atteindre le plein écran
+   du Compagnon (qui ramenait à la campagne). Pendant un dialogue, la barre du haut s'efface et #skelos
+   ne défile plus : seul le dialogue défile, ce qui évite le défilement bloqué. */
+html:has(.sk-overlay.on .sk-pickdlg) .header { display: none !important; }
+html:has(.sk-overlay.on .sk-pickdlg) .contents, html.skelos-dlgopen .contents { top: 0 !important; bottom: 0 !important; }
+html:has(.sk-overlay.on) #skelos.skelos-host, html.skelos-dlgopen #skelos.skelos-host { overflow: hidden !important; }
+html:has(.sk-overlay.on) #skelos > .sk-tabs, html.skelos-dlgopen #skelos > .sk-tabs { visibility: hidden; }
+.sk-overlay, .sk-dialogscreen, .sk-overlay .sk-pickdlg { overscroll-behavior: contain; }
