@@ -828,12 +828,16 @@ var Skelos = {
         // Zone libre : la partie visible du module, sans les barres du Compagnon (en-tête, onglets, navigation du bas).
         // Les textes longs (Poison en solo / coop…) élargissent la bulle, puis réduisent sa police, pour tenir sans défilement.
         var area = Skelos.freeArea(), b = el.getBoundingClientRect(), W = window.innerWidth, H = area.bottom - area.top;
-        var widths = [360, 480, 600, 760, Math.round(W * 0.94)].filter(function(x, i, l) { return x <= W - 16 || i == l.length - 1; });
+        // Téléphone : la description se lit dans un panneau sur toute la largeur, en bas de la partie visible.
+        var sheet = W <= 600;
+        tip.classList.toggle("sk-tipsheet", sheet);
+        var widths = sheet ? [W - 16] : [360, 480, 600, 760, Math.round(W * 0.94)].filter(function(x, i, l) { return x <= W - 16 || i == l.length - 1; });
         tip.style.fontSize = ""; tip.style.maxHeight = H + "px"; tip.style.overflowY = "auto";
         var w = Math.min(360, W - 16), fs = 17;
         for (var i = 0; i < widths.length; i++) { w = Math.min(widths[i], W - 16); tip.style.width = w + "px"; if (tip.scrollHeight <= H) break; }
         while (tip.scrollHeight > H && fs > 12) { fs--; tip.style.fontSize = fs + "px"; }
         var h = Math.min(tip.offsetHeight, H), left, top;
+        if (sheet) { tip.style.left = "8px"; tip.style.top = Math.max(area.top, area.bottom - h) + "px"; return; }
         if (b.right + 8 + w <= W - 8) left = b.right + 8;          // à droite de la compétence
         else if (b.left - 8 - w >= 8) left = b.left - 8 - w;        // sinon à gauche
         else left = null;                                         // sinon au-dessus ou en dessous

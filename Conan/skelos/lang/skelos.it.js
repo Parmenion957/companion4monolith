@@ -101,6 +101,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'not_enough': "Not enough gems: {0} needed, {1} left.",
     'too_many_activations': "The {0} activations of the turn are already used.",
     'mark_dead': "All units are dead",
+    'zoom_tile': "Enlarge the tile",
     'reinforce': "Reinforcement: flip the tile back",
     'dead': "Dead",
     'event_activated': "Event activated: choose an event to resolve.",

@@ -1351,3 +1351,66 @@ html:has(.sk-overlay.on) #skelos > .sk-tabs, html.skelos-dlgopen #skelos > .sk-t
 /* Plein écran Skelos sur tablette : plus de rebond en haut ni en bas de la page, ce rebond faisait sortir du plein écran. */
 html.skelos-full, html.skelos-full body, html.skelos-full #skelos.skelos-host, html.skelos-full .sk-overlay, html.skelos-full .sk-dialogscreen,
 html.skelos-full .sk-overlay .sk-pickdlg { overscroll-behavior: none; }
+
+/* ---------- Étape 23 : téléphone ---------- */
+/* Plateau : aucun texte ni image ne se sélectionne à l'appui long (iOS sélectionnait l'image de la compétence). */
+.skelos-game:not(.sk-screen), .skelos-game:not(.sk-screen) *, .sk-zoom, .sk-zoom * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.skelos-game:not(.sk-screen) img, .sk-zoom img { -webkit-user-drag: none; }
+.skelos-game:not(.sk-screen) input, .skelos-game:not(.sk-screen) textarea { -webkit-user-select: text; user-select: text; }
+.sk-river .sk-tilebox { touch-action: manipulation; }
+
+/* Tuile agrandie : centrée, aussi grande que l'écran le permet. */
+.sk-overlay.sk-zoomon { display: flex !important; align-items: center; justify-content: center; padding: 12px; }
+.sk-zoom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.sk-zoombox { width: min(92vw, calc((100dvh - var(--sk-bottom, 0px) - 230px) * 0.656), 520px); cursor: default; }
+.sk-zoombox .tile.tiletile { box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.sk-zoombox [data-skill] { cursor: help; }
+/* Points de vie de la tuile agrandie : sous la tuile, pour ne cacher ni la défense ni les dés. */
+.sk-zoomhp { container-type: inline-size; width: 300px; max-width: 80vw; display: flex; justify-content: center; }
+.sk-zoomhp .sk-hpwrap { position: static !important; }
+.sk-overlay .sk-zoom .sk-btn.sk-zoomclose { min-width: 140px; background: var(--body-bg-color) !important; color: var(--body-color) !important; border-color: var(--body-color) !important; }
+
+/* Description d'une compétence sur téléphone : panneau sur toute la largeur, en bas de la partie visible. */
+.sk-tip.sk-tipsheet { border-radius: 10px; box-shadow: 0 -4px 18px rgba(0,0,0,.35); }
+
+/* Écran vide des onglets Scénarios et Campagnes : le texte passe à la ligne au lieu d'être coupé. */
+.sk-sempty { max-width: 100%; box-sizing: border-box; overflow: hidden; }
+.sk-sempty p { max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+    .sk-sempty { font-size: 16px; padding: 16px 8px; }
+    .sk-cpelemele { width: 300px; height: 160px; }
+    .sk-cpelemele .sk-cmini { transform-origin: top left; }
+}
+
+/* Filtres des onglets Scénarios et Campagnes : colonne à gauche comme l'encyclopédie (et l'onglet Améliorations) ;
+   sur téléphone, panneau caché qui s'ouvre depuis la droite avec le bouton loupe, au-dessus du bouton +. */
+.sk-scols { display: flex; gap: 16px; align-items: flex-start; }
+.sk-scols > .sk-slist { flex: 1 1 auto; min-width: 0; }
+.sk-sfilters { position: sticky; top: 52px; }
+.sk-sfilters .sk-sseg { display: flex; flex-direction: column; gap: 6px; flex: none; width: 100%; }
+.sk-sfilters .sk-sseg button { width: 100%; margin: 0 !important; font-size: 15px !important; min-height: 38px; padding: 4px 10px !important; }
+.sk-sfilters .sk-ssearch, .sk-sfilters .sk-ssearch::placeholder { font-size: 17px !important; }
+.sk-sfilters .sk-ssearch { flex: none; width: 100%; height: 40px; min-height: 40px; line-height: 40px; padding: 0 10px !important; }
+.sk-sfilters .sk-filtclose { display: none; }
+ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
+@media (max-width: 600px) {
+    .sk-scols { display: block; }
+    .sk-sfilters { position: fixed; top: 0; bottom: 0; right: 0; width: min(260px, 80vw); z-index: 20004; box-sizing: border-box; padding: 14px 14px 24px; overflow-y: auto;
+        background: var(--body-bg-color); color: var(--body-color); transform: translateX(105%); transition: transform .3s; box-shadow: -6px 0 24px rgba(0,0,0,.3); }
+    .sk-filtopen .sk-sfilters { transform: none; }
+    .sk-sfilters .sk-filtclose { display: block; width: 100%; margin-top: 18px; }
+    .sk-filtveil { display: block; position: fixed; inset: 0; z-index: 20003; background: rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .3s; }
+    .sk-filtopen .sk-filtveil { opacity: 1; pointer-events: auto; }
+    ul.floatingactions.sk-searchbar { display: block; position: fixed; z-index: 40; right: 21px; bottom: calc(var(--sk-bottom, 0px) + 21px + 76px); }
+    .sk-filtopen ul.floatingactions.sk-searchbar { display: none; }
+}
+
+/* Sélecteurs plein écran sur téléphone en portrait (héros, cache, tuiles) : l'en-tête garde sa hauteur fixe de 64 px
+   alors que le titre et les boutons ne tiennent pas sur une ligne ; Ajouter et Fermer débordaient sur la recherche.
+   L'en-tête grandit : le titre, puis les deux boutons côte à côte. */
+@media (max-width: 600px) {
+    .sk-overlay .sk-pickdlg .sk-dialog-head { height: auto; min-height: 64px; padding: 10px 14px; flex-wrap: wrap; row-gap: 8px; }
+    .sk-overlay .sk-pickdlg .sk-dialog-head h2 { flex: 1 1 100%; font-size: 22px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sk-overlay .sk-pickdlg .sk-dialog-head > div { display: flex; flex: 1 1 100%; flex-wrap: nowrap; gap: 8px; }
+    .sk-overlay .sk-pickdlg .sk-dialog-head > div .sk-btn { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 15px; padding: 8px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}

@@ -430,6 +430,26 @@ S.floatingCode = function(fab, label) {
     return "<ul class='floatingactions sk-floatbar'><li><a class='sk-fabadd' href='javascript:void(0);' role='button' data-fab='" + fab + "' title='" + e(label) + "'><span>" + e(label) + "</span></a></li></ul>";
 };
 
+// Panneau de filtres des onglets Scénarios et Campagnes, sur le modèle de l'encyclopédie du Compagnon :
+// colonne à gauche sur tablette, panneau caché sur téléphone, ouvert par le bouton loupe au-dessus du bouton +.
+S.filterPanelCode = function(input, groups) {
+    return "<aside class='sk-filters-side sk-sfilters' aria-label='" + e(t("search")) + "'><h5>" + t("keyword") + "</h5>" + input
+        + groups.map(function(g) { return "<h5>" + e(g[0]) + "</h5>" + g[1]; }).join("")
+        + "<button class='sk-btn sk-filtclose' data-filt='close'>" + e(t("close")) + "</button></aside>";
+};
+S.filterExtrasCode = function() {
+    return "<div class='sk-filtveil' data-filt='close'></div>"
+        + "<ul class='floatingactions sk-floatbar sk-searchbar'><li><a class='encycloppedia-search-icon' href='javascript:void(0);' role='button' data-filt='open' title='" + e(t("search")) + "' aria-label='" + e(t("search")) + "'></a></li></ul>";
+};
+S.bindFilterPanel = function() {
+    if (S._filtRoot == S.root) return;
+    S._filtRoot = S.root;
+    S.root.addEventListener("click", function(ev) {
+        var b = ev.target.closest("[data-filt]"), scr = S.root.querySelector(".sk-screen"); if (!b || !scr) return;
+        ev.preventDefault();
+        scr.classList.toggle("sk-filtopen", b.dataset.filt == "open");
+    });
+};
 S.renderScenarios = function() {
     S.screen = "scenarios"; S.ctx = null;
     var list = S.scenarioList(), pr = S.prefs();
@@ -437,12 +457,12 @@ S.renderScenarios = function() {
         return "<div class='sk-seg sk-sseg' role='radiogroup' aria-label='" + e(t(label)) + "'>" + opts.map(function(m) {
             return "<button " + attr + "='" + m[0] + "' class='" + (cur == m[0] ? "sk-on" : "") + "' role='radio' aria-checked='" + (cur == m[0]) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>";
     };
-    var h = "<div class='sk-sbar'><input type='search' class='sk-in sk-ssearch' id='sk-sq' placeholder='" + e(t("search_scenario")) + "' aria-label='" + e(t("search_scenario")) + "' value='" + e(pr.scenQ || "") + "'>"
-        + seg("data-smode", pr.scenMode || "", [["", "all_modes"], ["classic", "mode_classic"], ["solo", "mode_solo"]], "filter_mode")
-        + seg("data-ssort", pr.scenSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by") + "</div>"
-        + "<div id='sk-slist' class='sk-slist'></div>" + S.floatingCode("scenario", t("new_scenario"));
+    var h = "<div class='sk-scols'>" + S.filterPanelCode("<input type='search' class='sk-in sk-ssearch' id='sk-sq' placeholder='" + e(t("search_scenario")) + "' aria-label='" + e(t("search_scenario")) + "' value='" + e(pr.scenQ || "") + "'>",
+            [[t("filter_mode"), seg("data-smode", pr.scenMode || "", [["", "all_modes"], ["classic", "mode_classic"], ["solo", "mode_solo"]], "filter_mode")],
+             [t("sort_by"), seg("data-ssort", pr.scenSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by")]])
+        + "<div id='sk-slist' class='sk-slist'></div></div>" + S.filterExtrasCode() + S.floatingCode("scenario", t("new_scenario"));
     origMount.call(S, "<div class='skelos-game sk-screen sk-scen'><div class='sk-board'>" + h + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
-    S.placeTabs();
+    S.placeTabs(); S.bindFilterPanel();
     var draw = function() {
         var q = S.norm(pr.scenQ || ""), m = pr.scenMode || "", sort = pr.scenSort || "recent";
         var rows = list.map(function(sc, i) { return {sc: sc, i: i}; }).filter(function(x) {
@@ -1095,7 +1115,7 @@ S.studioRemove = function(uid) {
 // Remplace le panneau du bas : un appui simple sélectionne la tuile (activation par le pion), un appui long ouvre ses actions.
 S.openTileMenu = function(uid) {
     var st = S.state, s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
-    var solo = st.mode == "solo", items = [];
+    var solo = st.mode == "solo", items = [["zoom", t("zoom_tile")]];
     if (!s.dead) items.push(["dead", t("mark_dead")]);
     else {
         var rc = S.reinforceCost(s);
@@ -1119,10 +1139,62 @@ S.openTileMenu = function(uid) {
             case "reinf": S.reinforce(uid); break;
             case "purge": S.purge(uid); break;
             case "rmtoken": S.removeToken(uid); break;
+            case "zoom": S.zoomTile(uid); break;
         }
     };
     if (navigator.vibrate) navigator.vibrate(20);
     ov.querySelector("[data-m]").focus();
+};
+// ---------- Zoom d'une tuile ----------
+// Sur téléphone, la Rivière garde ses quatre tuiles de front ; un double appui (ou « Agrandir » dans le menu de l'appui long)
+// montre la tuile en grand. Dans la tuile agrandie, un simple appui sur une compétence en donne la description.
+// La tuile agrandie porte aussi les − et + des points de vie, à taille du doigt (en partie comme en studio).
+S.zoomTile = function(uid) {
+    var s = S.slotByUid(uid); if (!s) return;
+    S.hideTip(); S.closeHp && S.closeHp();
+    // Points de vie à taille du doigt : en studio, les PV de départ ; en partie, les PV restants (0 = unités mortes, comme sur le plateau).
+    var hpCode = "";
+    if (!S.isEvent(s)) {
+        if (S.studio) { if (!s.dead) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
+        else if (s.lpMax) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
+    }
+    var ov = S.root.querySelector("#sk-overlay");
+    ov.innerHTML = "<div class='sk-zoom' role='dialog' aria-label='" + e(S.tileName(s)) + "'>"
+        + "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
+        + "</div>" + (hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "")
+        + "<button class='sk-btn sk-zoomclose' data-zclose>" + e(t("close")) + "</button></div>";
+    ov.classList.add("on", "sk-zoomon");
+    var shut = function() { S.hideTip(); ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; };
+    ov.onkeydown = function(ev) { if (ev.key == "Escape") shut(); };
+    ov.onclick = function(ev) {
+        var lp = ev.target.closest("[data-zlp], [data-zhp]");
+        if (lp) {
+            ev.stopPropagation();
+            if (lp.hasAttribute("data-zlp")) S.studioLife(uid, +lp.dataset.n); else S.life(uid, +lp.dataset.n);
+            S.zoomTile(uid); return;
+        }
+        if (ev.target.closest(".sk-studiohp")) return;
+        var sk = ev.target.closest("[data-skill]");
+        if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
+        if (ev.target.closest(".sk-tip")) return;
+        shut();
+    };
+    var cl = ov.querySelector("[data-zclose]"); if (cl) cl.focus({preventScroll: true});
+};
+// Double appui sur une tuile de la Rivière : le premier appui l'a sélectionnée, le second la désélectionne, puis le zoom s'ouvre.
+S.bindTileZoom = function(root) {
+    var last = {uid: null, at: 0};
+    root.addEventListener("click", function(ev) {
+        if (S.screen != "game") return;
+        // Studio : un appui sur le cœur ouvre la tuile en grand, pour régler les points de vie.
+        var heart = S.studio && ev.target.closest(".sk-river .sk-studiohp .sk-hp");
+        if (heart) { var hb = heart.closest(".sk-tilebox[data-uid]"); if (hb) { S.zoomTile(hb.dataset.uid); return; } }
+        if (ev.target.closest(".sk-hpwrap, [data-hp], button")) return;
+        var box = ev.target.closest(".sk-river .sk-tilebox[data-uid]"); if (!box || box.hasAttribute("data-eventuid")) { last.uid = null; return; }
+        var uid = box.dataset.uid, now = Date.now();
+        if (last.uid == uid && now - last.at < 400) { last.uid = null; S.zoomTile(uid); return; }
+        last.uid = uid; last.at = now;
+    });
 };
 S.bindTileMenu = function(root) {
     var timer = null, sx = 0, sy = 0;
@@ -1243,6 +1315,7 @@ S.init = function(root) {
     S.bindStudioDrag(root);
     S.bindActivateDrag(root);
     S.bindTileMenu(root);
+    S.bindTileZoom(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest(".sk-tabs [data-nav]"); if (!b) return;
@@ -1304,12 +1377,12 @@ S.renderCampaigns = function() {
         return "<div class='sk-seg sk-sseg' role='radiogroup' aria-label='" + e(t(label)) + "'>" + opts.map(function(m) {
             return "<button " + attr + "='" + m[0] + "' class='" + (cur == m[0] ? "sk-on" : "") + "' role='radio' aria-checked='" + (cur == m[0]) + "'>" + e(t(m[1])) + "</button>"; }).join("") + "</div>";
     };
-    var h = "<div class='sk-sbar'><input type='search' class='sk-in sk-ssearch' id='sk-cq' placeholder='" + e(t("search_campaign")) + "' aria-label='" + e(t("search_campaign")) + "' value='" + e(pr.campQ || "") + "'>"
-        + seg("data-cstate", pr.campState || "", [["", "all_campaigns"], ["cur", "in_progress"], ["done", "finished"]], "filter_state")
-        + seg("data-csort", pr.campSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by") + "</div>"
-        + "<div id='sk-clist' class='sk-slist'></div>" + S.floatingCode("campaign", t("new_campaign"));
+    var h = "<div class='sk-scols'>" + S.filterPanelCode("<input type='search' class='sk-in sk-ssearch' id='sk-cq' placeholder='" + e(t("search_campaign")) + "' aria-label='" + e(t("search_campaign")) + "' value='" + e(pr.campQ || "") + "'>",
+            [[t("filter_state"), seg("data-cstate", pr.campState || "", [["", "all_campaigns"], ["cur", "in_progress"], ["done", "finished"]], "filter_state")],
+             [t("sort_by"), seg("data-csort", pr.campSort || "recent", [["recent", "sort_recent"], ["alpha", "sort_alpha"]], "sort_by")]])
+        + "<div id='sk-clist' class='sk-slist'></div></div>" + S.filterExtrasCode() + S.floatingCode("campaign", t("new_campaign"));
     origMount.call(S, "<div class='skelos-game sk-screen sk-scen sk-camps'><div class='sk-board'>" + h + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
-    S.placeTabs();
+    S.placeTabs(); S.bindFilterPanel();
     var draw = function() {
         var q = S.norm(pr.campQ || ""), stt = pr.campState || "", sort = pr.campSort || "recent";
         var rows = list.filter(function(c) {
@@ -1954,6 +2027,18 @@ S.fitPhase = function() {
 };
 var fitRenderGame = S.renderGame;
 S.renderGame = function() { fitRenderGame.apply(S, arguments); S.fitPhase(); };
+// Le plateau se redessine en entier à chaque action : le temps du redessin, la page raccourcit et le défilement
+// du module recule (sélectionner une tuile de la dernière rangée faisait remonter l'écran d'une demi-tuile).
+// On garde la position de défilement d'un redessin à l'autre, tant qu'on reste sur le plateau.
+// (Avant les animations, qui mesurent les tuiles après le redessin.)
+var scrollRenderGame = S.renderGame;
+S.renderGame = function() {
+    var root = S.root, keep = root && S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
+    scrollRenderGame.apply(S, arguments);
+    if (keep == null || !S.root || S.screen != "game") return;
+    S.root.scrollTop = keep;
+    requestAnimationFrame(function() { if (S.screen == "game" && Math.abs(S.root.scrollTop - keep) > 1) S.root.scrollTop = keep; });
+};
 var fitTimer = null;
 window.addEventListener("resize", function() { clearTimeout(fitTimer); fitTimer = setTimeout(S.fitPhase, 120); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { S.fitPhase(); });
