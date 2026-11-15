@@ -94,6 +94,14 @@ self.addEventListener('activate', function(event) {
 });
 
 // Fetching content using Service Worker
+// A redirected response (e.g. Cloudflare sending page.html to page) cannot be served
+// from the cache to a navigation such as an iframe: copy it into a plain response
+async function cleanResponse(response)
+{
+    if (!response.redirected) return response;
+    return new Response(await response.blob(), {status: response.status, statusText: response.statusText, headers: response.headers});
+}
+
 self.addEventListener('fetch', (e) => {
     e.respondWith((async () => {
         if (e.request.url.includes("/engine/Version.json?foo="))
@@ -157,7 +165,7 @@ self.addEventListener('fetch', (e) => {
             const cachedResponse = await caches.match(modifiedUrl + "?version=" + Version);
             if (cachedResponse) 
             {
-    	       return cachedResponse;
+    	       return cleanResponse(cachedResponse);
             }
             else
             {
@@ -178,7 +186,7 @@ self.addEventListener('fetch', (e) => {
                         const cachedResponse = await caches.match(modifiedUrl.replace('_hd', ''));
                         if (cachedResponse) 
                         {
-                           return cachedResponse;
+                           return cleanResponse(cachedResponse);
                         }
                     }
                     
