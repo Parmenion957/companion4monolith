@@ -1584,3 +1584,48 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-cvheroes { grid-template-columns: 1fr; }
 @media (min-width: 760px) { .sk-cvheroes { grid-template-columns: 1fr 1fr; } }
 .sk-cvsheet { width: 100%; }
+/* Page d'une campagne : fil sur toute la largeur, compagnie sur toute la largeur, cache dessous */
+.sk-caveblk .sk-addrow { align-self: flex-start; }
+/* Compagnie et cache sur un seul écran : quatre rangées de héros (petite fiche à gauche, cartes à droite) et la cache en bas.
+   --av : la hauteur disponible sous l'en-tête ; --rowh : la hauteur d'une rangée de héros. */
+.sk-overlay .sk-pickdlg.sk-cview { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; padding: 0; --av: calc(100dvh - 128px); --rowh: calc(var(--av) * .16); }
+.sk-cview .sk-dialog-head { flex: none; }
+.sk-cview .sk-cvhint { flex: none; margin: 4px 12px; font-size: 13px; line-height: 1.25; }
+.sk-cview .sk-cvheroes { flex: none; grid-template-columns: 1fr; gap: 4px; padding: 0 10px; }
+.sk-cview .sk-cvhero { display: flex; align-items: center; gap: 10px; padding: 3px 6px; }
+.sk-cview .sk-cvsheet { flex: none; width: calc(var(--rowh) * 1.75); }
+.sk-cview .sk-cvhero .sk-ctrack { flex: 1; min-width: 0; padding: 3px; gap: 6px; }
+.sk-cview .sk-cvhero .sk-tcard { width: calc(var(--rowh) * .7); }
+.sk-cview .sk-cvhero .sk-tcard.sk-tsel { transform: none; outline-offset: -3px; }
+.sk-cview .sk-cvhero .sk-ctrack-empty { font-size: 13px; }
+.sk-cview .sk-cvcave { flex: 1; min-height: 0; margin: 6px 10px 8px; padding: 4px 8px; display: flex; flex-direction: column; }
+.sk-cview .sk-cvcave h3 { flex: none; font-size: 15px; margin: 0 0 2px; }
+.sk-cview .sk-cvcave .sk-ctrack { flex: 1; min-height: 0; align-items: flex-start; padding: 6px 3px; }
+.sk-cview .sk-cvcave .sk-tcard { width: calc(var(--av) * .17); }
+/* La corbeille et Désélectionner dans l'en-tête */
+.sk-cview .sk-cvbar { position: static; transform: none; z-index: auto; display: none; align-items: center; gap: 8px; }
+.sk-cview .sk-cvbar.on, #sk-overlay.sk-cvdrag .sk-cview .sk-cvbar { display: flex; }
+#sk-overlay .sk-cview .sk-cvbar .sk-trash, #sk-overlay .sk-cview .sk-cvbar .sk-btn { font-size: 14px; min-height: 40px; padding: 6px 14px; box-shadow: none; }
+#sk-overlay .sk-cview .sk-cvbar .sk-trash.hot { background: #b3161b; border-color: #b3161b; color: #fff; }
+@media (max-width: 600px) {
+    .sk-cview .sk-cvbar { left: auto; right: auto; }
+    .sk-cview .sk-cvbar .sk-trash span, .sk-cview .sk-cvunsel { display: none; }
+    #sk-overlay.sk-cvdrag .sk-cview .sk-cvbar .sk-trash span { display: inline; }
+    .sk-cview .sk-cvhint { display: none; }
+    .sk-overlay .sk-pickdlg.sk-cview { --av: calc(100dvh - 150px); }
+}
+/* Portrait et nom du héros au lieu de sa fiche, dans la vue Compagnie et cache */
+.sk-cview .sk-cvsheet.sk-cvmini { width: calc(var(--rowh) * .78); }
+.sk-hmini { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
+.sk-hmini img, .sk-hmini .sk-hsheet-ini { width: 100%; height: calc(var(--rowh) * .78); object-fit: cover; object-position: top center; border-radius: 8px; border: 3px solid var(--hc); background: var(--body-bg-color); }
+.sk-hmini .sk-hsheet-ini { display: flex; align-items: center; justify-content: center; font: 32px 'Primary', serif; color: var(--main-color); }
+.sk-hmini b { font: 13px/1.1 'Primary', serif; color: var(--main-color); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* La cache commune en bas ne doit jamais être tronquée : la piste prend la hauteur d'une carte entière, les rangées de héros se resserrent */
+.sk-overlay .sk-pickdlg.sk-cview { padding: 0 !important; --rowh: calc(var(--av) * .145); --caveh: calc(var(--av) * .23); }
+.sk-cview .sk-cvhero { padding: 2px 6px; }
+.sk-cview .sk-cvcave { flex: 1 0 auto; margin-bottom: 6px; }
+.sk-cview .sk-cvcave .sk-ctrack { flex: none; height: calc(var(--caveh) + 12px); overflow-y: hidden; }
+.sk-cview .sk-cvcave .sk-tcard { width: calc(var(--caveh) * .7); }
+.sk-cview .sk-cvcave .sk-tadd { height: var(--caveh); }
+.sk-cview .sk-cvcave .sk-tcard.sk-tsel { transform: none; outline-offset: -3px; }
+.sk-c8 > .sk-company25 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }

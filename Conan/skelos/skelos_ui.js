@@ -2466,6 +2466,11 @@ S.removeCards = function(cid, uids) {
     if (kept) S.toast(t("start_item_locked"));
 };
 
+// Dans la vue Compagnie et cache, un héros se reconnaît à son portrait et à son nom : toute la place va aux cartes.
+S.heroMini = function(hh) {
+    var img = S.heroImage(hh);
+    return "<span class='sk-hmini'>" + (img ? "<img src='" + e(img) + "' alt=''>" : "<span class='sk-hsheet-ini'>" + e((hh.name || "?").charAt(0)) + "</span>") + "<b>" + e(hh.name) + "</b></span>";
+};
 // ---------- Compagnie et cache : les héros avec leur piste de cartes, la cache en grande piste en bas ----------
 // Toucher des cartes les choisit (plusieurs à la fois) ; toucher ensuite un héros ou la cache les y envoie, la corbeille les supprime.
 // Appui long puis glisser : la carte (ou toutes les cartes choisies, si elle en fait partie) part vers un héros, la cache ou la corbeille.
@@ -2478,19 +2483,19 @@ S.openCompanyView = function(cid) {
     var row = function(hh) {
         var cards = S.cardsOf(c, hh.id);
         return "<div class='sk-cvhero" + (hh.dead ? " dead" : "") + "' data-dest='" + hh.id + "' style='--hc:" + hh.color + "'>"
-            + "<div class='sk-cvsheet' data-cvhero='" + hh.id + "'>" + S.heroFace(hh) + "</div>"
+            + "<div class='sk-cvsheet sk-cvmini' data-cvhero='" + hh.id + "'>" + S.heroMini(hh) + "</div>"
             + "<div class='sk-ctrack'>" + (cards.length ? cards.map(function(it) { return S.trackCard(c, it); }).join("") : "<span class='sk-ctrack-empty'>" + e(t("no_card")) + "</span>") + "</div></div>";
     };
     var cave = S.cardsOf(c, null);
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-cview' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("company_view")) + "</h2>"
-        + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-cvclose>" + e(t("close")) + "</button></div></div>"
+        // En-tête : la corbeille (cible du glisser, ou bouton quand des cartes sont choisies) et Désélectionner, à côté de Fermer.
+        + "<div class='sk-actions sk-pickactions'><div class='sk-cvbar" + (sel.length ? " on" : "") + "'><button class='sk-trash sk-cvtrash' data-dest='!bin' aria-label='" + e(t("cv_drop_remove")) + "' title='" + e(t("cv_drop_remove")) + "'><i>&#xf2ed;</i><span>" + e(t("cv_drop_remove")) + "</span></button>"
+        + "<button class='sk-btn sk-cvunsel' data-cvunsel>" + e(t("cv_unselect")) + "</button></div>"
+        + "<button class='sk-btn sk-primary' data-cvclose>" + e(t("close")) + "</button></div></div>"
         + "<p class='sk-cvhint" + (sel.length ? " on" : "") + "' role='status'>" + e(sel.length ? t("cv_hint_sel", sel.length) : t("cv_hint")) + "</p>"
         + "<div class='sk-cvheroes'>" + (c.heroes || []).filter(function(hh) { return !hh.dead; }).map(row).join("") + "</div>"
         + "<div class='sk-cvcave' data-dest=''><h3>" + e(t("common_cache")) + "</h3><div class='sk-ctrack sk-ctrack-big'>" + cave.map(function(it) { return S.trackCard(c, it); }).join("")
-        + "<button class='sk-tcard sk-tadd' data-cvadd aria-label='" + e(t("add_to_cave")) + "'><span>+</span>" + e(t("add_to_cave")) + "</button></div></div></div>"
-        // Barre du bas : la corbeille (cible du glisser, ou bouton quand des cartes sont choisies) et Désélectionner.
-        + "<div class='sk-cvbar" + (sel.length ? " on" : "") + "'><button class='sk-trash sk-cvtrash' data-dest='!bin' aria-label='" + e(t("cv_drop_remove")) + "'><i>&#xf2ed;</i><span>" + e(t("cv_drop_remove")) + "</span></button>"
-        + "<button class='sk-btn sk-cvunsel' data-cvunsel>" + e(t("cv_unselect")) + "</button></div>";
+        + "<button class='sk-tcard sk-tadd' data-cvadd aria-label='" + e(t("add_to_cave")) + "'><span>+</span>" + e(t("add_to_cave")) + "</button></div></div></div>";
     ov.classList.remove("sk-zoomon"); ov.classList.add("on");
     sel.forEach(function(u) { var n = ov.querySelector("[data-tcard='" + u + "']"); if (n) n.classList.add("sk-tsel"); });
     var keep = S._cvScroll || {};
@@ -2587,7 +2592,7 @@ S.bindCardDrag = function(ov, move) {
 // ---------- Écran de campagne : double appui sur une fiche, cave en piste de cartes, bouton Compagnie et cave ----------
 S.caveBlockCode = function(c) {
     var cave = S.cardsOf(c, null);
-    return "<div class='sk-blk sk-c2 sk-caveblk'><h3>" + e(t("common_cache")) + "</h3>"
+    return "<div class='sk-blk sk-c8 sk-caveblk'><h3>" + e(t("common_cache")) + "</h3>"
         + "<div class='sk-ctrack sk-ctrack-big' data-cavetrack>" + cave.map(function(it) { return S.trackCard(c, it); }).join("")
         + "<button class='sk-tcard sk-tadd' data-cact='addcave' aria-label='" + e(t("add_to_cave")) + "'><span>+</span>" + e(t("add_to_cave")) + "</button></div>"
         + "<button class='sk-btn sk-primary sk-addrow' data-cact='companyview'>&#xf0c0; " + e(t("company_view")) + "</button></div>";

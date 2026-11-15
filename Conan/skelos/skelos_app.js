@@ -320,7 +320,8 @@ S.renderCampaign = function(cid) {
     var played = S.playedCount(c), nextIdx = (c.scenarios || []).findIndex(function(x) { return x.status == "todo" || x.status == "playing"; });
     var h = S.campaignHeadCode(c);
     // Fil des scénarios
-    h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
+    // Page d'une campagne : le fil, puis la compagnie sur toute la largeur, puis la cache commune dessous.
+    h += "<div class='sk-blk sk-c8 sk-threadblk'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
     (c.scenarios || []).forEach(function(sc, i) {
         var next = i == nextIdx, plays = S.scenarioPlays(sc), last = plays[plays.length - 1];
         var running = !!(S.state && S.state.campaign && S.state.campaign.cid == c.id && S.state.campaign.idx == i);
@@ -341,7 +342,7 @@ S.renderCampaign = function(cid) {
     });
     h += "</div><button class='sk-btn sk-addrow' data-cact='addsc'>+ " + t("add_scenario") + "</button></div>";
     // Compagnie : quatre fiches de héros
-    h += "<div class='sk-blk sk-c3'><h3>" + t("company") + "</h3>" + S.companyCode(c) + "</div>";
+    h += "<div class='sk-blk sk-c8'><h3>" + t("company") + "</h3>" + S.companyCode(c) + "</div>";
     // Cache commune
     var cats = [["eq", "cat_eq"], ["sp", "cat_sp"], ["up", "cat_up"]];
     h += "<div class='sk-blk sk-c2' data-drop='cache'><h3>" + t("common_cache") + "</h3><div class='sk-legend'><span><i class='sk-k-eq'></i>" + t("kind_eq") + "</span><span><i class='sk-k-sp'></i>" + t("kind_sp") + "</span><span><i class='sk-k-up'></i>" + t("kind_up") + "</span></div>";
