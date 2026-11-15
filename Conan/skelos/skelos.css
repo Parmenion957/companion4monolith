@@ -1414,3 +1414,41 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     .sk-overlay .sk-pickdlg .sk-dialog-head > div { display: flex; flex: 1 1 100%; flex-wrap: nowrap; gap: 8px; }
     .sk-overlay .sk-pickdlg .sk-dialog-head > div .sk-btn { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 15px; padding: 8px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* ---------- Étape 24 : cartes des tuiles, zoom en carrousel ---------- */
+.sk-overlay.sk-zoomon { touch-action: none; }
+.sk-zoomhead { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 12px; color: #fff; text-align: center; font-family: 'Primary', serif; font-size: 18px; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.sk-zoomhead span { font-family: 'Secondary', sans-serif; font-size: 15px; opacity: .85; }
+.sk-zoompage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sk-zoomcard { width: min(80vw, calc((100dvh - var(--sk-bottom, 0px) - 260px) * 0.67), 380px); }
+.sk-zoomcard .card { box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.sk-zoomcard.dead { filter: grayscale(1) brightness(.6); }
+.sk-zoomcard.sk-castable .cost { cursor: pointer; outline: 3px solid var(--highlight-color); outline-offset: 2px; border-radius: 50%; animation: sk-costpulse 1.6s ease-in-out infinite; }
+@keyframes sk-costpulse { 50% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .sk-zoomcard.sk-castable .cost { animation: none; } }
+.sk-zoomnote { margin: 0; color: #fff; font-size: 15px; text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
+.sk-zoomcast { container-type: inline-size; width: 300px; max-width: 80vw; display: flex; align-items: center; justify-content: center; gap: 12px; color: #fff; font-size: 26px; }
+.sk-zoomcast .sk-hpbtn { display: flex; width: 48px; height: 48px; font-size: 28px; }
+.sk-zoomadd { width: min(70vw, 260px); aspect-ratio: .67; border: 3px dashed var(--highlight-color); border-radius: 12px; background: var(--body-bg-color); color: var(--body-color);
+    font-family: 'Primary', serif; font-size: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.sk-zoomadd span { font-size: 64px; line-height: 1; color: var(--highlight-color); }
+.sk-overlay .sk-zoom .sk-btn.sk-zoomrm { background: var(--body-bg-color) !important; color: #c0392b !important; border-color: #c0392b !important; }
+.sk-zoomdots { display: flex; gap: 6px; align-items: center; }
+.sk-zoomdots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.45); }
+.sk-zoomdots i.sk-dt { width: 11px; height: 11px; }
+.sk-zoomdots i.sk-ds { background: rgba(176,120,230,.6); }
+.sk-zoomdots i.sk-de { background: rgba(210,170,90,.6); }
+.sk-zoomdots i.on { background: #fff; box-shadow: 0 0 0 2px var(--highlight-color); }
+.sk-zoomnav { display: flex; align-items: center; gap: 8px; }
+.sk-zarrow { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #fff; background: rgba(0,0,0,.35); color: #fff; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 16px; cursor: pointer; }
+.sk-zarrow:disabled { opacity: .25; cursor: default; }
+.sk-zin-left { animation: sk-zinl .22s ease-out; } .sk-zin-right { animation: sk-zinr .22s ease-out; }
+.sk-zin-up { animation: sk-zinu .22s ease-out; } .sk-zin-down { animation: sk-zind .22s ease-out; }
+@keyframes sk-zinl { from { transform: translateX(-40px); opacity: .3; } } @keyframes sk-zinr { from { transform: translateX(40px); opacity: .3; } }
+@keyframes sk-zinu { from { transform: translateY(-40px); opacity: .3; } } @keyframes sk-zind { from { transform: translateY(40px); opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .sk-zin-left, .sk-zin-right, .sk-zin-up, .sk-zin-down { animation: none; } }
+/* Pastille des cartes portées, au coin haut gauche de la tuile. */
+.sk-cardsbadge { position: absolute; left: 3%; top: 3%; z-index: 2; display: flex; align-items: center; gap: 2cqw; padding: 1cqw 3cqw; border-radius: 8cqw;
+    background: rgba(20,12,8,.8); color: #fff; font: bold 9cqw/1.2 system-ui, sans-serif; pointer-events: none; }
+.sk-cardsbadge i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 8cqw; margin-right: 1cqw; }
+.sk-cardsbadge .sk-cb-sp { color: #c79cf0; } .sk-cardsbadge .sk-cb-eq { color: #e2c48a; }

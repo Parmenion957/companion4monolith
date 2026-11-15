@@ -138,7 +138,7 @@ S.forgetSlot = function(slot) {
 };
 S.scenarioFromState = function() {
     var st = S.state, d = JSON.parse(JSON.stringify(st.scenario));
-    d.river = st.river.map(function(s) { return {tileId: s.tileId, img: s.img, color: s.color, lp: s.lpMax, eventText: s.eventText || ""}; });
+    d.river = st.river.map(function(s) { return {tileId: s.tileId, img: s.img, color: s.color, lp: s.lpMax, eventText: s.eventText || "", cards: (s.cards || []).slice()}; });
     d.turns = st.turns; d.recovery = st.recovery; d.maxActivations = st.maxActivations; d.heroes = st.heroes;
     if (st.mode == "classic") { d.energy = st.energy; d.fatigue = st.fatigue + S.boostSum(); }
     return d;
@@ -617,6 +617,8 @@ S.openItemPicker = function(opts) {
     var ov = S.root.querySelector("#sk-overlay");
     var tabs = (opts.tiles ? [["tile", "tab_tiles"]] : []).concat([["eq", "tab_eq"], ["sp", "tab_sp"], ["up", "tab_up"]]);
     if (opts.tiles && !pr.itemKind) kind = "tile";
+    // Choix limité à certains types (cartes d'une tuile en studio : sorts ou équipements).
+    if (opts.kinds) { tabs = tabs.filter(function(x) { return opts.kinds.indexOf(x[0]) >= 0; }); if (opts.kinds.indexOf(kind) < 0) kind = opts.kinds[0]; }
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(opts.title) + "</h2><div class='sk-actions sk-pickactions'>"
         + (browse ? "" : "<button class='sk-btn sk-primary' data-addsel" + (editing ? "" : " disabled") + ">" + t("add_selection", 0) + "</button>") + "<button class='sk-btn' data-pclose>" + t("close") + "</button></div></div>"
         + "<div class='sk-tabs' role='tablist'>" + tabs.map(function(x) { return "<button class='sk-tab' role='tab' data-tab='" + x[0] + "'>" + t(x[1]) + "</button>"; }).join("") + "</div>"
@@ -629,7 +631,7 @@ S.openItemPicker = function(opts) {
     var items = function() {
         if (kind == "tile") return [];
         var nq = S.norm(q.value);
-        return S.catalog(kind).filter(function(it) { return (kind == "up" || S.inScope(it.origins)) && (!nq || S.norm(it.name).indexOf(nq) >= 0 || S.norm((it.data && (it.data.effect || it.data.text)) || "").indexOf(nq) >= 0); });
+        return S.catalog(kind).filter(function(it) { return (!opts.filter || opts.filter(it)) && (kind == "up" || S.inScope(it.origins)) && (!nq || S.norm(it.name).indexOf(nq) >= 0 || S.norm((it.data && (it.data.effect || it.data.text)) || "").indexOf(nq) >= 0); });
     };
     var status = function() {
         if (browse) return;

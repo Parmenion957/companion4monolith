@@ -475,7 +475,7 @@ var Skelos = {
         Skelos.undoStack = [];
         var river = d.river.map(function(s, i) {
             return {uid: "u" + i, token: i + 1, tileId: s.tileId, img: s.img, color: s.color, dead: false, eventText: s.eventText || "",
-                    lpMax: s.lp || null, lp: s.lp || null};
+                    lpMax: s.lp || null, lp: s.lp || null, cards: (s.cards || []).map(function(c) { return {kind: c.kind, ref: c.ref}; })};
         });
         river.forEach(function(s, i) { Skelos.adoptSharedHp(s, river.slice(0, i)); });
         Skelos.state = {

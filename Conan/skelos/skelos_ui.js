@@ -1145,41 +1145,184 @@ S.openTileMenu = function(uid) {
     if (navigator.vibrate) navigator.vibrate(20);
     ov.querySelector("[data-m]").focus();
 };
+// Cartes portées par une tuile (scénario) : sorts à gauche de la tuile, équipements à droite.
+S.slotCards = function(s, kind) { return ((s && s.cards) || []).filter(function(c) { return c.kind == kind; }); };
+S.spellData = function(ref) { return ((Encyclopedia.spells && Encyclopedia.spells.list) || []).filter(function(x) { return x.id == ref; })[0] || null; };
+// Tuiles de la Rivière qui ont des sorts utilisables (tuile vivante, hors Événement).
+S.spellSlots = function() {
+    return S.state ? S.state.river.filter(function(s) { return s && !s.dead && !S.isEvent(s) && S.slotCards(s, "sp").length; }) : [];
+};
+// Lancer un sort : son coût passe de l'énergie disponible à la zone Sort, comme une amélioration.
+S.castSpell = function(uid, ref, n) {
+    var st = S.state, s = S.slotByUid(uid); if (!s || !(n > 0)) return false;
+    if (st.energy < n) { S.toast(t("not_enough", n, st.energy)); return false; }
+    S.snapshot();
+    st.energy -= n; st.boosts.spell = (st.boosts.spell || 0) + n;
+    S.log(t("log_spell", S.tileName(s), S.itemName("sp", ref), n));
+    S.save(); S.renderGame();
+    return true;
+};
+
 // ---------- Zoom d'une tuile ----------
-// Sur téléphone, la Rivière garde ses quatre tuiles de front ; un double appui (ou « Agrandir » dans le menu de l'appui long)
-// montre la tuile en grand. Dans la tuile agrandie, un simple appui sur une compétence en donne la description.
-// La tuile agrandie porte aussi les − et + des points de vie, à taille du doigt (en partie comme en studio).
-S.zoomTile = function(uid) {
+// La tuile au centre ; glisser vers la droite fait venir ses sorts, vers la gauche ses équipements ;
+// glisser vers le haut ou le bas passe à la tuile suivante ou précédente de la Rivière.
+// La « main des sorts » (bouton Sort) est le même zoom, limité aux tuiles vivantes qui ont des sorts.
+// En studio, un + au bout de chaque côté ajoute un sort (à gauche) ou un équipement (à droite).
+S.zoomTile = function(uid, opts) {
+    opts = opts || {};
     var s = S.slotByUid(uid); if (!s) return;
+    var hand = !!opts.hand, studio = S.studio, game = !studio;
+    var sp = S.slotCards(s, "sp"), eq = S.slotCards(s, "eq");
+    var minPos = -sp.length - (studio ? 1 : 0), maxPos = eq.length + (studio ? 1 : 0);
+    var pos = Math.max(minPos, Math.min(maxPos, opts.pos == null ? (hand ? -1 : 0) : opts.pos));
+    S._zoom = {uid: uid, pos: pos, hand: hand};
     S.hideTip(); S.closeHp && S.closeHp();
-    // Points de vie à taille du doigt : en studio, les PV de départ ; en partie, les PV restants (0 = unités mortes, comme sur le plateau).
-    var hpCode = "";
-    if (!S.isEvent(s)) {
-        if (S.studio) { if (!s.dead) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
-        else if (s.lpMax) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
+    var title = S.tileName(s), body = "", label = "";
+    if (pos == 0) {
+        // Points de vie à taille du doigt : en studio, les PV de départ ; en partie, les PV restants (0 = unités mortes, comme sur le plateau).
+        var hpCode = "";
+        if (!S.isEvent(s)) {
+            if (studio) { if (!s.dead) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
+            else if (s.lpMax) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
+        }
+        body = "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + "</div>"
+            + (hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "");
+    } else if (pos == minPos && studio) {
+        body = "<button class='sk-zoomadd' data-zadd='sp'><span>+</span>" + e(t("add_spell")) + "</button>";
+        label = t("add_spell");
+    } else if (pos == maxPos && studio) {
+        body = "<button class='sk-zoomadd' data-zadd='eq'><span>+</span>" + e(t("add_eq")) + "</button>";
+        label = t("add_eq");
+    } else {
+        var kind = pos < 0 ? "sp" : "eq", list = kind == "sp" ? sp : eq, k = Math.abs(pos) - 1, c = list[k];
+        label = t(kind == "sp" ? "zoom_spell_n" : "zoom_eq_n", k + 1, list.length);
+        var real = S.realCardCode(kind, c.ref) || "<div class='sk-bigcard sk-k-" + kind + "'><span class='sk-icard-n'>" + e(S.itemName(kind, c.ref)) + "</span></div>";
+        var foot = "";
+        if (kind == "sp" && game) {
+            var d = S.spellData(c.ref), cost = d ? parseInt(d.cost, 10) : NaN;
+            if (s.dead) foot = "<p class='sk-zoomnote'>" + e(t("spell_tile_dead")) + "</p>";
+            else if (cost > 0) foot = "<p class='sk-zoomnote'>" + e(t("spell_cast_hint", cost)) + "</p>";
+            else foot = "<div class='sk-zoomcast'><button class='sk-hpbtn' data-zx='-1' aria-label='−'>−</button><b data-zxv>1</b><button class='sk-hpbtn' data-zx='1' aria-label='+'>+</button>"
+                + "<button class='sk-btn sk-primary' data-zcastx='" + e(c.ref) + "'>" + e(t("cast_spell")) + "</button></div>";
+        }
+        if (studio) foot = "<button class='sk-btn sk-zoomrm' data-zrm='" + kind + ":" + k + "'>" + e(t("remove_card")) + "</button>";
+        body = "<div class='sk-zoomcard" + (kind == "sp" && game && !s.dead ? " sk-castable" : "") + (s.dead && kind == "sp" ? " dead" : "") + "' data-zcard='" + kind + ":" + e(c.ref) + "'><span class='sk-cardscale'>" + real + "</span></div>" + foot;
     }
+    // Repères : un point par page, la tuile au milieu, les sorts à gauche, les équipements à droite.
+    var dots = "";
+    for (var p = minPos; p <= maxPos; p++) dots += "<i class='" + (p == 0 ? "sk-dt" : p < 0 ? "sk-ds" : "sk-de") + (p == pos ? " on" : "") + "'></i>";
+    var ring = S.zoomRing(hand), idx = ring.indexOf(uid);
+    var dir = opts.dir ? " sk-zin-" + opts.dir : "";
     var ov = S.root.querySelector("#sk-overlay");
-    ov.innerHTML = "<div class='sk-zoom' role='dialog' aria-label='" + e(S.tileName(s)) + "'>"
-        + "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-        + "</div>" + (hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "")
-        + "<button class='sk-btn sk-zoomclose' data-zclose>" + e(t("close")) + "</button></div>";
+    ov.innerHTML = "<div class='sk-zoom' role='dialog' aria-label='" + e(title) + "'>"
+        + "<div class='sk-zoomhead'><b>" + e(title) + "</b>" + (label ? "<span>" + e(label) + "</span>" : "") + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
+        + "<div class='sk-zoompage" + dir + "'>" + body + "</div>"
+        + (maxPos > minPos ? "<div class='sk-zoomdots' aria-hidden='true'>" + dots + "</div>" : "")
+        + "<div class='sk-zoomnav'>"
+        + "<button class='sk-zarrow' data-zgo='left'" + (pos > minPos ? "" : " disabled") + " aria-label='" + e(t("zoom_prev_card")) + "'>&#xf053;</button>"
+        + "<button class='sk-zarrow' data-zgo='up'" + (ring.length > 1 ? "" : " disabled") + " aria-label='" + e(t("zoom_prev_tile")) + "'>&#xf077;</button>"
+        + "<button class='sk-btn sk-zoomclose' data-zclose>" + e(t("close")) + "</button>"
+        + "<button class='sk-zarrow' data-zgo='down'" + (ring.length > 1 ? "" : " disabled") + " aria-label='" + e(t("zoom_next_tile")) + "'>&#xf078;</button>"
+        + "<button class='sk-zarrow' data-zgo='right'" + (pos < maxPos ? "" : " disabled") + " aria-label='" + e(t("zoom_next_card")) + "'>&#xf054;</button>"
+        + "</div></div>";
     ov.classList.add("on", "sk-zoomon");
-    var shut = function() { S.hideTip(); ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; };
-    ov.onkeydown = function(ev) { if (ev.key == "Escape") shut(); };
+    S.bindZoom(ov);
+    var cl = ov.querySelector("[data-zclose]"); if (cl) cl.focus({preventScroll: true});
+};
+// Tuiles parcourues de haut en bas : toutes les tuiles de la Rivière, ou seulement celles qui ont des sorts (main des sorts).
+S.zoomRing = function(hand) {
+    if (!S.state) return [];
+    return (hand ? S.spellSlots() : S.state.river.filter(function(s) { return s; })).map(function(s) { return s.uid; });
+};
+S.zoomGo = function(dir) {
+    var z = S._zoom; if (!z) return;
+    if (dir == "left" || dir == "right") { S.zoomTile(z.uid, {pos: z.pos + (dir == "right" ? 1 : -1), hand: z.hand, dir: dir}); return; }
+    var ring = S.zoomRing(z.hand), i = ring.indexOf(z.uid); if (ring.length < 2) return;
+    var j = (i + (dir == "down" ? 1 : -1) + ring.length) % ring.length;
+    S.zoomTile(ring[j], {pos: z.hand ? -1 : 0, hand: z.hand, dir: dir});
+};
+S.zoomShut = function() {
+    var ov = S.root && S.root.querySelector("#sk-overlay"); S._zoom = null; S.hideTip();
+    if (ov) { ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; ov.onpointerdown = null; ov.onpointerup = null; }
+};
+S.bindZoom = function(ov) {
+    // Le zoom se redessine à chaque glissement : le repère « vient de glisser » vit hors du redessin.
+    var sx = 0, sy = 0, down = false;
+    ov.onkeydown = function(ev) {
+        if (ev.key == "Escape") { S.zoomShut(); return; }
+        var m = {ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down"}[ev.key];
+        if (m) { ev.preventDefault(); S.zoomGo(m); }
+    };
+    ov.onpointerdown = function(ev) { down = true; sx = ev.clientX; sy = ev.clientY; };
+    ov.onpointerup = function(ev) {
+        if (!down) return; down = false;
+        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return;
+        S._zswipeAt = Date.now();
+        // Le doigt glisse vers la droite : la page de gauche arrive (sorts) ; vers la gauche : celle de droite (équipements).
+        if (Math.abs(dx) > Math.abs(dy)) S.zoomGo(dx > 0 ? "left" : "right");
+        else S.zoomGo(dy < 0 ? "down" : "up");
+    };
     ov.onclick = function(ev) {
+        if (S._zswipeAt && Date.now() - S._zswipeAt < 450) { S._zswipeAt = 0; ev.stopPropagation(); return; }
+        var z = S._zoom; if (!z) return;
+        var uid = z.uid, go = ev.target.closest("[data-zgo]");
+        if (go) { ev.stopPropagation(); if (!go.disabled) S.zoomGo(go.dataset.zgo); return; }
+        if (ev.target.closest("[data-zclose]")) { S.zoomShut(); return; }
         var lp = ev.target.closest("[data-zlp], [data-zhp]");
         if (lp) {
             ev.stopPropagation();
             if (lp.hasAttribute("data-zlp")) S.studioLife(uid, +lp.dataset.n); else S.life(uid, +lp.dataset.n);
-            S.zoomTile(uid); return;
+            S.zoomTile(uid, {pos: 0, hand: z.hand}); return;
         }
         if (ev.target.closest(".sk-studiohp")) return;
+        // Sort à coût fixe : un appui sur le coût le lance (le chiffre de saturation recouvre en partie le coût, il compte aussi).
+        var cost = ev.target.closest(".sk-zoomcard.sk-castable .cost, .sk-zoomcard.sk-castable .saturation, .sk-zoomcard.sk-castable .cost-and-saturation");
+        if (cost) {
+            ev.stopPropagation();
+            var card = cost.closest("[data-zcard]"), ref = card.dataset.zcard.split(":").slice(1).join(":"), d = S.spellData(ref), n = d ? parseInt(d.cost, 10) : 0;
+            if (n > 0 && S.castSpell(uid, ref, n)) S.zoomTile(uid, {pos: z.pos, hand: z.hand});
+            return;
+        }
+        // Coût variable (X) : choisir le nombre de gemmes, puis Lancer.
+        var xs = ev.target.closest("[data-zx]");
+        if (xs) { ev.stopPropagation(); var v = ov.querySelector("[data-zxv]"), nv = Math.max(1, Math.min(9, (+v.textContent || 1) + (+xs.dataset.zx))); v.textContent = nv; return; }
+        var cx = ev.target.closest("[data-zcastx]");
+        if (cx) { ev.stopPropagation(); if (S.castSpell(uid, cx.dataset.zcastx, +ov.querySelector("[data-zxv]").textContent || 1)) S.zoomTile(uid, {pos: z.pos, hand: z.hand}); return; }
+        var add = ev.target.closest("[data-zadd]");
+        if (add) { ev.stopPropagation(); S.studioAddCards(uid, add.dataset.zadd); return; }
+        var rm = ev.target.closest("[data-zrm]");
+        if (rm) { ev.stopPropagation(); var p = rm.dataset.zrm.split(":"); S.studioRemoveCard(uid, p[0], +p[1]); return; }
+        if (ev.target.closest("[data-zcard]")) return;
         var sk = ev.target.closest("[data-skill]");
         if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
-        if (ev.target.closest(".sk-tip")) return;
-        shut();
+        if (ev.target.closest(".sk-tip, .sk-zoomcast, .sk-zoomhead, .sk-zoomdots")) return;
+        S.zoomShut();
     };
-    var cl = ov.querySelector("[data-zclose]"); if (cl) cl.focus({preventScroll: true});
+};
+// Studio : cartes d'une tuile. Le côté décide du type : à gauche les sorts de l'Overlord, à droite les équipements.
+S.studioAddCards = function(uid, kind) {
+    var back = function(pos) { S.zoomTile(uid, {pos: pos}); };
+    S.zoomShut();
+    S.openItemPicker({title: t(kind == "sp" ? "add_spell" : "add_eq"), kind: kind, kinds: [kind],
+        filter: kind == "sp" ? function(it) { return it.data && it.data.forOverlord; } : null,
+        onClose: function() { back(kind == "sp" ? -1 : 1); },
+        onAdd: function(sel) {
+            var s = S.slotByUid(uid); if (!s || !sel.length) { back(0); return; }
+            S.snapshot();
+            s.cards = (s.cards || []).concat(sel.map(function(x) { return {kind: x.kind, ref: x.ref}; }));
+            commit();
+            back(kind == "sp" ? -S.slotCards(s, "sp").length : S.slotCards(s, "eq").length);
+        }});
+};
+S.studioRemoveCard = function(uid, kind, k) {
+    var s = S.slotByUid(uid); if (!s) return;
+    var c = S.slotCards(s, kind)[k]; if (!c) return;
+    S.snapshot();
+    s.cards.splice(s.cards.indexOf(c), 1);
+    commit();
+    var n = S.slotCards(s, kind).length;
+    S.zoomTile(uid, {pos: n ? (kind == "sp" ? -Math.min(k + 1, n) : Math.min(k + 1, n)) : 0});
 };
 // Double appui sur une tuile de la Rivière : le premier appui l'a sélectionnée, le second la désélectionne, puis le zoom s'ouvre.
 S.bindTileZoom = function(root) {
@@ -2042,4 +2185,58 @@ S.renderGame = function() {
 var fitTimer = null;
 window.addEventListener("resize", function() { clearTimeout(fitTimer); fitTimer = setTimeout(S.fitPhase, 120); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { S.fitPhase(); });
+})();
+
+// ---------- Étape 24 : sorts et équipements des tuiles ----------
+(function() {
+var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
+// Bouton Sort : s'il reste des sorts sur des tuiles vivantes, il ouvre la main des sorts ; sinon il ajoute une gemme, comme avant.
+// Appui long : une gemme sans ouvrir la main (sort hors des cartes).
+var baseBoost = S.boost;
+S.boost = function(kind) {
+    if (kind == "spell" && !S._forceGem && !S.studio) {
+        var hand = S.spellSlots();
+        if (hand.length) { S.zoomTile(hand[0].uid, {hand: true, pos: -1}); return; }
+    }
+    S._forceGem = false;
+    return baseBoost.apply(S, arguments);
+};
+S.bindSpellPress = function(root) {
+    var timer = null, sx = 0, sy = 0;
+    root.addEventListener("pointerdown", function(ev) {
+        var b = ev.target.closest("[data-act='boost'][data-k='spell']"); if (!b || S.studio) return;
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
+        timer = setTimeout(function() { timer = null; S._suppressClick = true; S._forceGem = true; S.boost("spell"); if (navigator.vibrate) navigator.vibrate(20); }, 450);
+    });
+    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; } });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); timer = null; }); });
+    root.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-act='boost'][data-k='spell']")) ev.preventDefault(); });
+};
+var baseInit = S.init;
+S.init = function(root) { var r = baseInit.apply(S, arguments); S.bindSpellPress(root); return r; };
+// Pastille au coin des tuiles qui portent des cartes : nombre de sorts et d'équipements.
+S.decorateCards = function() {
+    if (!S.root || !S.state) return;
+    S.root.querySelectorAll(".sk-river .sk-tilebox[data-uid]").forEach(function(box) {
+        var s = S.slotByUid(box.dataset.uid), sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length;
+        var old = box.querySelector(".sk-cardsbadge"); if (old) old.remove();
+        if (!sp && !eq) return;
+        box.insertAdjacentHTML("beforeend", "<span class='sk-cardsbadge' role='img' aria-label='" + e(t("cards_badge", sp, eq)) + "' title='" + e(t("cards_badge", sp, eq)) + "'>"
+            + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>");
+    });
+};
+var cardsRender = S.renderGame;
+S.renderGame = function() { var r = cardsRender.apply(S, arguments); if (S.screen == "game") S.decorateCards(); return r; };
+// Tuile morte : rappel des équipements qu'elle laisse au sol (Journal et message).
+var baseKill = S.killSlot;
+S.killSlot = function(slot) {
+    var r = baseKill.apply(S, arguments);
+    var eq = S.slotCards(slot, "eq");
+    if (eq.length) {
+        var msg = t("log_drop", S.tileName(slot), eq.map(function(c) { return S.itemName("eq", c.ref); }).join(", "));
+        S.log(msg); setTimeout(function() { S.toast(msg); }, 50);
+    }
+    return r;
+};
 })();
