@@ -438,11 +438,11 @@ S.duplicateCampaign = function(cid, stay) {
 
 // Modifier la cache : le sélecteur s'ouvre avec les objets de la cache déjà sélectionnés.
 // Retirer une puce ou « Vider » enlève des objets ; l'équipement de départ reste ; la validation confirme les retraits.
-S.openCacheEditor = function(cid) {
+S.openCacheEditor = function(cid, done) {
     var c = S.campaign(cid); if (!c) return;
     var color = {}; (c.heroes || []).forEach(function(hh) { color[hh.id] = hh.color; });
     var init = S.sortItems((c.cache || []).slice()).map(function(it) { return {kind: it.kind, ref: it.ref, name: it.name, uid: it.uid, start: !!it.start, color: it.owner ? color[it.owner] : null}; });
-    S.openItemPicker({title: t("edit_cache"), initial: init, onAdd: function(sel) {
+    S.openItemPicker({title: t("edit_cache"), initial: init, onClose: done || null, onAdd: function(sel) {
         var keep = {}, added = sel.filter(function(x) { if (x.uid) keep[x.uid] = true; return !x.uid; });
         var gone = (S.campaign(cid).cache || []).filter(function(it) { return !keep[it.uid] && !it.start; });
         var apply = function() {
@@ -452,7 +452,7 @@ S.openCacheEditor = function(cid) {
                 if (added.length) S.campLog(x, t("clog_items", added.length));
                 if (gone.length) S.campLog(x, t("clog_items_removed", gone.length));
             });
-            S.renderCampaign(cid);
+            if (done) done(); else S.renderCampaign(cid);
         };
         if (gone.length) S.ask(t("confirm_cache_remove", gone.length), t("validate"), apply); else apply();
     }});

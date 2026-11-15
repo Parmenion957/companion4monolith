@@ -2523,7 +2523,7 @@ S.openCompanyView = function(cid) {
         if (ev.target === ov || ev.target.closest("[data-cvclose]")) { S.closeCompanyView(); return; }
         if (ev.target.closest("[data-cvunsel]")) { sel = []; sync(); return; }
         if (ev.target.closest("[data-cvadd]")) {
-            S.openItemPicker({title: t("add_to_cave"), onAdd: function(l) { S.addItems(cid, l, null); redraw(); }, onClose: redraw}); return;
+            S.openCacheEditor(cid, redraw); return;
         }
         var k = ev.target.closest("[data-tcard]");
         if (k) {
@@ -2595,7 +2595,7 @@ S.caveBlockCode = function(c) {
     return "<div class='sk-blk sk-c8 sk-caveblk'><h3>" + e(t("common_cache")) + "</h3>"
         + "<div class='sk-ctrack sk-ctrack-big' data-cavetrack>" + cave.map(function(it) { return S.trackCard(c, it); }).join("")
         + "<button class='sk-tcard sk-tadd' data-cact='addcave' aria-label='" + e(t("add_to_cave")) + "'><span>+</span>" + e(t("add_to_cave")) + "</button></div>"
-        + "<button class='sk-btn sk-primary sk-addrow' data-cact='companyview'>&#xf0c0; " + e(t("company_view")) + "</button></div>";
+        + "<button class='sk-btn sk-primary sk-addrow' data-cact='companyview'>&#xf00a; " + e(t("company_view")) + "</button></div>";
 };
 var baseRenderCampaign = S.renderCampaign;
 S.renderCampaign = function(cid) {
@@ -2608,7 +2608,7 @@ S.renderCampaign = function(cid) {
         var b = ev.target.closest("[data-cact='companyview'], [data-cact='addcave'], .sk-caveblk [data-tcard]");
         if (b) {
             if (b.dataset.cact == "companyview") S.openCompanyView(c.id);
-            else if (b.dataset.cact == "addcave") S.openItemPicker({title: t("add_to_cave"), onAdd: function(l) { S.addItems(c.id, l, null); S.rerender(); }});
+            else if (b.dataset.cact == "addcave") S.openCacheEditor(c.id);
             else S.cardZoom(c.id, b.dataset.tcard, function() { var ov = S.root.querySelector("#sk-overlay"); ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = ov.onkeydown = null; S.rerender(); });
             return;
         }
@@ -2679,4 +2679,75 @@ S.bindDragScroll = function(root) {
 };
 var baseInitDS = S.init;
 S.init = function(root) { var r = baseInitDS.apply(S, arguments); S.bindDragScroll(root || S.root); return r; };
+})();
+
+// ---------- Page d'une campagne : glisser une carte de la cache sur la fiche d'un héros (ou dans la corbeille) ----------
+// Appui long sur une carte de la cache, puis glisser : sur une fiche, le héros la prend ; sur la corbeille qui apparaît en bas, elle est supprimée
+// (sauf l'équipement de départ). Un simple appui l'ouvre toujours en grand.
+(function() {
+var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
+S.bindPageCardDrag = function(cid) {
+    var blk = S.root.querySelector(".sk-caveblk"); if (!blk) return;
+    var timer = null, drag = null, sx = 0, sy = 0;
+    var scroller = function() { var n = blk.parentElement; while (n && n !== document.body) { var cs = getComputedStyle(n); if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight) return n; n = n.parentElement; } return document.scrollingElement; };
+    var target = function(x, y) {
+        var el = document.elementFromPoint(x, y); if (!el) return null;
+        if (el.closest(".sk-pgtrash")) return {bin: true, el: el.closest(".sk-pgtrash")};
+        var h = el.closest(".sk-hcard[data-hzoom]"); return h && !h.classList.contains("dead") ? {hid: h.dataset.hzoom, el: h} : null;
+    };
+    var finish = function() {
+        clearTimeout(timer); timer = null;
+        if (!drag) return;
+        var d = drag; drag = null; S._pgDragAt = Date.now();
+        d.ghost.remove(); d.bin.remove(); d.src.classList.remove("sk-tdrag");
+        S.root.querySelectorAll(".sk-dover").forEach(function(n) { n.classList.remove("sk-dover"); });
+        var tg = d.over; if (!tg) return;
+        if (tg.bin) S.removeCards(cid, [d.uid]);
+        else S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == d.uid) S.setItemOwner(x, y, tg.hid); }); });
+        S.rerender();
+    };
+    blk.addEventListener("pointerdown", function(ev) {
+        var k = ev.target.closest(".sk-ctrack [data-tcard]"); if (!k || (ev.pointerType == "mouse" && ev.button != 0)) return;
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
+        timer = setTimeout(function() {
+            timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true);
+            g.className = "sk-tcard sk-tghost"; g.style.width = r.width + "px"; g.style.left = (sx - r.width / 2) + "px"; g.style.top = (sy - r.height / 2) + "px";
+            document.body.appendChild(g); k.classList.add("sk-tdrag");
+            var bin = document.createElement("div"); bin.className = "sk-trash sk-pgtrash"; bin.setAttribute("aria-hidden", "true");
+            bin.innerHTML = "<i>&#xf2ed;</i><span>" + e(t("cv_drop_remove")) + "</span>"; document.body.appendChild(bin);
+            drag = {uid: k.dataset.tcard, src: k, ghost: g, bin: bin, w: r.width, h: r.height, over: null, sc: scroller()};
+            if (navigator.vibrate) navigator.vibrate(20);
+        }, 400);
+    });
+    S._pgMove = function(ev) {
+        if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; }
+        if (!drag) return;
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.w / 2) + "px"; drag.ghost.style.top = (ev.clientY - drag.h / 2) + "px";
+        var tg = target(ev.clientX, ev.clientY);
+        // Près du haut de l'écran, la page remonte vers les héros ; près du bas, elle descend.
+        if (drag.sc && !(tg && tg.bin)) { if (ev.clientY < 110) drag.sc.scrollTop -= 14; else if (ev.clientY > innerHeight - 110) drag.sc.scrollTop += 14; }
+        if ((tg && tg.el) != (drag.over && drag.over.el)) {
+            if (drag.over) drag.over.el.classList.remove("sk-dover", "hot");
+            drag.over = tg; if (tg) tg.el.classList.add(tg.bin ? "hot" : "sk-dover");
+        }
+    };
+    S._pgEnd = finish;
+    // Les écouteurs de la fenêtre ne sont posés qu'une fois ; ils suivent la page affichée.
+    if (!S._pgWin) {
+        S._pgWin = true;
+        window.addEventListener("pointermove", function(ev) { if (S._pgMove) S._pgMove(ev); }, {passive: false});
+        window.addEventListener("pointerup", function() { if (S._pgEnd) S._pgEnd(); });
+        window.addEventListener("pointercancel", function() { if (S._pgEnd) S._pgEnd(); });
+    }
+    blk.addEventListener("touchmove", function(ev) { if (drag) ev.preventDefault(); }, {passive: false});
+    blk.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-tcard]")) ev.preventDefault(); });
+    blk.addEventListener("click", function(ev) { if (S._pgDragAt && Date.now() - S._pgDragAt < 400) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+};
+var baseRC = S.renderCampaign;
+S.renderCampaign = function(cid) {
+    var r = baseRC.apply(S, arguments);
+    if (S.screen == "campaign") S.bindPageCardDrag(cid);
+    return r;
+};
 })();

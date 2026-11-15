@@ -1629,3 +1629,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-cview .sk-cvcave .sk-tadd { height: var(--caveh); }
 .sk-cview .sk-cvcave .sk-tcard.sk-tsel { transform: none; outline-offset: -3px; }
 .sk-c8 > .sk-company25 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
+/* Page d'une campagne : fiche de héros visée pendant le glisser d'une carte, corbeille au-dessus de tout */
+.sk-hcard.sk-dover .sk-hcard-f { outline: 4px solid var(--highlight-color); outline-offset: 3px; border-radius: 8px; }
+.sk-trash.sk-pgtrash { z-index: 100001; }
