@@ -108,6 +108,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'zoom_spell_n': "Spell {0} / {1}",
     'zoom_eq_n': "Equipment {0} / {1}",
     'spell_cast_hint': "Touch the cost to cast the spell ({0} gem(s)).",
+    'spell_casts': "Cast {0} time(s) this turn (saturation {1})",
+    'spell_cast_done': "Touch the cost again to cast it once more ({0} gem(s)).",
     'spell_tile_dead': "Dead tile: spell unavailable.",
     'cast_spell': "Cast",
     'log_spell': "{0} casts {1}: {2} gem(s)",

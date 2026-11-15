@@ -1158,6 +1158,8 @@ S.castSpell = function(uid, ref, n) {
     if (st.energy < n) { S.toast(t("not_enough", n, st.energy)); return false; }
     S.snapshot();
     st.energy -= n; st.boosts.spell = (st.boosts.spell || 0) + n;
+    st.cast = st.cast || {}; st.cast[uid + "|" + ref] = (st.cast[uid + "|" + ref] || 0) + 1;
+    S._justCast = uid + "|" + ref; S._lastCastN = n;
     S.log(t("log_spell", S.tileName(s), S.itemName("sp", ref), n));
     S.save(); S.renderGame();
     return true;
@@ -1177,7 +1179,7 @@ S.zoomTile = function(uid, opts) {
     var pos = Math.max(minPos, Math.min(maxPos, opts.pos == null ? (hand ? -1 : 0) : opts.pos));
     S._zoom = {uid: uid, pos: pos, hand: hand};
     S.hideTip(); S.closeHp && S.closeHp();
-    var title = S.tileName(s), body = "", label = "";
+    var title = S.tileName(s), body = "", after = "", label = "";
     if (pos == 0) {
         // Points de vie à taille du doigt : en studio, les PV de départ ; en partie, les PV restants (0 = unités mortes, comme sur le plateau).
         var hpCode = "";
@@ -1185,8 +1187,8 @@ S.zoomTile = function(uid, opts) {
             if (studio) { if (!s.dead) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
             else if (s.lpMax) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
         }
-        body = "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + "</div>"
-            + (hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "");
+        body = "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + "</div>";
+        after = hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "";
     } else if (pos == minPos && studio) {
         body = "<button class='sk-zoomadd' data-zadd='sp'><span>+</span>" + e(t("add_spell")) + "</button>";
         label = t("add_spell");
@@ -1197,38 +1199,52 @@ S.zoomTile = function(uid, opts) {
         var kind = pos < 0 ? "sp" : "eq", list = kind == "sp" ? sp : eq, k = Math.abs(pos) - 1, c = list[k];
         label = t(kind == "sp" ? "zoom_spell_n" : "zoom_eq_n", k + 1, list.length);
         var real = S.realCardCode(kind, c.ref) || "<div class='sk-bigcard sk-k-" + kind + "'><span class='sk-icard-n'>" + e(S.itemName(kind, c.ref)) + "</span></div>";
-        var foot = "";
+        var foot = "", cast = 0, cls = "", pips = "";
         if (kind == "sp" && game) {
             var d = S.spellData(c.ref), cost = d ? parseInt(d.cost, 10) : NaN;
+            cast = S.castCount(uid, c.ref);
+            // Sort déjà lancé ce tour : son coût passe en rouge.
+            if (cast) cls += " sk-cast";
+            if (S._justCast == uid + "|" + c.ref) { cls += " sk-castanim"; S._justCast = null; }
+            // Pastilles de saturation : une gemme par lancement possible dans le tour, remplie en rouge à chaque lancement.
+            // Sans saturation : une seule pastille, avec ×n si le sort est relancé. Au-delà de la saturation, des pastilles en plus (non bloquant).
+            var sat = d ? parseInt(d.saturation, 10) || 0 : 0, slots = sat > 0 ? Math.max(sat, cast) : 1;
+            pips = "<span class='sk-satpips' role='img' aria-label='" + e(t("spell_casts", cast, sat || "∞")) + "'>";
+            for (var q = 0; q < slots; q++) pips += "<i class='" + (q < cast ? "on" : "") + (sat > 0 && q >= sat ? " over" : "") + (cls.indexOf("sk-castanim") >= 0 && q == (sat > 0 ? cast - 1 : 0) ? " new" : "") + "'>&#xf3a5;</i>";
+            pips += (!sat && cast > 1 ? "<b>×" + cast + "</b>" : "") + "</span>";
             if (s.dead) foot = "<p class='sk-zoomnote'>" + e(t("spell_tile_dead")) + "</p>";
-            else if (cost > 0) foot = "<p class='sk-zoomnote'>" + e(t("spell_cast_hint", cost)) + "</p>";
+            else if (cost > 0) foot = "<p class='sk-zoomnote'>" + e(t(cast ? "spell_cast_done" : "spell_cast_hint", cost)) + "</p>";
             else foot = "<div class='sk-zoomcast'><button class='sk-hpbtn' data-zx='-1' aria-label='−'>−</button><b data-zxv>1</b><button class='sk-hpbtn' data-zx='1' aria-label='+'>+</button>"
                 + "<button class='sk-btn sk-primary' data-zcastx='" + e(c.ref) + "'>" + e(t("cast_spell")) + "</button></div>";
         }
-        if (studio) foot = "<button class='sk-btn sk-zoomrm' data-zrm='" + kind + ":" + k + "'>" + e(t("remove_card")) + "</button>";
-        body = "<div class='sk-zoomcard" + (kind == "sp" && game && !s.dead ? " sk-castable" : "") + (s.dead && kind == "sp" ? " dead" : "") + "' data-zcard='" + kind + ":" + e(c.ref) + "'><span class='sk-cardscale'>" + real + "</span></div>" + foot;
+        // Studio : une pastille corbeille au coin bas droit de la carte la retire de la tuile.
+        var rm = studio ? "<button class='sk-zoomrm' data-zrm='" + kind + ":" + k + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button>" : "";
+        var paid = cls.indexOf("sk-castanim") >= 0 ? "<span class='sk-castpaid' aria-hidden='true'>−" + S._lastCastN + "</span>" : "";
+        body = "<div class='sk-zoomcard" + (kind == "sp" && game && !s.dead ? " sk-castable" : "") + (s.dead && kind == "sp" ? " dead" : "") + cls + "' data-zcard='" + kind + ":" + e(c.ref) + "'><span class='sk-cardscale'>" + real + "</span>" + rm + paid + pips + "</div>"; after = foot;
     }
     // Repères : un point par page, la tuile au milieu, les sorts à gauche, les équipements à droite.
     var dots = "";
     for (var p = minPos; p <= maxPos; p++) dots += "<i class='" + (p == 0 ? "sk-dt" : p < 0 ? "sk-ds" : "sk-de") + (p == pos ? " on" : "") + "'></i>";
     var ring = S.zoomRing(hand), idx = ring.indexOf(uid);
     var dir = opts.dir ? " sk-zin-" + opts.dir : "";
+    // Esquisses des cartes voisines, en retrait derrière la carte : elles montrent de quel côté on peut glisser.
+    // Teinte selon la page voisine : sort (violet), équipement (or), tuile ou ajout (neutre). Un appui y mène aussi.
+    var tint = function(p) { return p == 0 || (studio && (p == minPos || p == maxPos)) ? "sk-zg-t" : p < 0 ? "sk-zg-sp" : "sk-zg-eq"; };
+    var ghost = function(side, cl, lab) { return "<button class='sk-zghost sk-zg-" + side + " " + cl + "' data-zgo='" + side + "' aria-label='" + e(t(lab)) + "' tabindex='-1'></button>"; };
+    var ghosts = (pos > minPos ? ghost("left", tint(pos - 1), "zoom_prev_card") : "") + (pos < maxPos ? ghost("right", tint(pos + 1), "zoom_next_card") : "")
+        + (ring.length > 1 ? ghost("up", "sk-zg-t", "zoom_prev_tile") + ghost("down", "sk-zg-t", "zoom_next_tile") : "");
     var ov = S.root.querySelector("#sk-overlay");
-    ov.innerHTML = "<div class='sk-zoom' role='dialog' aria-label='" + e(title) + "'>"
-        + "<div class='sk-zoomhead'><b>" + e(title) + "</b>" + (label ? "<span>" + e(label) + "</span>" : "") + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
-        + "<div class='sk-zoompage" + dir + "'>" + body + "</div>"
+    ov.innerHTML = "<div class='sk-zoom' role='dialog' tabindex='-1' aria-label='" + e(title) + "'>"
+        + "<div class='sk-zoomhead'>" + (label ? "<span>" + e(label) + "</span>" : "") + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
+        + "<div class='sk-zoompage" + dir + "'><div class='sk-zoomstage'>" + ghosts + body + "</div>" + after + "</div>"
         + (maxPos > minPos ? "<div class='sk-zoomdots' aria-hidden='true'>" + dots + "</div>" : "")
-        + "<div class='sk-zoomnav'>"
-        + "<button class='sk-zarrow' data-zgo='left'" + (pos > minPos ? "" : " disabled") + " aria-label='" + e(t("zoom_prev_card")) + "'>&#xf053;</button>"
-        + "<button class='sk-zarrow' data-zgo='up'" + (ring.length > 1 ? "" : " disabled") + " aria-label='" + e(t("zoom_prev_tile")) + "'>&#xf077;</button>"
-        + "<button class='sk-btn sk-zoomclose' data-zclose>" + e(t("close")) + "</button>"
-        + "<button class='sk-zarrow' data-zgo='down'" + (ring.length > 1 ? "" : " disabled") + " aria-label='" + e(t("zoom_next_tile")) + "'>&#xf078;</button>"
-        + "<button class='sk-zarrow' data-zgo='right'" + (pos < maxPos ? "" : " disabled") + " aria-label='" + e(t("zoom_next_card")) + "'>&#xf054;</button>"
-        + "</div></div>";
+        + "</div>";
     ov.classList.add("on", "sk-zoomon");
     S.bindZoom(ov);
-    var cl = ov.querySelector("[data-zclose]"); if (cl) cl.focus({preventScroll: true});
+    ov.querySelector(".sk-zoom").focus({preventScroll: true});
 };
+// Nombre de lancements ce tour d'un sort d'une tuile (remis à zéro quand les gemmes rejoignent la fatigue).
+S.castCount = function(uid, ref) { var c = S.state && S.state.cast; return (c && c[uid + "|" + ref]) || 0; };
 // Tuiles parcourues de haut en bas : toutes les tuiles de la Rivière, ou seulement celles qui ont des sorts (main des sorts).
 S.zoomRing = function(hand) {
     if (!S.state) return [];
@@ -1268,7 +1284,6 @@ S.bindZoom = function(ov) {
         var z = S._zoom; if (!z) return;
         var uid = z.uid, go = ev.target.closest("[data-zgo]");
         if (go) { ev.stopPropagation(); if (!go.disabled) S.zoomGo(go.dataset.zgo); return; }
-        if (ev.target.closest("[data-zclose]")) { S.zoomShut(); return; }
         var lp = ev.target.closest("[data-zlp], [data-zhp]");
         if (lp) {
             ev.stopPropagation();
@@ -2228,6 +2243,9 @@ S.decorateCards = function() {
 };
 var cardsRender = S.renderGame;
 S.renderGame = function() { var r = cardsRender.apply(S, arguments); if (S.screen == "game") S.decorateCards(); return r; };
+// Fin du tour de l'Overlord : les gemmes des sorts rejoignent la fatigue, les sorts lancés redeviennent disponibles.
+var baseClearCast = S.clearBoosts;
+S.clearBoosts = function() { var r = baseClearCast.apply(S, arguments); if (S.state) S.state.cast = {}; return r; };
 // Tuile morte : rappel des équipements qu'elle laisse au sol (Journal et message).
 var baseKill = S.killSlot;
 S.killSlot = function(slot) {

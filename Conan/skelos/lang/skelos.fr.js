@@ -111,6 +111,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'zoom_spell_n': "Sort {0} / {1}",
     'zoom_eq_n': "Équipement {0} / {1}",
     'spell_cast_hint': "Touche le coût pour lancer le sort ({0} gemme(s)).",
+    'spell_casts': "Lancé {0} fois ce tour (saturation {1})",
+    'spell_cast_done': "Touche à nouveau le coût pour le relancer ({0} gemme(s)).",
     'spell_tile_dead': "Tuile morte : sort indisponible.",
     'cast_spell': "Lancer",
     'log_spell': "{0} lance {1} : {2} gemme(s)",
