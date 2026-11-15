@@ -1441,17 +1441,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-zoomdots i.sk-ds { background: rgba(176,120,230,.6); }
 .sk-zoomdots i.sk-de { background: rgba(210,170,90,.6); }
 .sk-zoomdots i.on { background: #fff; box-shadow: 0 0 0 2px var(--highlight-color); }
-/* Esquisses des cartes voisines, en retrait derrière la carte en cours : on voit de quel côté glisser. */
-.sk-zoomstage { position: relative; isolation: isolate; }
-.sk-zghost { position: absolute; z-index: -1; padding: 0; border-radius: 12px; border: 2px dashed rgba(255,255,255,.55); background: rgba(255,255,255,.12);
-    box-shadow: 0 6px 18px rgba(0,0,0,.45); cursor: pointer; }
-.sk-zghost.sk-zg-sp { border-color: rgba(190,140,240,.8); background: rgba(120,60,170,.35); }
-.sk-zghost.sk-zg-eq { border-color: rgba(225,190,120,.85); background: rgba(160,120,50,.35); }
-.sk-zg-left { top: 6%; bottom: 6%; left: -26px; width: 50%; transform: rotate(-3deg); }
-.sk-zg-right { top: 6%; bottom: 6%; right: -26px; width: 50%; transform: rotate(3deg); }
-.sk-zg-up { top: -18px; left: 12%; right: 12%; height: 40%; }
-.sk-zg-down { bottom: -18px; left: 12%; right: 12%; height: 40%; }
-/* Sort lancé ce tour : le coût passe en rouge ; au lancement, il grossit et vire au rouge, et les gemmes payées s'envolent. */
+.sk-zoomstage { position: relative; }
+.sk-zoom:focus { outline: none; }
+/* Sort lancé ce tour : le coût ne clignote plus ; au lancement, les pastilles se remplissent et les gemmes payées s’envolent. */
 .sk-zoomcard.sk-castable.sk-cast .cost { animation: none; outline-color: transparent; }
 /* Pastilles de saturation, en languette au milieu du bord haut de la carte (le bandeau de la carte peut porter une explosion) :
    vides, puis rouges à chaque lancement. */
@@ -1472,8 +1464,8 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 @keyframes sk-zinl { from { transform: translateX(-40px); opacity: .3; } } @keyframes sk-zinr { from { transform: translateX(40px); opacity: .3; } }
 @keyframes sk-zinu { from { transform: translateY(-40px); opacity: .3; } } @keyframes sk-zind { from { transform: translateY(40px); opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .sk-zin-left, .sk-zin-right, .sk-zin-up, .sk-zin-down { animation: none; } }
-/* Pastille des cartes portées, au coin haut gauche de la tuile. */
-.sk-cardsbadge { position: absolute; left: 3%; top: 3%; z-index: 2; display: flex; align-items: center; gap: 2cqw; padding: 1cqw 3cqw; border-radius: 8cqw;
+/* Pastille des cartes portées : en bas au centre de la tuile, sous les dés, à cheval sur le bord (le nom reste lisible). */
+.sk-cardsbadge { position: absolute; left: 50%; bottom: 0; transform: translate(-50%, 50%); z-index: 3; white-space: nowrap; box-shadow: 0 1px 4px rgba(0,0,0,.6); display: flex; align-items: center; gap: 2cqw; padding: 1cqw 3cqw; border-radius: 8cqw;
     background: rgba(20,12,8,.8); color: #fff; font: bold 9cqw/1.2 system-ui, sans-serif; pointer-events: none; }
 .sk-cardsbadge i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 8cqw; margin-right: 1cqw; }
 .sk-cardsbadge .sk-cb-sp { color: #c79cf0; } .sk-cardsbadge .sk-cb-eq { color: #e2c48a; }
