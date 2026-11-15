@@ -1476,3 +1476,79 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     background: rgba(20,12,8,.8); color: #fff; font: bold 9cqw/1.2 system-ui, sans-serif; pointer-events: none; }
 .sk-cardsbadge i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 8cqw; margin-right: 1cqw; }
 .sk-cardsbadge .sk-cb-sp { color: #c79cf0; } .sk-cardsbadge .sk-cb-eq { color: #e2c48a; }
+
+/* ---------- Étape 25 : campagne ---------- */
+/* Fil des scénarios : mode au-dessus, titre en grand sur deux lignes au plus, dates dessous ; les points de victoire gardent leur place à droite. */
+.sk-thread .sk-sc-main { gap: 4px; }
+.sk-thread .sk-sc-main > .sk-smode { margin: 0; align-self: flex-start; }
+.sk-thread .sk-sc-top { align-items: flex-start; }
+.sk-thread .sk-sc-top .sk-sc-t { font-family: 'Primary', serif; font-size: 22px; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.sk-thread .sk-sc-top .sk-sc-t.sk-sc-none { color: var(--sk-muted); }
+.sk-thread .sk-sc-top .sk-pastille { flex: none; }
+
+/* Compagnie : fiche complète du héros, pastille de cartes à cheval sur le bas, crayon pour la modifier. */
+.sk-company25 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 18px 12px; }
+.sk-hcard { position: relative; min-width: 0; padding-bottom: 14px; }
+.sk-hcard-f { position: relative; display: block; container-type: inline-size; cursor: pointer; border-radius: 10px; box-shadow: 0 0 0 3px var(--hc), 0 4px 12px rgba(0,0,0,.25); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sk-hcard-f:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
+.sk-hcard.dead .sk-hcard-f { filter: grayscale(1); opacity: .55; }
+.sk-hcard-ed { position: absolute; top: -10px; right: -8px; z-index: 3; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--body-bg-color); background: var(--main-color); color: var(--body-bg-color);
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.sk-hcard-dead { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 2; }
+.sk-cardsbadge.sk-herobadge { font-size: 4.6cqw; gap: 1cqw; padding: .6cqw 2cqw; border-radius: 4cqw; }
+.sk-cardsbadge.sk-herobadge i { font-size: 4cqw; }
+.sk-cardsbadge .sk-cb-up { color: #8fdcc0; }
+.sk-hface-alt { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; aspect-ratio: 1.75; padding-bottom: 8px; background: var(--body-bg-color); border-radius: 10px; overflow: hidden; }
+.sk-hface-alt img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.sk-hface-alt b { font-family: 'Primary', serif; font-weight: normal; font-size: 20px; color: var(--main-color); }
+/* Pistes de cartes : défilent à gauche et à droite. */
+.sk-ctrack { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 6px 4px 10px; scroll-snap-type: x proximity; overscroll-behavior-x: contain; touch-action: pan-x; }
+.sk-ctrack-wrap { flex-wrap: wrap; overflow: visible; touch-action: auto; }
+.sk-tcard { position: relative; flex: none; width: 104px; padding: 0; border: 0; background: none; cursor: pointer; scroll-snap-align: start; border-radius: 6%; line-height: 0;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sk-tcard .sk-cardscale, .sk-tcard .sk-upcard { pointer-events: none; }
+.sk-ctrack-big .sk-tcard { width: 132px; }
+.sk-hzoom .sk-tcard { width: 116px; }
+.sk-tcard.sk-tsel { outline: 4px solid var(--highlight-color); outline-offset: 2px; transform: translateY(-4px); }
+.sk-tcard.sk-tdrag { opacity: .3; }
+.sk-tcard.sk-tmoved { animation: sk-tmoved .5s ease-out; }
+@keyframes sk-tmoved { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.sk-tghost { position: fixed; z-index: 100000; pointer-events: none; opacity: .92; transform: rotate(-4deg) scale(1.05); box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+.sk-tadd { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; aspect-ratio: .67; border: 2px dashed var(--highlight-color); background: var(--body-bg-color);
+    color: var(--body-color); font-size: 13px; line-height: 1.15; text-align: center; padding: 6px; }
+.sk-tadd span { font-size: 36px; line-height: 1; color: var(--highlight-color); }
+.sk-cstart { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #b8860b; color: #fff;
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 12px; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.sk-ctrack-empty { align-self: center; padding: 8px; color: var(--sk-muted); font-size: 15px; line-height: 1.2; }
+.sk-upcard { display: flex; flex-direction: column; gap: 6px; aspect-ratio: .67; padding: 8%; border-radius: 6%; border: 2px solid var(--main-color); background: var(--body-bg-color); color: var(--body-color);
+    line-height: 1.2; text-align: left; overflow: hidden; }
+.sk-upcard b { font-family: 'Primary', serif; font-weight: normal; font-size: 15px; color: var(--main-color); }
+.sk-upcard span { font-size: 12px; }
+.sk-czoom .sk-upcard b { font-size: 26px; } .sk-czoom .sk-upcard span { font-size: 18px; }
+/* Zoom d'un héros : la fiche en grand, la piste de ses cartes dessous. */
+.sk-hzoom { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 760px; }
+.sk-hzoom:focus, .sk-czoom:focus { outline: none; }
+.sk-hzoom-f { width: min(94vw, 720px, calc((100dvh - var(--sk-bottom, 0px) - 300px) * 1.75)); container-type: inline-size; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.sk-hzoom .sk-ctrack { width: 100%; justify-content: safe center; }
+/* Une carte en grand : corbeille en bas à droite, cadenas d'équipement de départ en bas à gauche. */
+.sk-czoom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.sk-czoom-c { position: relative; }
+.sk-cstartbtn { position: absolute; left: -10px; bottom: -10px; z-index: 3; width: 52px; height: 52px; border-radius: 50%; border: 2px solid #fff; background: rgba(40,30,20,.85); color: rgba(255,255,255,.55);
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 20px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.5); }
+.sk-cstartbtn.on { background: #b8860b; color: #fff; }
+.sk-zoomrm:disabled { opacity: .45; cursor: not-allowed; }
+/* Compagnie et cache : une piste par héros, la cache en grande piste en bas. */
+.sk-cview { max-width: 1100px; }
+.sk-cvhint { margin: 0 0 8px; color: var(--sk-muted); font-size: 15px; }
+.sk-cvhint.on { color: var(--highlight-color); font-weight: bold; }
+.sk-cvheroes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; }
+.sk-cvhero, .sk-cvcave { min-width: 0; padding: 8px; border-radius: 10px; border: 2px solid transparent; background: color-mix(in srgb, var(--body-color) 6%, transparent); }
+.sk-cvhero { border-left: 6px solid var(--hc); }
+.sk-cvsheet { width: min(100%, 300px); container-type: inline-size; cursor: pointer; }
+.sk-cvcave { margin-top: 14px; }
+.sk-cvcave h3 { margin: 0 0 4px; }
+.sk-cvhero.sk-dover, .sk-cvcave.sk-dover { border-color: var(--highlight-color); background: color-mix(in srgb, var(--highlight-color) 15%, transparent); }
+.sk-cview:has(.sk-tsel) [data-dest] { cursor: copy; }
+/* Écran de campagne : la cache en piste de cartes. */
+.sk-caveblk .sk-ctrack { margin-bottom: 8px; }
+.sk-cavepick .sk-ctrack { max-height: 60vh; overflow-y: auto; }

@@ -166,7 +166,9 @@ S.onGameStart = function() {
     var st = S.state; if (!st || !st.campaign) return;
     S.updateCampaign(st.campaign.cid, function(c) {
         var sc = c.scenarios[st.campaign.idx]; if (!sc) return;
-        sc.setup = JSON.parse(JSON.stringify(st.scenario)); sc.title = st.scenario.title || sc.title; sc.status = sc.status == "todo" ? "playing" : sc.status;
+        // La préparation du scénario n'est jamais réécrite au lancement : elle doit pouvoir resservir telle quelle (elle porte l'état préparé en studio).
+        if (!sc.setup) sc.setup = JSON.parse(JSON.stringify(st.scenario));
+        sc.title = sc.title || st.scenario.title; sc.status = sc.status == "todo" ? "playing" : sc.status;
         if (!sc.date) sc.date = today();
         S.campLog(c, t("clog_launch", st.campaign.idx + 1, sc.title));
     });
@@ -322,14 +324,16 @@ S.renderCampaign = function(cid) {
     (c.scenarios || []).forEach(function(sc, i) {
         var next = i == nextIdx, plays = S.scenarioPlays(sc), last = plays[plays.length - 1];
         var running = !!(S.state && S.state.campaign && S.state.campaign.cid == c.id && S.state.campaign.idx == i);
-        var hint = running ? t("in_play") : plays.length ? "" : next && sc.setup ? t("next_scenario") : sc.setup ? t("thread_todo") : t("to_choose");
-        var acts = (running ? "<button class='sk-btn sk-primary sk-sm' data-nav='game'>" + t("resume_short") + "</button>"
+        // Plus de « à jouer » ni de « prochain scénario » : les pastilles de l'en-tête disent déjà ce qui a été joué. Seule la partie en cours est signalée.
+        var hint = running ? t("in_play") : "";
+        var acts = (running ? "<button class='sk-btn sk-primary sk-sm' data-cact='resume'>" + t("resume_short") + "</button>"
                 : sc.setup ? "<button class='sk-btn sk-sm' data-cact='prepare' data-i='" + i + "'>" + t("prepare") + "</button><button class='sk-btn sk-primary sk-sm' data-cact='launch' data-i='" + i + "'>" + t("launch") + "</button>" : "")
             + "<button class='sk-btn sk-sm' data-cact='choose' data-i='" + i + "'>" + t("choose") + "</button>"
             + (!plays.length && !running ? "<button class='sk-btn sk-icon sk-sm' data-cact='rmsc' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button>" : "");
         h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><button class='sk-grip' data-grip='" + i + "' title='" + e(t("move_scenario")) + "' aria-label='" + e(t("move_scenario")) + "'>&#xf58e;</button><span class='sk-sc-n'>" + (i + 1) + "</span>"
-            + "<div class='sk-sc-main'><div class='sk-sc-top'><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose"))
-            + (sc.setup ? " <span class='sk-smode'>" + e(t(((sc.setup.saved || sc.setup).mode) == "solo" ? "mode_solo" : "mode_classic")) + "</span>" : "") + "</span>"
+            // Mode au-dessus, titre en grand (sur deux lignes s'il le faut, la place des points de victoire reste à droite), dates en dessous.
+            + "<div class='sk-sc-main'>" + (sc.setup ? "<span class='sk-smode'>" + e(t(((sc.setup.saved || sc.setup).mode) == "solo" ? "mode_solo" : "mode_classic")) + "</span>" : "")
+            + "<div class='sk-sc-top'><span class='sk-sc-t" + (sc.title ? "" : " sk-sc-none") + "'>" + e(sc.title || t("scenario_to_choose")) + "</span>"
             + (last ? "<span class='sk-pastille " + last.result + "' title='" + e(t("last_counts")) + "'>" + S.fmtVp(last.vp) + "</span>" : "") + "</div>"
             + "<div class='sk-sc-sub'><span class='sk-sc-dates'>" + plays.map(function(p, k) {
                 return "<button class='sk-date sk-date-" + p.result + "' data-cact='play' data-i='" + i + "' data-p='" + k + "' aria-label='" + e(t("play_detail", fmtDate(p.date))) + "'>" + fmtDate(p.date) + "</button>";
@@ -363,6 +367,8 @@ S.renderCampaign = function(cid) {
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
             case "prepare": S.openCampaignEditor(c.id, i); break;
             case "launch": S.launchCampaignScenario(c.id, i); break;
+            // Reprendre : toujours la partie en jeu, jamais le mode studio ni un éditeur resté ouvert.
+            case "resume": if (S.editing) S.closeEditor(); S.studio = false; S.renderGame(); break;
             case "play": S.openPlay(c.id, i, +b.dataset.p); break;
             case "addhero": S.openHeroPicker(c.id); break;
             case "hero": S.openHeroEditor(c.id, b.dataset.hero); break;
@@ -373,7 +379,7 @@ S.renderCampaign = function(cid) {
 
 S.launchCampaignScenario = function(cid, i) {
     var c = S.campaign(cid), sc = c.scenarios[i];
-    var go = function() { S.clearGame(); S.ctx = {cid: cid, idx: i}; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
+    var go = function() { if (S.editing) S.closeEditor(); S.studio = false; S.clearGame(); S.ctx = {cid: cid, idx: i}; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
     if (!sc.setup || !(sc.setup.river || []).length) { S.toast(t("river_help")); return; }
     if (S.state && S.state.river.length) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
 };
@@ -538,13 +544,13 @@ S.openAssign = function(cid, hid) {
 };
 S.openItemMenu = function(cid, iuid) {
     var c = S.campaign(cid), it = (c.cache || []).filter(function(x) { return x.uid == iuid; })[0]; if (!it) return;
-    var up = it.kind == "up", tk = S.takers(it);
+    // Les améliorations ont un seul porteur, comme les autres cartes (étape 25).
+    var up = false, tk = S.takers(it);
     S.dialog("<h2>" + e(it.name) + "</h2><div class='sk-fl'>" + t(up ? "taken_by" : "owner") + "</div><div class='sk-chips'>"
         + "<button class='sk-chip" + (!tk.length ? " sk-sel" : "") + "' data-own=''>" + t("nobody") + "</button>"
         + c.heroes.map(function(hh) { return "<button class='sk-chip sk-own" + (tk.indexOf(hh.id) >= 0 ? " sk-sel" : "") + "' style='--hc:" + hh.color + "' data-own='" + hh.id + "'" + (up ? " aria-pressed='" + (tk.indexOf(hh.id) >= 0) + "'" : "") + ">" + e(hh.name) + "</button>"; }).join("") + "</div>"
-        + (up ? "<p class='sk-help'>" + t("up_shared_help") + "</p>" : "")
         + "<label class='sk-check'><input type='checkbox' id='sk-st'" + (it.start ? " checked" : "") + "> " + t("start_item") + "</label>"
-        + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm" + (it.start ? " disabled title='" + e(t("start_item_locked")) + "'" : "") + ">" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
+        + "<div class='sk-actions'><button class='sk-btn sk-danger' data-rm" + (it.start ? " disabled title='" + e(t("start_item_locked")) + "'" : "") + ">" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
             var o = ev.target.closest("[data-own]");
             if (o && up) {
