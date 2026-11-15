@@ -1148,17 +1148,22 @@ S.openTileMenu = function(uid) {
 // ---------- Zoom d'une tuile ----------
 // Sur téléphone, la Rivière garde ses quatre tuiles de front ; un double appui (ou « Agrandir » dans le menu de l'appui long)
 // montre la tuile en grand. Dans la tuile agrandie, un simple appui sur une compétence en donne la description.
+// En mode studio, la tuile agrandie porte aussi les − et + des points de vie, à taille du doigt.
 S.zoomTile = function(uid) {
     var s = S.slotByUid(uid); if (!s) return;
     S.hideTip(); S.closeHp && S.closeHp();
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-zoom' role='dialog' aria-label='" + e(S.tileName(s)) + "'>"
-        + "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + "</div>"
+        + "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
+        + (S.studio && !S.isEvent(s) && !s.dead ? S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp") : "") + "</div>"
         + "<button class='sk-btn sk-zoomclose' data-zclose>" + e(t("close")) + "</button></div>";
     ov.classList.add("on", "sk-zoomon");
     var shut = function() { S.hideTip(); ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; };
     ov.onkeydown = function(ev) { if (ev.key == "Escape") shut(); };
     ov.onclick = function(ev) {
+        var lp = ev.target.closest("[data-zlp]");
+        if (lp) { ev.stopPropagation(); S.studioLife(uid, +lp.dataset.n); S.zoomTile(uid); return; }
+        if (ev.target.closest(".sk-studiohp")) return;
         var sk = ev.target.closest("[data-skill]");
         if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
         if (ev.target.closest(".sk-tip")) return;
@@ -1170,7 +1175,10 @@ S.zoomTile = function(uid) {
 S.bindTileZoom = function(root) {
     var last = {uid: null, at: 0};
     root.addEventListener("click", function(ev) {
-        if (S.studio || S.screen != "game") return;
+        if (S.screen != "game") return;
+        // Studio : un appui sur le cœur ouvre la tuile en grand, pour régler les points de vie.
+        var heart = S.studio && ev.target.closest(".sk-river .sk-studiohp .sk-hp");
+        if (heart) { var hb = heart.closest(".sk-tilebox[data-uid]"); if (hb) { S.zoomTile(hb.dataset.uid); return; } }
         if (ev.target.closest(".sk-hpwrap, [data-hp], button")) return;
         var box = ev.target.closest(".sk-river .sk-tilebox[data-uid]"); if (!box || box.hasAttribute("data-eventuid")) { last.uid = null; return; }
         var uid = box.dataset.uid, now = Date.now();
@@ -2009,6 +2017,18 @@ S.fitPhase = function() {
 };
 var fitRenderGame = S.renderGame;
 S.renderGame = function() { fitRenderGame.apply(S, arguments); S.fitPhase(); };
+// Le plateau se redessine en entier à chaque action : le temps du redessin, la page raccourcit et le défilement
+// du module recule (sélectionner une tuile de la dernière rangée faisait remonter l'écran d'une demi-tuile).
+// On garde la position de défilement d'un redessin à l'autre, tant qu'on reste sur le plateau.
+// (Avant les animations, qui mesurent les tuiles après le redessin.)
+var scrollRenderGame = S.renderGame;
+S.renderGame = function() {
+    var root = S.root, keep = root && S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
+    scrollRenderGame.apply(S, arguments);
+    if (keep == null || !S.root || S.screen != "game") return;
+    S.root.scrollTop = keep;
+    requestAnimationFrame(function() { if (S.screen == "game" && Math.abs(S.root.scrollTop - keep) > 1) S.root.scrollTop = keep; });
+};
 var fitTimer = null;
 window.addEventListener("resize", function() { clearTimeout(fitTimer); fitTimer = setTimeout(S.fitPhase, 120); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { S.fitPhase(); });
