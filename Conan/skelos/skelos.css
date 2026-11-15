@@ -1441,7 +1441,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-zoomdots i.sk-ds { background: rgba(176,120,230,.6); }
 .sk-zoomdots i.sk-de { background: rgba(210,170,90,.6); }
 .sk-zoomdots i.on { background: #fff; box-shadow: 0 0 0 2px var(--highlight-color); }
-.sk-zoomstage { position: relative; }
+.sk-zoomstage { position: relative; isolation: isolate; }
+/* Ombres de cartes voisines : un bord de carte qui dépasse derrière, à gauche ou à droite. */
+.sk-shade { position: absolute; z-index: -1; top: 4%; bottom: 4%; width: 40%; border-radius: 12px; background: #2a2230; box-shadow: 0 6px 16px rgba(0,0,0,.6); }
+.sk-shade.sk-sh-l { left: -14px; transform: rotate(-4deg); transform-origin: right center; }
+.sk-shade.sk-sh-r { right: -14px; transform: rotate(4deg); transform-origin: left center; }
+.sk-shade.sk-sh-sp { background: linear-gradient(#5b2d86, #3a1b58); }
+.sk-shade.sk-sh-eq { background: linear-gradient(#e9dcc2, #b9a37a); }
+.sk-shade.sk-sh-t { background: linear-gradient(#d8d2c8, #9c958a); }
 .sk-zoom:focus { outline: none; }
 /* Sort lancé ce tour : le coût ne clignote plus ; au lancement, les pastilles se remplissent et les gemmes payées s’envolent. */
 .sk-zoomcard.sk-castable.sk-cast .cost { animation: none; outline-color: transparent; }

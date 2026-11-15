@@ -1225,17 +1225,23 @@ S.zoomTile = function(uid, opts) {
         var paid = cls.indexOf("sk-castanim") >= 0 && S.state.mode != "solo" ? "<span class='sk-castpaid' aria-hidden='true'>−" + S._lastCastN + "</span>" : "";
         body = "<div class='sk-zoomcard" + (kind == "sp" && game && !s.dead ? " sk-castable" : "") + (s.dead && kind == "sp" ? " dead" : "") + cls + "' data-zcard='" + kind + ":" + e(c.ref) + "'><span class='sk-cardscale'>" + real + "</span>" + rm + paid + pips + "</div>"; after = foot;
     }
-    // Repères : un point par page, la tuile au milieu, les sorts à gauche, les équipements à droite.
+    // Repères : un point par carte, la tuile au milieu, les sorts à gauche, les équipements à droite (les pages « + » du studio n'en ont pas).
+    // Ils se placent juste sous la carte, au-dessus des points de vie, pour rester visibles.
     var dots = "";
-    for (var p = minPos; p <= maxPos; p++) dots += "<i class='" + (p == 0 ? "sk-dt" : p < 0 ? "sk-ds" : "sk-de") + (p == pos ? " on" : "") + "'></i>";
+    for (var p = -sp.length; p <= eq.length; p++) dots += "<i class='" + (p == 0 ? "sk-dt" : p < 0 ? "sk-ds" : "sk-de") + (p == pos ? " on" : "") + "'></i>";
     var ring = S.zoomRing(hand), idx = ring.indexOf(uid);
     var dir = opts.dir ? " sk-zin-" + opts.dir : "";
+    // Ombres de cartes derrière la carte en cours, à gauche et à droite, quand il y a quelque chose de ce côté
+    // (violet : un sort ; or : un équipement ; neutre : la tuile ou une page « + » du studio).
+    var shadeOf = function(p) { return p == 0 || p < -sp.length || p > eq.length ? "sk-sh-t" : p < 0 ? "sk-sh-sp" : "sk-sh-eq"; };
+    var shade = (pos > minPos ? "<i class='sk-shade sk-sh-l " + shadeOf(pos - 1) + "' aria-hidden='true'></i>" : "")
+        + (pos < maxPos ? "<i class='sk-shade sk-sh-r " + shadeOf(pos + 1) + "' aria-hidden='true'></i>" : "");
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-zoom' role='dialog' tabindex='-1' aria-label='" + e(title) + "'>"
         // En-tête : seulement la position de la tuile dans la Rivière (les points du bas situent la carte).
         + "<div class='sk-zoomhead'>" + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
-        + "<div class='sk-zoompage" + dir + "'><div class='sk-zoomstage'>" + body + "</div>" + after + "</div>"
-        + (maxPos > minPos ? "<div class='sk-zoomdots' aria-hidden='true'>" + dots + "</div>" : "")
+        + "<div class='sk-zoompage" + dir + "'><div class='sk-zoomstage'>" + shade + body + "</div>"
+        + (sp.length + eq.length ? "<div class='sk-zoomdots' aria-hidden='true'>" + dots + "</div>" : "") + after + "</div>"
         + "</div>";
     ov.classList.add("on", "sk-zoomon");
     S.bindZoom(ov);
