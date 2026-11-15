@@ -1552,3 +1552,35 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Écran de campagne : la cache en piste de cartes. */
 .sk-caveblk .sk-ctrack { margin-bottom: 8px; }
 .sk-cavepick .sk-ctrack { max-height: 60vh; overflow-y: auto; }
+/* Étape 25 bis : sélection multiple, corbeille de la vue Compagnie et cache, cartes voisines dans le zoom */
+.sk-czoom-c { isolation: isolate; }
+.sk-czoom-p { display: flex; justify-content: center; }
+.sk-czoom .sk-zoomdots { justify-content: center; }
+.sk-cvbar { position: fixed; left: 50%; bottom: calc(var(--sk-bottom, 0px) + 20px); transform: translateX(-50%); z-index: 100001; display: none; align-items: center; gap: 10px; }
+.sk-cvbar.on, #sk-overlay.sk-cvdrag .sk-cvbar { display: flex; }
+#sk-overlay.sk-cvdrag .sk-cvunsel { display: none; }
+.sk-cvbar .sk-trash { position: static; transform: none; cursor: pointer; }
+.sk-cvbar .sk-trash.hot { transform: scale(1.08); }
+.sk-cvbar .sk-cvunsel { background: var(--body-bg-color); box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+.sk-cview { padding-bottom: 90px; }
+.sk-tghostn { position: absolute; right: -10px; top: -10px; min-width: 34px; height: 34px; border-radius: 17px; background: var(--highlight-color); color: #fff;
+    font: bold 18px/34px system-ui, sans-serif; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.sk-cvbar .sk-trash, .sk-cvbar .sk-cvunsel { white-space: nowrap; font-size: 16px; padding: 10px 16px; min-height: 48px; }
+@media (max-width: 600px) {
+    .sk-cvbar { left: 16px; right: 16px; transform: none; justify-content: center; }
+    #sk-overlay:not(.sk-cvdrag) .sk-cvbar .sk-trash span { display: none; }
+}
+/* Défilement par glissé partout dans le module : les barres de défilement sont masquées */
+#skelos, #skelos *, .sk-overlay, .sk-overlay * { scrollbar-width: none; }
+#skelos::-webkit-scrollbar, #skelos *::-webkit-scrollbar, .sk-overlay::-webkit-scrollbar, .sk-overlay *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+@media (hover: hover) { .sk-ctrack { cursor: grab; } }
+.sk-ctrack.sk-grabbing { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+.sk-ctrack.sk-grabbing * { pointer-events: none; }
+/* Barre du bas de la vue Compagnie et cache : boutons compacts, et place laissée sous la cache */
+#sk-overlay .sk-cvbar .sk-btn, #sk-overlay .sk-cvbar .sk-trash { font-size: 15px; line-height: 1.2; padding: 10px 16px; min-height: 46px; white-space: nowrap; width: auto; margin: 0; }
+.sk-overlay .sk-pickdlg.sk-cview { padding-bottom: 110px; }
+/* Compagnie et cache : toute la page ; deux héros par rangée sur tablette, un sur téléphone ; fiches sur toute la largeur */
+.sk-overlay .sk-pickdlg.sk-cview { max-width: none; width: 100%; }
+.sk-cvheroes { grid-template-columns: 1fr; }
+@media (min-width: 760px) { .sk-cvheroes { grid-template-columns: 1fr 1fr; } }
+.sk-cvsheet { width: 100%; }
