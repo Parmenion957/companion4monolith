@@ -166,7 +166,9 @@ S.onGameStart = function() {
     var st = S.state; if (!st || !st.campaign) return;
     S.updateCampaign(st.campaign.cid, function(c) {
         var sc = c.scenarios[st.campaign.idx]; if (!sc) return;
-        sc.setup = JSON.parse(JSON.stringify(st.scenario)); sc.title = st.scenario.title || sc.title; sc.status = sc.status == "todo" ? "playing" : sc.status;
+        // La préparation du scénario n'est jamais réécrite au lancement : elle doit pouvoir resservir telle quelle (elle porte l'état préparé en studio).
+        if (!sc.setup) sc.setup = JSON.parse(JSON.stringify(st.scenario));
+        sc.title = sc.title || st.scenario.title; sc.status = sc.status == "todo" ? "playing" : sc.status;
         if (!sc.date) sc.date = today();
         S.campLog(c, t("clog_launch", st.campaign.idx + 1, sc.title));
     });
@@ -318,18 +320,21 @@ S.renderCampaign = function(cid) {
     var played = S.playedCount(c), nextIdx = (c.scenarios || []).findIndex(function(x) { return x.status == "todo" || x.status == "playing"; });
     var h = S.campaignHeadCode(c);
     // Fil des scénarios
-    h += "<div class='sk-blk sk-c3'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
+    // Page d'une campagne : le fil, puis la compagnie sur toute la largeur, puis la cache commune dessous.
+    h += "<div class='sk-blk sk-c8 sk-threadblk'><h3>" + t("scenario_thread") + "</h3><div class='sk-thread'>";
     (c.scenarios || []).forEach(function(sc, i) {
         var next = i == nextIdx, plays = S.scenarioPlays(sc), last = plays[plays.length - 1];
         var running = !!(S.state && S.state.campaign && S.state.campaign.cid == c.id && S.state.campaign.idx == i);
-        var hint = running ? t("in_play") : plays.length ? "" : next && sc.setup ? t("next_scenario") : sc.setup ? t("thread_todo") : t("to_choose");
-        var acts = (running ? "<button class='sk-btn sk-primary sk-sm' data-nav='game'>" + t("resume_short") + "</button>"
+        // Plus de « à jouer » ni de « prochain scénario » : les pastilles de l'en-tête disent déjà ce qui a été joué. Seule la partie en cours est signalée.
+        var hint = running ? t("in_play") : "";
+        var acts = (running ? "<button class='sk-btn sk-primary sk-sm' data-cact='resume'>" + t("resume_short") + "</button>"
                 : sc.setup ? "<button class='sk-btn sk-sm' data-cact='prepare' data-i='" + i + "'>" + t("prepare") + "</button><button class='sk-btn sk-primary sk-sm' data-cact='launch' data-i='" + i + "'>" + t("launch") + "</button>" : "")
             + "<button class='sk-btn sk-sm' data-cact='choose' data-i='" + i + "'>" + t("choose") + "</button>"
             + (!plays.length && !running ? "<button class='sk-btn sk-icon sk-sm' data-cact='rmsc' data-i='" + i + "' aria-label='" + e(t("delete")) + "'>✕</button>" : "");
         h += "<div class='sk-sc" + (next ? " sk-next" : "") + "'><button class='sk-grip' data-grip='" + i + "' title='" + e(t("move_scenario")) + "' aria-label='" + e(t("move_scenario")) + "'>&#xf58e;</button><span class='sk-sc-n'>" + (i + 1) + "</span>"
-            + "<div class='sk-sc-main'><div class='sk-sc-top'><span class='sk-sc-t'>" + e(sc.title || t("scenario_to_choose"))
-            + (sc.setup ? " <span class='sk-smode'>" + e(t(((sc.setup.saved || sc.setup).mode) == "solo" ? "mode_solo" : "mode_classic")) + "</span>" : "") + "</span>"
+            // Mode au-dessus, titre en grand (sur deux lignes s'il le faut, la place des points de victoire reste à droite), dates en dessous.
+            + "<div class='sk-sc-main'>" + (sc.setup ? "<span class='sk-smode'>" + e(t(((sc.setup.saved || sc.setup).mode) == "solo" ? "mode_solo" : "mode_classic")) + "</span>" : "")
+            + "<div class='sk-sc-top'><span class='sk-sc-t" + (sc.title ? "" : " sk-sc-none") + "'>" + e(sc.title || t("scenario_to_choose")) + "</span>"
             + (last ? "<span class='sk-pastille " + last.result + "' title='" + e(t("last_counts")) + "'>" + S.fmtVp(last.vp) + "</span>" : "") + "</div>"
             + "<div class='sk-sc-sub'><span class='sk-sc-dates'>" + plays.map(function(p, k) {
                 return "<button class='sk-date sk-date-" + p.result + "' data-cact='play' data-i='" + i + "' data-p='" + k + "' aria-label='" + e(t("play_detail", fmtDate(p.date))) + "'>" + fmtDate(p.date) + "</button>";
@@ -337,7 +342,7 @@ S.renderCampaign = function(cid) {
     });
     h += "</div><button class='sk-btn sk-addrow' data-cact='addsc'>+ " + t("add_scenario") + "</button></div>";
     // Compagnie : quatre fiches de héros
-    h += "<div class='sk-blk sk-c3'><h3>" + t("company") + "</h3>" + S.companyCode(c) + "</div>";
+    h += "<div class='sk-blk sk-c8'><h3>" + t("company") + "</h3>" + S.companyCode(c) + "</div>";
     // Cache commune
     var cats = [["eq", "cat_eq"], ["sp", "cat_sp"], ["up", "cat_up"]];
     h += "<div class='sk-blk sk-c2' data-drop='cache'><h3>" + t("common_cache") + "</h3><div class='sk-legend'><span><i class='sk-k-eq'></i>" + t("kind_eq") + "</span><span><i class='sk-k-sp'></i>" + t("kind_sp") + "</span><span><i class='sk-k-up'></i>" + t("kind_up") + "</span></div>";
@@ -363,6 +368,8 @@ S.renderCampaign = function(cid) {
             case "rmsc": S.ask(t("confirm_rm_scenario"), t("delete"), function() { S.updateCampaign(c.id, function(x) { x.scenarios.splice(i, 1); }); S.renderCampaign(c.id); }); break;
             case "prepare": S.openCampaignEditor(c.id, i); break;
             case "launch": S.launchCampaignScenario(c.id, i); break;
+            // Reprendre : toujours la partie en jeu, jamais le mode studio ni un éditeur resté ouvert.
+            case "resume": if (S.editing) S.closeEditor(); S.studio = false; S.renderGame(); break;
             case "play": S.openPlay(c.id, i, +b.dataset.p); break;
             case "addhero": S.openHeroPicker(c.id); break;
             case "hero": S.openHeroEditor(c.id, b.dataset.hero); break;
@@ -373,7 +380,7 @@ S.renderCampaign = function(cid) {
 
 S.launchCampaignScenario = function(cid, i) {
     var c = S.campaign(cid), sc = c.scenarios[i];
-    var go = function() { S.clearGame(); S.ctx = {cid: cid, idx: i}; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
+    var go = function() { if (S.editing) S.closeEditor(); S.studio = false; S.clearGame(); S.ctx = {cid: cid, idx: i}; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); };
     if (!sc.setup || !(sc.setup.river || []).length) { S.toast(t("river_help")); return; }
     if (S.state && S.state.river.length) S.ask(t("confirm_new"), t("confirm_new_yes"), go); else go();
 };
@@ -431,11 +438,11 @@ S.duplicateCampaign = function(cid, stay) {
 
 // Modifier la cache : le sélecteur s'ouvre avec les objets de la cache déjà sélectionnés.
 // Retirer une puce ou « Vider » enlève des objets ; l'équipement de départ reste ; la validation confirme les retraits.
-S.openCacheEditor = function(cid) {
+S.openCacheEditor = function(cid, done) {
     var c = S.campaign(cid); if (!c) return;
     var color = {}; (c.heroes || []).forEach(function(hh) { color[hh.id] = hh.color; });
     var init = S.sortItems((c.cache || []).slice()).map(function(it) { return {kind: it.kind, ref: it.ref, name: it.name, uid: it.uid, start: !!it.start, color: it.owner ? color[it.owner] : null}; });
-    S.openItemPicker({title: t("edit_cache"), initial: init, onAdd: function(sel) {
+    S.openItemPicker({title: t("edit_cache"), initial: init, onClose: done || null, onAdd: function(sel) {
         var keep = {}, added = sel.filter(function(x) { if (x.uid) keep[x.uid] = true; return !x.uid; });
         var gone = (S.campaign(cid).cache || []).filter(function(it) { return !keep[it.uid] && !it.start; });
         var apply = function() {
@@ -445,7 +452,7 @@ S.openCacheEditor = function(cid) {
                 if (added.length) S.campLog(x, t("clog_items", added.length));
                 if (gone.length) S.campLog(x, t("clog_items_removed", gone.length));
             });
-            S.renderCampaign(cid);
+            if (done) done(); else S.renderCampaign(cid);
         };
         if (gone.length) S.ask(t("confirm_cache_remove", gone.length), t("validate"), apply); else apply();
     }});
@@ -538,13 +545,13 @@ S.openAssign = function(cid, hid) {
 };
 S.openItemMenu = function(cid, iuid) {
     var c = S.campaign(cid), it = (c.cache || []).filter(function(x) { return x.uid == iuid; })[0]; if (!it) return;
-    var up = it.kind == "up", tk = S.takers(it);
+    // Les améliorations ont un seul porteur, comme les autres cartes (étape 25).
+    var up = false, tk = S.takers(it);
     S.dialog("<h2>" + e(it.name) + "</h2><div class='sk-fl'>" + t(up ? "taken_by" : "owner") + "</div><div class='sk-chips'>"
         + "<button class='sk-chip" + (!tk.length ? " sk-sel" : "") + "' data-own=''>" + t("nobody") + "</button>"
         + c.heroes.map(function(hh) { return "<button class='sk-chip sk-own" + (tk.indexOf(hh.id) >= 0 ? " sk-sel" : "") + "' style='--hc:" + hh.color + "' data-own='" + hh.id + "'" + (up ? " aria-pressed='" + (tk.indexOf(hh.id) >= 0) + "'" : "") + ">" + e(hh.name) + "</button>"; }).join("") + "</div>"
-        + (up ? "<p class='sk-help'>" + t("up_shared_help") + "</p>" : "")
         + "<label class='sk-check'><input type='checkbox' id='sk-st'" + (it.start ? " checked" : "") + "> " + t("start_item") + "</label>"
-        + "<div class='sk-actions'><button class='sk-btn' data-dup>" + t("duplicate") + "</button><button class='sk-btn sk-danger' data-rm" + (it.start ? " disabled title='" + e(t("start_item_locked")) + "'" : "") + ">" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
+        + "<div class='sk-actions'><button class='sk-btn sk-danger' data-rm" + (it.start ? " disabled title='" + e(t("start_item_locked")) + "'" : "") + ">" + t("remove_from_cache") + "</button><button class='sk-btn sk-primary' data-dclose>" + t("close") + "</button></div>",
         function(ev, close) {
             var o = ev.target.closest("[data-own]");
             if (o && up) {

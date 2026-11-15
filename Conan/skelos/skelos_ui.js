@@ -603,24 +603,7 @@ S.renderSettings = function() {
     scr.classList.add("sk-dialogscreen");
     var hb = scr.querySelector(".sk-headblk");
     if (hb) hb.outerHTML = "<div class='sk-dlghead'><button class='sk-dlgback' data-nav='home' title='" + e(t("close")) + "' aria-label='" + e(t("close")) + "'>&#xf060;</button><h1>" + t("settings") + "</h1></div>";
-    var g = scr.querySelector(".sk-g8"), ic = S.itemColors();
-    if (g) {
-        g.insertAdjacentHTML("beforeend", "<div class='sk-blk sk-c3 sk-itemcolors'><h3>" + e(t("item_colors")) + "</h3><p>" + e(t("item_colors_help")) + "</p>"
-            + ["eq", "sp", "up"].map(function(k) {
-                var others = ["eq", "sp", "up"].filter(function(o) { return o != k; }).map(function(o) { return ic[o]; });
-                return "<div class='sk-fl'><span class='sk-chip sk-k-" + k + "'>" + e(t("kind_" + k)) + "</span></div>"
-                    + S.swatchesCode(S.PASTELS.filter(function(x) { return others.indexOf(x) < 0; }), ic[k], "sk-ic-" + k, k);
-            }).join("") + "</div>");
-        g.querySelector(".sk-itemcolors").addEventListener("click", function(ev) {
-            var sw = ev.target.closest("[data-col]"); if (!sw) return;
-            var k = sw.closest("[data-kind]").dataset.kind, pr = S.prefs();
-            pr.itemColors = S.itemColors(); pr.itemColors[k] = sw.dataset.col; S.savePrefs();
-            S.applyItemColors();
-            var n = S.fixAllHeroColors();
-            S.renderSettings();
-            if (n) S.toast(t("hero_colors_changed", n));
-        });
-    }
+    // Les couleurs des types d'objets n'existent plus : les cartes se montrent elles-mêmes (étape 25).
     S.syncDialogMode();
 };
 // La fin de scénario prend aussi l'allure d'un dialogue du Compagnon.
@@ -1855,7 +1838,7 @@ S.applyItemColors = function() {
     var ic = S.itemColors(), st = document.documentElement.style;
     ["eq", "sp", "up"].forEach(function(k) { st.setProperty("--sk-c-" + k, ic[k]); });
 };
-var itemColorList = function() { var ic = S.itemColors(); return [ic.eq, ic.sp, ic.up]; };
+var itemColorList = function() { return []; };
 // Couleurs libres pour un héros : ni celle d'un type d'objet, ni celle d'un autre héros de la campagne.
 S.freeHeroColors = function(c, exceptHid) {
     var used = itemColorList().concat((c.heroes || []).filter(function(h) { return h.id != exceptHid; }).map(function(h) { return h.color; }));
@@ -2259,6 +2242,512 @@ S.killSlot = function(slot) {
         var msg = t("log_drop", S.tileName(slot), eq.map(function(c) { return S.itemName("eq", c.ref); }).join(", "));
         S.log(msg); setTimeout(function() { S.toast(msg); }, 50);
     }
+    return r;
+};
+})();
+
+// ---------- Étape 25 : cartes de la campagne (fiches de héros, pistes de cartes, compagnie et cave) ----------
+(function() {
+var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
+var nid = function() { return "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
+
+// Les améliorations sont des cartes comme les autres : un seul porteur. Un ancien partage (« takers ») devient des exemplaires.
+S.takers = function(it) { return it.owner ? [it.owner] : []; };
+S.setTaker = function(c, it, hid, on) { if (!on) { if (it.owner != hid) return false; it.owner = null; return true; } return S.setItemOwner(c, it, hid); };
+var baseOwner = S.setItemOwner;
+S.setItemOwner = function(c, it, owner) {
+    if (it.kind != "up") return baseOwner.apply(S, arguments);
+    owner = owner || null; if ((it.owner || null) == owner) return false;
+    var nm = function(id) { var h = id ? (c.heroes || []).filter(function(x) { return x.id == id; })[0] : null; return h ? h.name : t("common_cache"); };
+    S.campLog(c, t("clog_move", it.name, nm(it.owner), nm(owner)));
+    if (it.start && !it.startHero && it.owner) it.startHero = it.owner;
+    it.owner = owner; delete it.takers; return true;
+};
+var baseCampaigns = S.campaigns;
+S.campaigns = function() {
+    var l = baseCampaigns.apply(S, arguments), changed = false;
+    l.forEach(function(c) {
+        var add = [];
+        (c.cache || []).forEach(function(it) {
+            if (!it.takers) return;
+            var who = it.takers.slice(); if (it.owner && who.indexOf(it.owner) < 0) who.unshift(it.owner);
+            it.owner = who.shift() || null; delete it.takers; changed = true;
+            who.forEach(function(h) { add.push({uid: nid(), kind: it.kind, ref: it.ref, name: it.name, owner: h, start: false}); });
+        });
+        if (add.length) c.cache = c.cache.concat(add);
+    });
+    if (changed) S.saveCampaigns(l);
+    return l;
+};
+
+S.heroById = function(c, hid) { return (c.heroes || []).filter(function(x) { return x.id == hid; })[0] || null; };
+S.heroRef = function(hh) {
+    if (hh.ref) return hh.ref;
+    var n = S.norm(hh.name || ""), x = S.heroCatalog().filter(function(k) { return S.norm(k.name) == n; })[0];
+    return x ? x.ref : null;
+};
+// Cartes d'un héros (hid) ou de la cave (hid = null), dans l'ordre : équipements, sorts, améliorations.
+S.cardsOf = function(c, hid) { return S.sortItems((c.cache || []).filter(function(it) { return (it.owner || null) == (hid || null); })); };
+// Dessin d'une carte d'objet : la carte du Compagnon (équipement, sort) ou la carte d'amélioration du module.
+S.itemFace = function(it) {
+    var real = it.kind == "up" ? null : S.realCardCode(it.kind, it.ref);
+    if (real) return "<span class='sk-cardscale'>" + real + "</span>";
+    var d = (S.catalog(it.kind).filter(function(x) { return x.ref == it.ref; })[0] || {}).data || {};
+    return "<span class='sk-upcard sk-k-" + it.kind + "'><b>" + e(it.name) + "</b><span>" + e(it.kind == "up" ? (d.effect || "") : t("kind_" + it.kind)) + "</span></span>";
+};
+var lockCode = function(c, it) { return it.start ? "<span class='sk-cstart' title='" + e(S.startLabel(c, it)) + "' aria-label='" + e(S.startLabel(c, it)) + "'>&#xf023;</span>" : ""; };
+// Une carte de piste : touchée, elle s'ouvre en grand (ou se sélectionne dans la vue de la compagnie).
+S.trackCard = function(c, it) {
+    return "<button class='sk-tcard' data-tcard='" + it.uid + "' aria-label='" + e(it.name) + "'>" + S.itemFace(it) + lockCode(c, it) + "</button>";
+};
+// Pastille des cartes d'un héros, comme sur les tuiles : équipements, sorts, améliorations.
+S.heroBadge = function(c, hid) {
+    var l = S.cardsOf(c, hid), n = function(k) { return l.filter(function(x) { return x.kind == k; }).length; }, eq = n("eq"), sp = n("sp"), up = n("up");
+    if (!l.length) return "";
+    var lbl = t("hero_cards_badge", eq, sp, up);
+    return "<span class='sk-cardsbadge sk-herobadge' role='img' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'>"
+        + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (up ? "<i class='sk-cb-up'>&#xf062;</i>" + up : "") + "</span>";
+};
+S.heroFace = function(hh) {
+    var ref = S.heroRef(hh), full = ref ? S.heroSheetFull(ref) : null;
+    if (full) return "<span class='sk-hsheetscale'>" + full + "</span>";
+    var img = S.heroImage(hh);
+    return "<span class='sk-hface-alt'>" + (img ? "<img src='" + e(img) + "' alt=''>" : "<span class='sk-hsheet-ini'>" + e((hh.name || "?").charAt(0)) + "</span>") + "<b>" + e(hh.name) + "</b></span>";
+};
+
+// Compagnie : la fiche complète de chaque héros, sa pastille de cartes ; double appui pour l'ouvrir, crayon pour la modifier.
+S.heroSheetCode = function(c, hh) {
+    return "<div class='sk-hcard" + (hh.dead ? " dead" : "") + "' data-hzoom='" + hh.id + "' style='--hc:" + hh.color + "'>"
+        + "<div class='sk-hcard-f' role='button' tabindex='0' aria-label='" + e(t("open_hero", hh.name)) + "'>" + S.heroFace(hh) + S.heroBadge(c, hh.id) + "</div>"
+        + "<button class='sk-hcard-ed' data-cact='hero' data-hero='" + hh.id + "' title='" + e(t("edit_hero")) + "' aria-label='" + e(t("edit_hero") + " : " + hh.name) + "'>&#xf303;</button>"
+        + (hh.dead ? "<span class='sk-st loss sk-hcard-dead'>" + e(t("fell_at", hh.deadAt || "?")) + "</span>" : "") + "</div>";
+};
+S.companyCode = function(c) {
+    var h = "<div class='sk-company sk-company25'>" + (c.heroes || []).map(function(hh) { return S.heroSheetCode(c, hh); }).join("");
+    for (var i = S.companyFree(c); i > 0; i--) h += "<button class='sk-hsheet sk-hsheet-empty' data-cact='addhero'><span aria-hidden='true'>+</span><small>" + e(t("add_hero")) + "</small></button>";
+    return h + "</div>";
+};
+
+// ---------- Zoom d'un héros : la fiche en grand, ses cartes en piste dessous, un + pour en prendre dans la cave ----------
+S.heroZoom = function(cid, hid, dir) {
+    var c = S.campaign(cid), hh = c && S.heroById(c, hid); if (!hh) return;
+    var ring = (c.heroes || []).map(function(x) { return x.id; }), idx = ring.indexOf(hid);
+    var cards = S.cardsOf(c, hid);
+    var ov = S.root.querySelector("#sk-overlay");
+    S._hz = {cid: cid, hid: hid};
+    ov.innerHTML = "<div class='sk-hzoom" + (dir ? " sk-zin-" + dir : "") + "' role='dialog' tabindex='-1' aria-label='" + e(hh.name) + "'>"
+        + (ring.length > 1 ? "<div class='sk-zoomhead'><span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span></div>" : "")
+        + "<div class='sk-hzoom-f'>" + S.heroFace(hh) + "</div>"
+        + "<div class='sk-ctrack' data-dest='" + hid + "'>" + cards.map(function(it) { return S.trackCard(c, it); }).join("")
+        + "<button class='sk-tcard sk-tadd' data-hadd='" + hid + "' aria-label='" + e(t("take_from_cave")) + "'><span>+</span>" + e(t("take_from_cave")) + "</button></div></div>";
+    ov.classList.add("on", "sk-zoomon");
+    var box = ov.querySelector(".sk-hzoom"); box.focus({preventScroll: true});
+    var sx = 0, sy = 0, down = false, tr = ov.querySelector(".sk-ctrack");
+    ov.onkeydown = function(ev) {
+        if (ev.key == "Escape") { S.hzShut(); return; }
+        if (ev.key == "ArrowUp" || ev.key == "ArrowDown") { ev.preventDefault(); S.heroZoomGo(ev.key == "ArrowDown" ? 1 : -1); }
+    };
+    // Glisser vers le haut ou le bas (hors de la piste) : héros suivant ou précédent.
+    ov.onpointerdown = function(ev) { down = !ev.target.closest(".sk-ctrack"); sx = ev.clientX; sy = ev.clientY; };
+    ov.onpointerup = function(ev) {
+        if (!down) return; down = false;
+        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (Math.abs(dy) < 40 || Math.abs(dy) < Math.abs(dx)) return;
+        S._zswipeAt = Date.now(); S.heroZoomGo(dy < 0 ? 1 : -1);
+    };
+    ov.onclick = function(ev) {
+        if (S._zswipeAt && Date.now() - S._zswipeAt < 450) { S._zswipeAt = 0; return; }
+        var a = ev.target.closest("[data-hadd]"); if (a) { S.pickFromCave(cid, hid); return; }
+        var k = ev.target.closest("[data-tcard]"); if (k) { S.cardZoom(cid, k.dataset.tcard, function() { S.heroZoom(cid, hid); }); return; }
+        if (ev.target.closest(".sk-ctrack, .sk-hzoom-f, .sk-zoomhead")) return;
+        S.hzShut();
+    };
+    if (tr && S._hzScroll && S._hzScroll.hid == hid) tr.scrollLeft = S._hzScroll.x;
+    if (tr) tr.addEventListener("scroll", function() { S._hzScroll = {hid: hid, x: tr.scrollLeft}; });
+};
+S.heroZoomGo = function(d) {
+    var z = S._hz; if (!z) return; var c = S.campaign(z.cid), ring = (c.heroes || []).map(function(x) { return x.id; });
+    if (ring.length < 2) return; var i = (ring.indexOf(z.hid) + d + ring.length) % ring.length;
+    S.heroZoom(z.cid, ring[i], d > 0 ? "down" : "up");
+};
+S.hzShut = function() {
+    var ov = S.root.querySelector("#sk-overlay"); S._hz = null;
+    ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = ov.onkeydown = ov.onpointerdown = ov.onpointerup = null;
+    S.rerender();
+};
+// Le + d'un héros : les cartes libres de la cache. On en touche une ou plusieurs, puis Donner.
+S.pickFromCave = function(cid, hid, picked) {
+    var c = S.campaign(cid), hh = S.heroById(c, hid), free = S.cardsOf(c, null);
+    var sel = (picked || []).filter(function(u) { return free.some(function(x) { return x.uid == u; }); });
+    var ov = S.root.querySelector("#sk-overlay"), keep = ov.querySelector(".sk-cavepick .sk-ctrack"), sx = keep ? keep.scrollTop : 0;
+    ov.innerHTML = "<div class='sk-dialog sk-cavepick' role='dialog' aria-modal='true'><h2>" + e(t("assign_to", hh.name)) + "</h2>"
+        + (free.length ? "<p class='sk-help'>" + e(t("cave_pick_help")) + "</p><div class='sk-ctrack sk-ctrack-wrap'>" + free.map(function(it) { return S.trackCard(c, it); }).join("") + "</div>"
+            : "<p>" + e(t("cache_empty")) + "</p>")
+        + "<div class='sk-actions'><button class='sk-btn' data-new>" + e(t("new_items")) + "</button><button class='sk-btn' data-back>" + e(t("close")) + "</button>"
+        + (free.length ? "<button class='sk-btn sk-primary' data-give" + (sel.length ? "" : " disabled") + ">" + e(t("give_n", sel.length)) + "</button>" : "") + "</div></div>";
+    ov.classList.remove("sk-zoomon"); ov.classList.add("on");
+    sel.forEach(function(u) { var n = ov.querySelector("[data-tcard='" + u + "']"); if (n) n.classList.add("sk-tsel"); });
+    var tr = ov.querySelector(".sk-cavepick .sk-ctrack"); if (tr) tr.scrollTop = sx;
+    ov.onpointerdown = ov.onpointerup = null;
+    ov.onclick = function(ev) {
+        var k = ev.target.closest("[data-tcard]");
+        if (k) { var u = k.dataset.tcard, i = sel.indexOf(u); if (i < 0) sel.push(u); else sel.splice(i, 1); S.pickFromCave(cid, hid, sel); return; }
+        if (ev.target.closest("[data-give]")) {
+            if (!sel.length) return;
+            S.updateCampaign(cid, function(x) { x.cache.forEach(function(it) { if (sel.indexOf(it.uid) >= 0) S.setItemOwner(x, it, hid); }); });
+            S.heroZoom(cid, hid); return;
+        }
+        if (ev.target.closest("[data-new]")) { S.openItemPicker({title: t("assign_to", hh.name), onAdd: function(l) { S.addItems(cid, l, hid); S.heroZoom(cid, hid); }, onClose: function() { S.heroZoom(cid, hid); }}); return; }
+        if (ev.target === ov || ev.target.closest("[data-back]")) S.heroZoom(cid, hid);
+    };
+};
+
+// ---------- Une carte en grand : corbeille (d'un héros → la cache ; de la cache → supprimée) et cadenas d'équipement de départ ----------
+// Glisser à gauche ou à droite (ou les flèches du clavier) : les autres cartes du même endroit, celles du héros ou celles de la cache.
+S.cardZoom = function(cid, iuid, back, dir) {
+    var c = S.campaign(cid), it = (c.cache || []).filter(function(x) { return x.uid == iuid; })[0]; if (!it) { back(); return; }
+    var hh = it.owner ? S.heroById(c, it.owner) : null, ov = S.root.querySelector("#sk-overlay");
+    var list = S.cardsOf(c, it.owner || null), idx = list.map(function(x) { return x.uid; }).indexOf(iuid);
+    var shadeOf = function(x) { return x.kind == "sp" ? "sk-sh-sp" : x.kind == "eq" ? "sk-sh-eq" : "sk-sh-t"; };
+    var shade = (idx > 0 ? "<i class='sk-shade sk-sh-l " + shadeOf(list[idx - 1]) + "' aria-hidden='true'></i>" : "")
+        + (idx < list.length - 1 ? "<i class='sk-shade sk-sh-r " + shadeOf(list[idx + 1]) + "' aria-hidden='true'></i>" : "");
+    var dots = list.length > 1 ? "<div class='sk-zoomdots' aria-hidden='true'>" + list.map(function(x, i) { return "<i class='" + (x.kind == "sp" ? "sk-ds" : x.kind == "eq" ? "sk-de" : "") + (i == idx ? " on" : "") + "'></i>"; }).join("") + "</div>" : "";
+    var binLbl = hh ? t("card_to_cave") : it.start ? t("start_item_locked") : t("remove_from_cache");
+    ov.innerHTML = "<div class='sk-czoom' role='dialog' tabindex='-1' aria-label='" + e(it.name) + "'>"
+        + "<div class='sk-zoomhead'><span>" + e(hh ? hh.name : t("common_cache")) + (list.length > 1 ? " · " + (idx + 1) + " / " + list.length : "") + "</span></div>"
+        + "<div class='sk-czoom-p" + (dir ? " sk-zin-" + dir : "") + "'><div class='sk-zoomcard sk-czoom-c'>" + shade + S.itemFace(it)
+        + "<button class='sk-zoomrm' data-cbin" + (!hh && it.start ? " disabled" : "") + " title='" + e(binLbl) + "' aria-label='" + e(binLbl) + "'>" + "&#xf2ed;" + "</button>"
+        + "<button class='sk-cstartbtn" + (it.start ? " on" : "") + "' data-cstart aria-pressed='" + !!it.start + "' title='" + e(t("start_item")) + "' aria-label='" + e(t("start_item")) + "'>&#xf023;</button></div></div>"
+        + dots + "<p class='sk-zoomnote'>" + e(it.start ? S.startLabel(c, it) + " — " + t("start_item_note") : t("start_item_hint")) + "</p></div>";
+    ov.classList.add("on", "sk-zoomon");
+    ov.querySelector(".sk-czoom").focus({preventScroll: true});
+    var go = function(d) { var j = idx + d; if (j < 0 || j >= list.length) return; S.cardZoom(cid, list[j].uid, back, d > 0 ? "right" : "left"); };
+    var sx = 0, sy = 0, down = false;
+    ov.onpointerdown = function(ev) { down = !ev.target.closest("button"); sx = ev.clientX; sy = ev.clientY; };
+    ov.onpointerup = function(ev) {
+        if (!down) return; down = false;
+        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+        S._zswipeAt = Date.now(); go(dx < 0 ? 1 : -1);
+    };
+    ov.onkeydown = function(ev) {
+        if (ev.key == "Escape") back();
+        else if (ev.key == "ArrowLeft" || ev.key == "ArrowRight") { ev.preventDefault(); go(ev.key == "ArrowRight" ? 1 : -1); }
+    };
+    ov.onclick = function(ev) {
+        if (S._zswipeAt && Date.now() - S._zswipeAt < 450) { S._zswipeAt = 0; return; }
+        if (ev.target.closest("[data-cstart]")) {
+            S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) { y.start = !y.start; y.startHero = y.start ? (y.startHero || y.owner || null) : null; } }); });
+            S.cardZoom(cid, iuid, back); return;
+        }
+        var b = ev.target.closest("[data-cbin]");
+        if (b) {
+            if (b.disabled) { S.toast(t("start_item_locked")); return; }
+            if (hh) S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == iuid) S.setItemOwner(x, y, null); }); });
+            else S.updateCampaign(cid, function(x) { x.cache = x.cache.filter(function(y) { return y.uid != iuid || y.start; }); S.campLog(x, t("clog_items_removed", 1)); });
+            // La carte suivante du même endroit s'affiche, s'il en reste.
+            var nx = list[idx + 1] || list[idx - 1];
+            if (nx) S.cardZoom(cid, nx.uid, back); else back();
+            return;
+        }
+        if (ev.target.closest(".sk-czoom-c, .sk-zoomhead, .sk-zoomdots")) return;
+        back();
+    };
+};
+
+// Supprimer des cartes de la campagne (corbeille de la vue Compagnie et cache). L'équipement de départ est gardé.
+S.removeCards = function(cid, uids) {
+    var n = 0, kept = 0;
+    S.updateCampaign(cid, function(x) {
+        x.cache = x.cache.filter(function(y) { if (uids.indexOf(y.uid) < 0) return true; if (y.start) { kept++; return true; } n++; return false; });
+        if (n) S.campLog(x, t("clog_items_removed", n));
+    });
+    if (n) S.toast(t("cards_removed", n));
+    if (kept) S.toast(t("start_item_locked"));
+};
+
+// Dans la vue Compagnie et cache, un héros se reconnaît à son portrait et à son nom : toute la place va aux cartes.
+S.heroMini = function(hh) {
+    var img = S.heroImage(hh);
+    return "<span class='sk-hmini'>" + (img ? "<img src='" + e(img) + "' alt=''>" : "<span class='sk-hsheet-ini'>" + e((hh.name || "?").charAt(0)) + "</span>") + "<b>" + e(hh.name) + "</b></span>";
+};
+// ---------- Compagnie et cache : les héros avec leur piste de cartes, la cache en grande piste en bas ----------
+// Toucher des cartes les choisit (plusieurs à la fois) ; toucher ensuite un héros ou la cache les y envoie, la corbeille les supprime.
+// Appui long puis glisser : la carte (ou toutes les cartes choisies, si elle en fait partie) part vers un héros, la cache ou la corbeille.
+// Double appui sur une carte : elle s'ouvre en grand.
+S.openCompanyView = function(cid) {
+    var c = S.campaign(cid); if (!c) return;
+    var ov = S.root.querySelector("#sk-overlay"), all = (c.cache || []).map(function(x) { return x.uid; });
+    var sel = S._cvSel && S._cvSel.cid == cid ? S._cvSel.uids.filter(function(u) { return all.indexOf(u) >= 0; }) : [];
+    S._cvSel = {cid: cid, uids: sel};
+    var row = function(hh) {
+        var cards = S.cardsOf(c, hh.id);
+        return "<div class='sk-cvhero" + (hh.dead ? " dead" : "") + "' data-dest='" + hh.id + "' style='--hc:" + hh.color + "'>"
+            + "<div class='sk-cvsheet sk-cvmini' data-cvhero='" + hh.id + "'>" + S.heroMini(hh) + "</div>"
+            + "<div class='sk-ctrack'>" + (cards.length ? cards.map(function(it) { return S.trackCard(c, it); }).join("") : "<span class='sk-ctrack-empty'>" + e(t("no_card")) + "</span>") + "</div></div>";
+    };
+    var cave = S.cardsOf(c, null);
+    ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-cview' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("company_view")) + "</h2>"
+        // En-tête : la corbeille (cible du glisser, ou bouton quand des cartes sont choisies) et Désélectionner, à côté de Fermer.
+        + "<div class='sk-actions sk-pickactions'><div class='sk-cvbar" + (sel.length ? " on" : "") + "'><button class='sk-trash sk-cvtrash' data-dest='!bin' aria-label='" + e(t("cv_drop_remove")) + "' title='" + e(t("cv_drop_remove")) + "'><i>&#xf2ed;</i><span>" + e(t("cv_drop_remove")) + "</span></button>"
+        + "<button class='sk-btn sk-cvunsel' data-cvunsel>" + e(t("cv_unselect")) + "</button></div>"
+        + "<button class='sk-btn sk-primary' data-cvclose>" + e(t("close")) + "</button></div></div>"
+        + "<p class='sk-cvhint" + (sel.length ? " on" : "") + "' role='status'>" + e(sel.length ? t("cv_hint_sel", sel.length) : t("cv_hint")) + "</p>"
+        + "<div class='sk-cvheroes'>" + (c.heroes || []).filter(function(hh) { return !hh.dead; }).map(row).join("") + "</div>"
+        + "<div class='sk-cvcave' data-dest=''><h3>" + e(t("common_cache")) + "</h3><div class='sk-ctrack sk-ctrack-big'>" + cave.map(function(it) { return S.trackCard(c, it); }).join("")
+        + "<button class='sk-tcard sk-tadd' data-cvadd aria-label='" + e(t("add_to_cave")) + "'><span>+</span>" + e(t("add_to_cave")) + "</button></div></div></div>";
+    ov.classList.remove("sk-zoomon"); ov.classList.add("on");
+    sel.forEach(function(u) { var n = ov.querySelector("[data-tcard='" + u + "']"); if (n) n.classList.add("sk-tsel"); });
+    var keep = S._cvScroll || {};
+    ov.querySelectorAll(".sk-ctrack").forEach(function(tr, i) { if (keep[i]) tr.scrollLeft = keep[i]; tr.addEventListener("scroll", function() { (S._cvScroll = S._cvScroll || {})[i] = tr.scrollLeft; }); });
+    var dlg = ov.querySelector(".sk-cview"); if (keep.top) dlg.scrollTop = keep.top; dlg.addEventListener("scroll", function() { (S._cvScroll = S._cvScroll || {}).top = dlg.scrollTop; });
+    var redraw = function() { S.openCompanyView(cid); };
+    // Choisir ou laisser une carte : seuls la carte, la consigne et la barre du bas changent (pas de nouvel affichage, le double appui reste rapide).
+    var sync = function() {
+        S._cvSel = {cid: cid, uids: sel};
+        ov.querySelectorAll(".sk-cview [data-tcard]").forEach(function(n) { n.classList.toggle("sk-tsel", sel.indexOf(n.dataset.tcard) >= 0); });
+        var h = ov.querySelector(".sk-cvhint"); h.classList.toggle("on", !!sel.length); h.textContent = sel.length ? t("cv_hint_sel", sel.length) : t("cv_hint");
+        ov.querySelector(".sk-cvbar").classList.toggle("on", !!sel.length);
+    };
+    var move = function(uids, dest) {
+        S._cvSel = null;
+        if (dest == "!bin") { S.removeCards(cid, uids); redraw(); return; }
+        var moved = [];
+        S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (uids.indexOf(y.uid) >= 0 && S.setItemOwner(x, y, dest || null)) moved.push(y.uid); }); });
+        redraw();
+        moved.forEach(function(u) { var n = S.root.querySelector("#sk-overlay [data-tcard='" + u + "']"); if (n) n.classList.add("sk-tmoved"); });
+    };
+    ov.onpointerdown = ov.onpointerup = null; ov.onkeydown = function(ev) { if (ev.key == "Escape") S.closeCompanyView(); };
+    ov.onclick = function(ev) {
+        if (S._cvDragAt && Date.now() - S._cvDragAt < 400) return;
+        if (ev.target === ov || ev.target.closest("[data-cvclose]")) { S.closeCompanyView(); return; }
+        if (ev.target.closest("[data-cvunsel]")) { sel = []; sync(); return; }
+        if (ev.target.closest("[data-cvadd]")) {
+            S.openCacheEditor(cid, redraw); return;
+        }
+        var k = ev.target.closest("[data-tcard]");
+        if (k) {
+            var u = k.dataset.tcard, now = Date.now(), tp = S._cvTap;
+            // Double appui : la sélection revient à ce qu'elle était avant le premier appui, et la carte s'ouvre en grand.
+            if (tp && tp.uid == u && now - tp.at < 400) { S._cvTap = null; sel = tp.prev; sync(); S.cardZoom(cid, u, redraw); return; }
+            S._cvTap = {uid: u, at: now, prev: sel.slice()};
+            var i = sel.indexOf(u); if (i < 0) sel.push(u); else sel.splice(i, 1);
+            sync(); return;
+        }
+        var d = ev.target.closest("[data-dest]");
+        if (d && sel.length) { move(sel.slice(), d.dataset.dest); return; }
+    };
+    S.bindCardDrag(ov, move);
+};
+S.closeCompanyView = function() {
+    var ov = S.root.querySelector("#sk-overlay"); S._cvSel = null; S._cvScroll = null; S._cvTap = null;
+    ov.classList.remove("on", "sk-cvdrag"); ov.innerHTML = ""; ov.onclick = ov.onkeydown = null; S.rerender();
+};
+// Appui long sur une carte, puis glisser jusqu'à un héros, la cache ou la corbeille. Une carte choisie emmène toutes les cartes choisies.
+// Les écouteurs ne sont posés qu'une fois sur le calque, qui est réutilisé à chaque nouvel affichage de la vue.
+S.bindCardDrag = function(ov, move) {
+    S._cvMove = move;
+    if (ov._cvDragBound) return; ov._cvDragBound = true;
+    var timer = null, drag = null, sx = 0, sy = 0;
+    var target = function(x, y) { var el = document.elementFromPoint(x, y); return el ? el.closest("#sk-overlay [data-dest]") : null; };
+    var end = function() {
+        clearTimeout(timer); timer = null;
+        if (!drag) return;
+        drag.ghost.remove(); ov.classList.remove("sk-cvdrag");
+        ov.querySelectorAll(".sk-tdrag").forEach(function(n) { n.classList.remove("sk-tdrag"); });
+        ov.querySelectorAll(".sk-dover").forEach(function(n) { n.classList.remove("sk-dover"); });
+        var d = drag.over, uids = drag.uids; drag = null; S._cvDragAt = Date.now();
+        if (d && S._cvMove) S._cvMove(uids, d.dataset.dest);
+    };
+    ov.addEventListener("pointerdown", function(ev) {
+        var k = ev.target.closest("[data-tcard]"); if (!k || !ov.querySelector(".sk-cview")) return;
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
+        timer = setTimeout(function() {
+            timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true), sel = (S._cvSel && S._cvSel.uids) || [];
+            var uids = sel.indexOf(k.dataset.tcard) >= 0 ? sel.slice() : [k.dataset.tcard];
+            g.className = "sk-tcard sk-tghost"; g.style.width = r.width + "px"; g.style.left = (sx - r.width / 2) + "px"; g.style.top = (sy - r.height / 2) + "px";
+            if (uids.length > 1) g.insertAdjacentHTML("beforeend", "<b class='sk-tghostn'>" + uids.length + "</b>");
+            document.body.appendChild(g); ov.classList.add("sk-cvdrag");
+            uids.forEach(function(u) { var n = ov.querySelector("[data-tcard='" + u + "']"); if (n) n.classList.add("sk-tdrag"); });
+            drag = {uids: uids, ghost: g, w: r.width, h: r.height, over: null};
+            S._cvTap = null;
+            if (navigator.vibrate) navigator.vibrate(20);
+        }, 400);
+    });
+    ov.addEventListener("pointermove", function(ev) {
+        if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; }
+        if (!drag) return;
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.w / 2) + "px"; drag.ghost.style.top = (ev.clientY - drag.h / 2) + "px";
+        // Près du haut ou du bas de l'écran, la vue défile pour atteindre un héros caché (sauf sur la corbeille).
+        var d = target(ev.clientX, ev.clientY), bin = d && d.dataset.dest == "!bin";
+        var dlg = ov.querySelector(".sk-cview"); if (dlg && !bin) { if (ev.clientY < 90) dlg.scrollTop -= 14; else if (ev.clientY > innerHeight - 90) dlg.scrollTop += 14; }
+        if (d != drag.over) { if (drag.over) drag.over.classList.remove("sk-dover", "hot"); drag.over = d; if (d) d.classList.add(bin ? "hot" : "sk-dover"); }
+    }, {passive: false});
+    ov.addEventListener("pointerup", end); ov.addEventListener("pointercancel", end);
+    ov.addEventListener("touchmove", function(ev) { if (drag) ev.preventDefault(); }, {passive: false});
+    ov.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-tcard]")) ev.preventDefault(); });
+};
+
+// ---------- Écran de campagne : double appui sur une fiche, cave en piste de cartes, bouton Compagnie et cave ----------
+S.caveBlockCode = function(c) {
+    var cave = S.cardsOf(c, null);
+    return "<div class='sk-blk sk-c8 sk-caveblk'><h3>" + e(t("common_cache")) + "</h3>"
+        + "<div class='sk-ctrack sk-ctrack-big' data-cavetrack>" + cave.map(function(it) { return S.trackCard(c, it); }).join("")
+        + "<button class='sk-tcard sk-tadd' data-cact='addcave' aria-label='" + e(t("add_to_cave")) + "'><span>+</span>" + e(t("add_to_cave")) + "</button></div>"
+        + "<button class='sk-btn sk-primary sk-addrow' data-cact='companyview'>&#xf00a; " + e(t("company_view")) + "</button></div>";
+};
+var baseRenderCampaign = S.renderCampaign;
+S.renderCampaign = function(cid) {
+    var r = baseRenderCampaign.apply(S, arguments);
+    var c = S.campaign(cid); if (!c || S.screen != "campaign") return r;
+    var old = S.root.querySelector(".sk-campaign [data-drop='cache']");
+    if (old) old.outerHTML = S.caveBlockCode(c);
+    var base = S.screenClick;
+    S.screenClick = function(ev) {
+        var b = ev.target.closest("[data-cact='companyview'], [data-cact='addcave'], .sk-caveblk [data-tcard]");
+        if (b) {
+            if (b.dataset.cact == "companyview") S.openCompanyView(c.id);
+            else if (b.dataset.cact == "addcave") S.openCacheEditor(c.id);
+            else S.cardZoom(c.id, b.dataset.tcard, function() { var ov = S.root.querySelector("#sk-overlay"); ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = ov.onkeydown = null; S.rerender(); });
+            return;
+        }
+        return base && base.apply(this, arguments);
+    };
+    return r;
+};
+// Double appui (ou double clic) sur une fiche de héros : son zoom. Écran de campagne et préparation d'un scénario.
+S.bindHeroZoom = function(root) {
+    var last = {id: null, at: 0};
+    root.addEventListener("click", function(ev) {
+        var f = ev.target.closest(".sk-hcard-f"); if (!f || ev.target.closest("[data-cact]")) return;
+        var hid = f.closest("[data-hzoom]").dataset.hzoom, now = Date.now(), cid = S.curCampaign || (S.ctx && S.ctx.cid);
+        if (last.id == hid && now - last.at < 400) { last.id = null; if (cid) S.heroZoom(cid, hid); return; }
+        last = {id: hid, at: now};
+    });
+    root.addEventListener("keydown", function(ev) {
+        if (ev.key != "Enter") return; var f = ev.target.closest && ev.target.closest(".sk-hcard-f"); if (!f) return;
+        var cid = S.curCampaign || (S.ctx && S.ctx.cid); if (cid) S.heroZoom(cid, f.closest("[data-hzoom]").dataset.hzoom);
+    });
+};
+var baseInit25 = S.init;
+S.init = function(root) { var r = baseInit25.apply(S, arguments); S.bindHeroZoom(root); return r; };
+
+// Préparation d'un scénario de campagne : les mêmes fiches que la compagnie.
+S.heroesSectionCode = function(cid) {
+    var c = S.campaign(cid); if (!c) return "";
+    return "<h2>" + t("heroes_equipment") + "</h2><p class='sk-help'>" + t("heroes_equipment_help") + "</p>"
+        + ((c.heroes || []).length ? S.companyCode(c).replace(/<button class='sk-hsheet sk-hsheet-empty'[^]*?<\/button>/g, "") : "<p class='sk-help'>" + t("no_hero") + "</p>");
+};
+})();
+
+// ---------- Défilement par glissé, partout : pas de barre de défilement ----------
+(function() {
+var S = Skelos;
+// Au doigt, les pistes de cartes défilent déjà en glissant. À la souris, on attrape la piste et on la fait glisser ;
+// la molette verticale la fait aussi défiler. Un glissé ne compte pas comme un appui sur la carte où il a commencé.
+S.bindDragScroll = function(root) {
+    if (!root || root._skDragScroll) return; root._skDragScroll = true;
+    var st = null;
+    root.addEventListener("pointerdown", function(ev) {
+        if (ev.pointerType != "mouse" || ev.button != 0) return;
+        var tr = ev.target.closest(".sk-ctrack"); if (!tr || tr.scrollWidth <= tr.clientWidth + 2) return;
+        st = {tr: tr, x: ev.clientX, l: tr.scrollLeft, moved: false};
+    });
+    window.addEventListener("pointermove", function(ev) {
+        if (!st) return;
+        // Une carte attrapée par appui long (vue Compagnie et cache) : c'est elle qui bouge, pas la piste.
+        if (root.querySelector("#sk-overlay.sk-cvdrag")) { st.tr.classList.remove("sk-grabbing"); st = null; return; }
+        var dx = ev.clientX - st.x;
+        if (!st.moved && Math.abs(dx) < 6) return;
+        st.moved = true; st.tr.classList.add("sk-grabbing"); st.tr.scrollLeft = st.l - dx;
+    });
+    window.addEventListener("pointerup", function() {
+        if (!st) return;
+        if (st.moved) S._dragScrollAt = Date.now();
+        st.tr.classList.remove("sk-grabbing"); st = null;
+    });
+    root.addEventListener("click", function(ev) {
+        if (S._dragScrollAt && Date.now() - S._dragScrollAt < 300) { S._dragScrollAt = 0; ev.stopPropagation(); ev.preventDefault(); }
+    }, true);
+    root.addEventListener("wheel", function(ev) {
+        var tr = ev.target.closest(".sk-ctrack"); if (!tr || tr.scrollWidth <= tr.clientWidth + 2 || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return;
+        var max = tr.scrollWidth - tr.clientWidth;
+        if ((ev.deltaY < 0 && tr.scrollLeft <= 0) || (ev.deltaY > 0 && tr.scrollLeft >= max - 1)) return;  // au bout : la page reprend la molette
+        ev.preventDefault(); tr.scrollLeft += ev.deltaY;
+    }, {passive: false});
+};
+var baseInitDS = S.init;
+S.init = function(root) { var r = baseInitDS.apply(S, arguments); S.bindDragScroll(root || S.root); return r; };
+})();
+
+// ---------- Page d'une campagne : glisser une carte de la cache sur la fiche d'un héros (ou dans la corbeille) ----------
+// Appui long sur une carte de la cache, puis glisser : sur une fiche, le héros la prend ; sur la corbeille qui apparaît en bas, elle est supprimée
+// (sauf l'équipement de départ). Un simple appui l'ouvre toujours en grand.
+(function() {
+var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
+S.bindPageCardDrag = function(cid) {
+    var blk = S.root.querySelector(".sk-caveblk"); if (!blk) return;
+    var timer = null, drag = null, sx = 0, sy = 0;
+    var scroller = function() { var n = blk.parentElement; while (n && n !== document.body) { var cs = getComputedStyle(n); if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight) return n; n = n.parentElement; } return document.scrollingElement; };
+    var target = function(x, y) {
+        var el = document.elementFromPoint(x, y); if (!el) return null;
+        if (el.closest(".sk-pgtrash")) return {bin: true, el: el.closest(".sk-pgtrash")};
+        var h = el.closest(".sk-hcard[data-hzoom]"); return h && !h.classList.contains("dead") ? {hid: h.dataset.hzoom, el: h} : null;
+    };
+    var finish = function() {
+        clearTimeout(timer); timer = null;
+        if (!drag) return;
+        var d = drag; drag = null; S._pgDragAt = Date.now();
+        d.ghost.remove(); d.bin.remove(); d.src.classList.remove("sk-tdrag");
+        S.root.querySelectorAll(".sk-dover").forEach(function(n) { n.classList.remove("sk-dover"); });
+        var tg = d.over; if (!tg) return;
+        if (tg.bin) S.removeCards(cid, [d.uid]);
+        else S.updateCampaign(cid, function(x) { x.cache.forEach(function(y) { if (y.uid == d.uid) S.setItemOwner(x, y, tg.hid); }); });
+        S.rerender();
+    };
+    blk.addEventListener("pointerdown", function(ev) {
+        var k = ev.target.closest(".sk-ctrack [data-tcard]"); if (!k || (ev.pointerType == "mouse" && ev.button != 0)) return;
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
+        timer = setTimeout(function() {
+            timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true);
+            g.className = "sk-tcard sk-tghost"; g.style.width = r.width + "px"; g.style.left = (sx - r.width / 2) + "px"; g.style.top = (sy - r.height / 2) + "px";
+            document.body.appendChild(g); k.classList.add("sk-tdrag");
+            var bin = document.createElement("div"); bin.className = "sk-trash sk-pgtrash"; bin.setAttribute("aria-hidden", "true");
+            bin.innerHTML = "<i>&#xf2ed;</i><span>" + e(t("cv_drop_remove")) + "</span>"; document.body.appendChild(bin);
+            drag = {uid: k.dataset.tcard, src: k, ghost: g, bin: bin, w: r.width, h: r.height, over: null, sc: scroller()};
+            if (navigator.vibrate) navigator.vibrate(20);
+        }, 400);
+    });
+    S._pgMove = function(ev) {
+        if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; }
+        if (!drag) return;
+        ev.preventDefault();
+        drag.ghost.style.left = (ev.clientX - drag.w / 2) + "px"; drag.ghost.style.top = (ev.clientY - drag.h / 2) + "px";
+        var tg = target(ev.clientX, ev.clientY);
+        // Près du haut de l'écran, la page remonte vers les héros ; près du bas, elle descend.
+        if (drag.sc && !(tg && tg.bin)) { if (ev.clientY < 110) drag.sc.scrollTop -= 14; else if (ev.clientY > innerHeight - 110) drag.sc.scrollTop += 14; }
+        if ((tg && tg.el) != (drag.over && drag.over.el)) {
+            if (drag.over) drag.over.el.classList.remove("sk-dover", "hot");
+            drag.over = tg; if (tg) tg.el.classList.add(tg.bin ? "hot" : "sk-dover");
+        }
+    };
+    S._pgEnd = finish;
+    // Les écouteurs de la fenêtre ne sont posés qu'une fois ; ils suivent la page affichée.
+    if (!S._pgWin) {
+        S._pgWin = true;
+        window.addEventListener("pointermove", function(ev) { if (S._pgMove) S._pgMove(ev); }, {passive: false});
+        window.addEventListener("pointerup", function() { if (S._pgEnd) S._pgEnd(); });
+        window.addEventListener("pointercancel", function() { if (S._pgEnd) S._pgEnd(); });
+    }
+    blk.addEventListener("touchmove", function(ev) { if (drag) ev.preventDefault(); }, {passive: false});
+    blk.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-tcard]")) ev.preventDefault(); });
+    blk.addEventListener("click", function(ev) { if (S._pgDragAt && Date.now() - S._pgDragAt < 400) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+};
+var baseRC = S.renderCampaign;
+S.renderCampaign = function(cid) {
+    var r = baseRC.apply(S, arguments);
+    if (S.screen == "campaign") S.bindPageCardDrag(cid);
     return r;
 };
 })();
