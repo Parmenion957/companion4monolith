@@ -1148,21 +1148,31 @@ S.openTileMenu = function(uid) {
 // ---------- Zoom d'une tuile ----------
 // Sur téléphone, la Rivière garde ses quatre tuiles de front ; un double appui (ou « Agrandir » dans le menu de l'appui long)
 // montre la tuile en grand. Dans la tuile agrandie, un simple appui sur une compétence en donne la description.
-// En mode studio, la tuile agrandie porte aussi les − et + des points de vie, à taille du doigt.
+// La tuile agrandie porte aussi les − et + des points de vie, à taille du doigt (en partie comme en studio).
 S.zoomTile = function(uid) {
     var s = S.slotByUid(uid); if (!s) return;
     S.hideTip(); S.closeHp && S.closeHp();
+    // Points de vie à taille du doigt : en studio, les PV de départ ; en partie, les PV restants (0 = unités mortes, comme sur le plateau).
+    var hpCode = "";
+    if (!S.isEvent(s)) {
+        if (S.studio) { if (!s.dead) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
+        else if (s.lpMax) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
+    }
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-zoom' role='dialog' aria-label='" + e(S.tileName(s)) + "'>"
         + "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-        + (S.studio && !S.isEvent(s) && !s.dead ? S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp") : "") + "</div>"
+        + "</div>" + (hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "")
         + "<button class='sk-btn sk-zoomclose' data-zclose>" + e(t("close")) + "</button></div>";
     ov.classList.add("on", "sk-zoomon");
     var shut = function() { S.hideTip(); ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; };
     ov.onkeydown = function(ev) { if (ev.key == "Escape") shut(); };
     ov.onclick = function(ev) {
-        var lp = ev.target.closest("[data-zlp]");
-        if (lp) { ev.stopPropagation(); S.studioLife(uid, +lp.dataset.n); S.zoomTile(uid); return; }
+        var lp = ev.target.closest("[data-zlp], [data-zhp]");
+        if (lp) {
+            ev.stopPropagation();
+            if (lp.hasAttribute("data-zlp")) S.studioLife(uid, +lp.dataset.n); else S.life(uid, +lp.dataset.n);
+            S.zoomTile(uid); return;
+        }
         if (ev.target.closest(".sk-studiohp")) return;
         var sk = ev.target.closest("[data-skill]");
         if (sk) { ev.stopPropagation(); S.showTip(sk); return; }

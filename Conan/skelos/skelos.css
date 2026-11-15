@@ -1362,9 +1362,12 @@ html.skelos-full .sk-overlay .sk-pickdlg { overscroll-behavior: none; }
 /* Tuile agrandie : centrée, aussi grande que l'écran le permet. */
 .sk-overlay.sk-zoomon { display: flex !important; align-items: center; justify-content: center; padding: 12px; }
 .sk-zoom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.sk-zoombox { width: min(92vw, calc((100dvh - var(--sk-bottom, 0px) - 150px) * 0.656), 520px); cursor: default; }
+.sk-zoombox { width: min(92vw, calc((100dvh - var(--sk-bottom, 0px) - 230px) * 0.656), 520px); cursor: default; }
 .sk-zoombox .tile.tiletile { box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 .sk-zoombox [data-skill] { cursor: help; }
+/* Points de vie de la tuile agrandie : sous la tuile, pour ne cacher ni la défense ni les dés. */
+.sk-zoomhp { container-type: inline-size; width: 300px; max-width: 80vw; display: flex; justify-content: center; }
+.sk-zoomhp .sk-hpwrap { position: static !important; }
 .sk-overlay .sk-zoom .sk-btn.sk-zoomclose { min-width: 140px; background: var(--body-bg-color) !important; color: var(--body-color) !important; border-color: var(--body-color) !important; }
 
 /* Description d'une compétence sur téléphone : panneau sur toute la largeur, en bas de la partie visible. */
