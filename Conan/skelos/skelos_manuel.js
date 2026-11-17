@@ -94,11 +94,16 @@ var tokCode = function(s) {
 var zoneCode = function(z, inner, title, nShown) {
     var n, content;
     if (coop() && z == "energy") { n = nShown != null ? nShown : poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
-    else if (coop()) { var l = tokensIn(z); n = l.length; content = l.map(tokCode).join(""); }
+    // Coop : les jetons posés, et les gemmes ajoutées en mode studio (petit tas à part, avec son nombre).
+    else if (coop()) {
+        var l = tokensIn(z), gn = z == "aside" ? 0 : count(z); n = l.length;
+        content = l.map(tokCode).join("") + (gn ? "<span class='sk-mcgems'>" + groupsCode(gn, S.icon("gem"), "sk-mgem", z) + "</span>" : "");
+        if (gn) inner = (inner || "") + "<span class='sk-mgcount' aria-hidden='true'><img src='" + S.icon("gem") + "' alt=''>" + gn + "</span>";
+    }
     else { n = nShown != null ? nShown : count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
-    var label = zoneLabel(z) + " · " + n;
+    var label = zoneLabel(z) + " · " + n + (coop() && z != "energy" && count(z) ? " · " + t("man_tile_gems", count(z), zoneLabel(z)) : "");
     // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
-    var groups = Math.ceil(n / 3), gs = BAND1.indexOf(z) >= 0 && !coop() ? " style='--g:" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw'" : "";
+    var groups = Math.ceil((coop() ? count(z) : n) / 3), gs = BAND1.indexOf(z) >= 0 ? " style='--g:" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw'" : "";
     return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'" + gs + ">"
         + (inner || "") + (title ? "<span class='sk-mtitle'>" + e(title) + "</span>" : "")
         + "<div class='sk-mgems'>" + content + "</div>"
@@ -192,7 +197,7 @@ var BOWL_FRONT = "<svg class='sk-mbowl-front' viewBox='0 0 100 80' aria-hidden='
     + "<path d='M4 24A46 17 0 0 0 96 24' fill='none' stroke='#b0926a' stroke-width='1.3'/>"
     + "<path d='M4 24A46 17 0 0 1 96 24' fill='none' stroke='#3a2a1b' stroke-width='1.1'/></svg>";
 var reserveCode = function() {
-    if (!S.studio || coop()) return "";
+    if (!S.studio) return "";
     return "<div class='sk-mside sk-mside-l'><div class='sk-mz sk-mz-reserve sk-mbowl' data-zone='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("man_reserve_hint")) + "'>"
         + BOWL_BACK + "<div class='sk-mgems'>" + groupsCode(12, S.icon("gem"), "sk-mgem", "reserve") + "</div>" + BOWL_FRONT
         + "<span class='sk-mobjname'>" + e(t("man_reserve")) + "</span></div></div>";
@@ -321,6 +326,7 @@ var commit = function(msg) { if (msg) S.log(msg); S.save(); S.renderGame(); };
 S.manualMoveGems = function(from, to, n) {
     n = Math.min(n, count(from));
     if (!to || to == from || n <= 0) return;
+    if (coop() && to == "energy") { S.toast(t("man_coop_no_energy")); return; }
     S.snapshot();
     setCount(from, count(from) - n); setCount(to, count(to) + n);
     commit(from == "reserve" ? t("man_log_gems_add", n, zoneLabel(to)) : to == "reserve" ? t("man_log_gems_rm", n, zoneLabel(from)) : t("man_log_gems", n, zoneLabel(from), zoneLabel(to)));
@@ -328,17 +334,27 @@ S.manualMoveGems = function(from, to, n) {
 
 // Double appui sur la tuile de repos : tout ce qui est dépensé passe en Fatigue, puis autant de gemmes que la
 // Récupération reviennent de la Fatigue vers l'Énergie disponible. Tout ce qui est dépensé revient : Mouvement, Défense, Relance, et les gemmes posées sur les tuiles et leurs cartes.
+// Gemmes dépensées : celles de Mouvement, Défense, Relance et celles posées sur les tuiles et leurs cartes.
+// spentPaths, avant le changement : d'où elles partent (pour l'animation) ; spentToFatigue : elles passent en Fatigue.
+var spentPaths = function() {
+    var st = S.state, paths = BAND1.filter(function(z) { return count(z) > 0; }).map(function(z) { return {from: rectOf("[data-zone='" + z + "']"), n: count(z)}; });
+    st.river.forEach(function(s) { var n = tileGems(s); if (n) paths.push({from: rectOf("[data-mtile='" + s.uid + "'] .sk-mtg") || rectOf("[data-mtile='" + s.uid + "']"), n: n}); });
+    return paths;
+};
+var spentToFatigue = function() {
+    var st = S.state;
+    S.clearBoosts();
+    st.river.forEach(function(s) { var n = tileGems(s); if (n) { st.fatigue += n; delete s.gems; (s.cards || []).forEach(function(c) { delete c.gems; }); } });
+};
 S.manualRecover = function() {
     var st = S.state; if (coop()) return;
     var onTiles = st.river.reduce(function(a, s) { return a + tileGems(s); }, 0);
     var spent = S.boostSum() + onTiles, back = Math.min(st.recovery || 0, st.fatigue + spent), fat0 = st.fatigue, en0 = st.energy;
     if (!spent && !back) { S.toast(t("man_recover_none")); return; }
     // Avant de changer l'état : d'où partent les gemmes (zones, tas posés sur les tuiles).
-    var paths = BAND1.filter(function(z) { return count(z) > 0; }).map(function(z) { return {from: rectOf("[data-zone='" + z + "']"), n: count(z)}; });
-    st.river.forEach(function(s) { var n = tileGems(s); if (n) paths.push({from: rectOf("[data-mtile='" + s.uid + "'] .sk-mtg") || rectOf("[data-mtile='" + s.uid + "']"), n: n}); });
+    var paths = spentPaths();
     S.snapshot();
-    S.clearBoosts();
-    st.river.forEach(function(s) { var n = tileGems(s); if (n) { st.fatigue += n; delete s.gems; (s.cards || []).forEach(function(c) { delete c.gems; }); } });
+    spentToFatigue();
     st.fatigue -= back; st.energy += back;
     commit(t("man_log_recover", spent, back));
     // Animation : les gemmes dépensées volent vers la Fatigue, puis la Récupération repart vers l'Énergie disponible.
@@ -399,33 +415,35 @@ var pulse = function(sel) {
 var DRAWN = ["move", "defense", "reroll"];
 S.manualCoopClear = function() {
     var st = S.state; if (!coop()) return;
-    if (!poolCount()) {
-        var back = st.river.filter(function(s) { return live(s.uid) && s.token && st.pool.indexOf(s.uid) < 0 && st.used.indexOf(s.uid) >= 0; });
-        if (!back.length) { S.toast(t("man_coop_none")); return; }
-        var fromR = back.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); }), pool0 = poolCount();
-        S.snapshot();
-        back.forEach(function(s) { st.pool.push(s.uid); });
+    var reset = !poolCount();
+    var toks = reset ? st.river.filter(function(s) { return live(s.uid) && s.token && st.pool.indexOf(s.uid) < 0 && st.used.indexOf(s.uid) >= 0; })
+        : st.river.filter(function(s) { return live(s.uid) && DRAWN.indexOf(tokLoc(s.uid)) >= 0; });
+    var gems = S.boostSum() + st.river.reduce(function(a, s) { return a + tileGems(s); }, 0);
+    if (!toks.length && !gems) { S.toast(t("man_coop_none")); return; }
+    // Avant le changement : d'où partent jetons et gemmes, et l'ancien affichage des zones d'arrivée.
+    var fromT = toks.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); }), paths = spentPaths();
+    var oldFat = outerOf("fatigue"), pool0 = poolCount();
+    S.snapshot();
+    spentToFatigue();
+    if (reset) {
+        toks.forEach(function(s) { st.pool.push(s.uid); });
         st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
         st.tokLoc = {};
-        commit(t("man_log_coop_reset", back.length));
-        // Les jetons regagnent la zone verte et s'y retournent ; la zone verte attend leur arrivée.
-        pulse("[data-mrest]");
-        var en = rectOf("[data-zone='energy']"), g = ++animGen, end = 0;
-        back.forEach(function(s, i) { end = Math.max(end, fly(S.marker(s.token), fromR[i], en, 1, i * 70, S.icon("tokenback"))); });
-        if (end) { hold("energy", zoneCode("energy", "", t("tokens_pool"), pool0)); later(g, end, S.renderGame); }
-        return;
+    } else {
+        st.tokLoc = st.tokLoc || {};
+        toks.forEach(function(s) { st.tokLoc[s.uid] = "fatigue"; });
     }
-    var drawn = st.river.filter(function(s) { return live(s.uid) && DRAWN.indexOf(tokLoc(s.uid)) >= 0; });
-    if (!drawn.length) { S.toast(t("man_coop_none")); return; }
-    var fromD = drawn.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); }), oldFat = outerOf("fatigue");
-    S.snapshot();
-    st.tokLoc = st.tokLoc || {};
-    drawn.forEach(function(s) { st.tokLoc[s.uid] = "fatigue"; });
-    commit(t("man_log_coop_clear", drawn.length));
+    if (gems) S.log(t("man_log_coop_gems", gems));
+    commit(toks.length ? t(reset ? "man_log_coop_reset" : "man_log_coop_clear", toks.length) : null);
+    // Animation : gemmes vers la Fatigue ; jetons vers la Fatigue (ou, quand tout a été tiré, vers la zone verte, retournés).
     pulse("[data-mrest]");
-    var fat = rectOf("[data-zone='fatigue']"), g = ++animGen, end = 0;
-    drawn.forEach(function(s, i) { end = Math.max(end, fly(S.marker(s.token), fromD[i], fat, 1, i * 90)); });
-    if (end) { hold("fatigue", oldFat); later(g, end, S.renderGame); }
+    var fat = rectOf("[data-zone='fatigue']"), en = rectOf("[data-zone='energy']"), g = ++animGen, end = 0, gem = S.icon("gem");
+    paths.forEach(function(p, i) { end = Math.max(end, fly(gem, p.from, fat, p.n, i * 90)); });
+    toks.forEach(function(s, i) { end = Math.max(end, reset ? fly(S.marker(s.token), fromT[i], en, 1, i * 70, S.icon("tokenback")) : fly(S.marker(s.token), fromT[i], fat, 1, i * 90)); });
+    if (!end) return;
+    hold("fatigue", oldFat);
+    if (reset) hold("energy", zoneCode("energy", "", t("tokens_pool"), pool0));
+    later(g, end, S.renderGame);
 };
 
 // Gemmes des tuiles et de leurs cartes : comptées dans le total ; une tuile ou une carte retirée rend les siennes à la Fatigue.
@@ -457,7 +475,7 @@ S.studioRemoveCard = function(uid, kind, k) {
 
 S.manualMoveToken = function(uid, to) {
     var st = S.state, s = S.slotByUid(uid), from = tokLoc(uid);
-    if (!s || !to || to == from) return;
+    if (!s || !to || to == from || to == "reserve" || to.indexOf("g:") == 0) return;   // un jeton ne va ni dans le bol ni sur une tuile
     S.snapshot();
     st.tokLoc = st.tokLoc || {};
     if (to == "energy") {
@@ -731,7 +749,7 @@ var bind = function(board) {
         }
 
         // Gemmes : glisser en emmène une ; appui long, puis glisser ou lâcher, en emmène plusieurs.
-        if (zone && !coop() && count(zone.dataset.zone) > 0) {
+        if (zone && !(coop() && zone.dataset.zone == "energy") && count(zone.dataset.zone) > 0) {
             ev.preventDefault();
             var from = zone.dataset.zone, max = count(from);
             var charge = function() {

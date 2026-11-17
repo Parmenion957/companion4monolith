@@ -1873,3 +1873,10 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mzfoot .sk-zoomhp { width: 240px; max-width: 60vw; }
 /* Livre manuel : la pastille des cartes d'une tuile s'ouvre d'un appui */
 .sk-mtile .sk-cardsbadge { pointer-events: auto; cursor: pointer; touch-action: manipulation; }
+/* Coop : gemmes posées avec les jetons (tas à part, toujours visible, et son nombre en bas à gauche) */
+.sk-mcgems { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+.sk-mgcount { position: absolute; left: .8cqw; bottom: .5cqw; display: flex; align-items: center; gap: .3cqw; font-family: 'Motrg', 'Primary', serif; font-size: 1.8cqw; line-height: 1; color: #fff;
+    text-shadow: 0 0 .3cqw #000, 0 0 .3cqw #000; pointer-events: none; z-index: 2; }
+.sk-mgcount img { width: 2cqw; height: 2cqw; object-fit: contain; }
+.sk-mb1 .sk-mgcount { font-size: 1.4cqw; left: .4cqw; bottom: .3cqw; }
+.sk-manual.solo .sk-mb1 .sk-mtok { width: 3.6cqw; height: 3.6cqw; }
