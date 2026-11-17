@@ -706,6 +706,28 @@ var showHand = function() {
     el.style.left = hand.x + "px"; el.style.top = hand.y + "px";
 };
 var dropHand = function() { hand = null; showHand(); };
+// Fenêtre « tuile + cartes » : pendant qu'on y glisse des gemmes, la rangée défile seule quand le doigt
+// s'approche de son bord gauche ou droit.
+var edge = {t: null, x: 0, y: 0};
+var edgeScroll = function(x, y) {
+    edge.x = x; edge.y = y;
+    if (edge.t) return;
+    edge.t = setInterval(function() {
+        var list = S.root && S.root.querySelector(".sk-mgpop .sk-mgcards"); if (!list) return;
+        var r = list.getBoundingClientRect(), E = 56, v = 0;
+        if (edge.y < r.top - 40 || edge.y > r.bottom + 40) return;
+        if (edge.x < r.left + E) v = -(r.left + E - edge.x) / 3;
+        else if (edge.x > r.right - E) v = (edge.x - r.right + E) / 3;
+        if (v) list.scrollLeft += Math.max(-22, Math.min(22, v < 0 ? Math.floor(v) : Math.ceil(v)));
+    }, 16);
+};
+var stopEdge = function() { clearInterval(edge.t); edge.t = null; };
+// Une gemme prise dans la fenêtre et emmenée vers le haut ou le bas, hors de la fenêtre, la ferme.
+var leavePop = function(y) {
+    var pop = S._mgpop && S.root.querySelector(".sk-mgpop"); if (!pop) return;
+    var r = pop.getBoundingClientRect();
+    if (y < r.top - 30 || y > r.bottom + 30) closeGemPop();
+};
 
 // ---------- Fantôme d'une pièce glissée (jeton, sablier, tuile) ----------
 var ghost = null;
@@ -808,8 +830,10 @@ var bind = function(board) {
         if (S._mgpop && !zone && !ev.target.closest(".sk-mgpop, [data-tgems]")) closeGemPop();
         if (ev.target.closest("[data-tgems], [data-mtile] .sk-cardsbadge")) return;
 
+        var gcards = ev.target.closest(".sk-mgpop .sk-mgcards");
         // Gemmes en main : l'appui suivant les pose dans la zone touchée (ou sur une tuile), ou les repose.
-        if (hand && hand.pinned) {
+        // (Dans la rangée de cartes de la fenêtre, c'est traité plus bas : glisser y fait défiler.)
+        if (hand && hand.pinned && !gcards) {
             ev.preventDefault();
             var from = hand.from, n = hand.n; dropHand();
             if (zone && zone.dataset.zone != from) S.manualMoveGems(from, zone.dataset.zone, n);
@@ -832,6 +856,23 @@ var bind = function(board) {
             };
             document.addEventListener("pointermove", on); document.addEventListener("pointerup", off); document.addEventListener("pointercancel", off);
         };
+
+        // Rangée de cartes de la fenêtre : glisser du doigt la fait défiler (les cartes sont des zones de gemmes, qui
+        // bloquent le défilement natif). Sans glisser : avec des gemmes en main, l'appui les pose ; sur une carte qui
+        // porte des gemmes, on passe au glisser des gemmes ci-dessous.
+        if (gcards && ((hand && hand.pinned) || !(zone && count(zone.dataset.zone) > 0))) {
+            ev.preventDefault();
+            var sl = gcards.scrollLeft;
+            listen(function(e2) {
+                if (!g.moved && far(e2)) g.moved = true;
+                if (g.moved) gcards.scrollLeft = sl - (e2.clientX - x0);
+            }, function(e2, cancel) {
+                if (cancel || g.moved || !(hand && hand.pinned)) return;
+                var fromP = hand.from, nP = hand.n; dropHand();
+                if (zone && zone.dataset.zone != fromP) S.manualMoveGems(fromP, zone.dataset.zone, nP);
+            });
+            return;
+        }
 
         // Pastille de PV d'une tuile : glissée sur une case de la piste, elle fixe les PV ; lâchée hors de la piste, elle la quitte.
         if (hpm) {
@@ -889,7 +930,7 @@ var bind = function(board) {
         // Gemmes : glisser en emmène une ; appui long, puis glisser ou lâcher, en emmène plusieurs.
         if (zone && count(zone.dataset.zone) > 0) {
             ev.preventDefault();
-            var from = zone.dataset.zone, max = count(from);
+            var from = zone.dataset.zone, max = count(from), inPop = !!gcards;
             var charge = function() {
                 hand = {from: from, n: 1, x: x0, y: y0, pinned: false}; showHand();
                 if (navigator.vibrate) navigator.vibrate(15);
@@ -905,8 +946,10 @@ var bind = function(board) {
                     g.moved = true; clearTimeout(g.timer); clearInterval(g.tick);
                     if (!hand) hand = {from: from, n: 1, pinned: false};
                 }
+                if (g.moved && hand) { edgeScroll(e2.clientX, e2.clientY); if (inPop) leavePop(e2.clientY); }
                 if (g.moved && hand) { hand.x = e2.clientX; hand.y = e2.clientY; showHand(); markTarget(under(e2.clientX, e2.clientY, "[data-zone]") || under(e2.clientX, e2.clientY, "[data-mtile]")); }
             }, function(e2, cancel) {
+                stopEdge();
                 if (cancel) { dropHand(); return; }
                 if (g.moved && hand) {
                     var to = under(e2.clientX, e2.clientY, "[data-zone]"), n = hand.n;
