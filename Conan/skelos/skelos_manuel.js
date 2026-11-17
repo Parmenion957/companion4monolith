@@ -460,7 +460,22 @@ S.manualMoveToken = function(uid, to) {
         if (from == "energy") { st.pool = st.pool.filter(function(u) { return u != uid; }); if (st.used.indexOf(uid) < 0) st.used.push(uid); }
         st.tokLoc[uid] = to;
     }
-    commit(t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(s), zoneLabel(to)));
+    var msg = t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(s), zoneLabel(to));
+    // Dès que le dernier jeton est tiré, tous les jetons redeviennent disponibles (zone verte), comme dans le jeu.
+    if (from == "energy" && !poolCount()) {
+        var all = st.river.filter(function(x) { return live(x.uid) && st.used.indexOf(x.uid) >= 0; });
+        var fromR = all.map(function(x) { return x.uid == uid ? rectOf("[data-zone='" + to + "']") : rectOf("[data-tok='" + x.uid + "']"); });
+        all.forEach(function(x) { st.pool.push(x.uid); });
+        st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
+        st.tokLoc = {};
+        S.log(msg);
+        commit(t("man_log_coop_reset", all.length));
+        S.toast(t("man_coop_reset_toast", s.token, S.tileName(s)));
+        var en = rectOf("[data-zone='energy']");
+        all.forEach(function(x, i) { fly(S.marker(x.token), fromR[i], en, 1, 150 + i * 70, S.icon("tokenback")); });
+        return;
+    }
+    commit(msg);
 };
 
 // Un jeton tiré au hasard parmi ceux de la zone verte.

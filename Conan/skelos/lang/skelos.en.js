@@ -581,5 +581,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_coop_clear': "{0} drawn token(s) moved to Fatigue",
     'man_log_coop_reset': "Last token drawn: {0} token(s) available again",
     'man_track_prev': "Previous cards",
-    'man_track_next': "Next cards"
+    'man_track_next': "Next cards",
+    'man_coop_reset_toast': "Last token drawn: {0} ({1}). All tokens are available again."
 });
