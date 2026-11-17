@@ -2,14 +2,14 @@
 // Code sous licence LGPL-3.0, comme le Compagnon. Images et données du jeu : Monolith, avec l'autorisation accordée au Compagnon ;
 // le module reprend celles du Compagnon (Encyclopedia, Tile, jetons du dossier data/) et ajoute les fonds du livre (img/fond/).
 //
-// Livre de Skelos manuel (réglage « Livre de Skelos manuel ») : le plateau se joue comme le vrai livre.
+// Livre de Skelos manuel, seul plateau du module : il se joue comme le vrai livre.
 // Rien n'est calculé : les gemmes, les jetons, les tuiles, le sablier et la fin de partie se déplacent à la main.
 // Le bureau porte la piste des tours ; le livre a quatre bandes, du haut vers le bas :
 //   1. Mouvement, Défense active, Relance   2. Énergie disponible, tuile de repos, Fatigue
 //   3. pions gemmes rouges numérotés        4. espace des tuiles, sans séparation.
 // Coop : les jetons non tirés sont dans la zone verte ; un jeton tiré se pose sur Mouvement, Défense, Relance,
 // Fatigue, puis est mis de côté. Les gemmes et les jetons restent dans l'état de partie habituel
-// (energy, fatigue, boosts, pool, used) : on peut passer d'un plateau à l'autre en cours de partie.
+// (energy, fatigue, boosts, pool, used), qui est aussi celui des scénarios et des campagnes.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 

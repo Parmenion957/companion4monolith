@@ -1,62 +1,114 @@
 # Livre de Skelos — module pour le Compagnon de Conan
 
-Un Livre de Skelos numérique, utilisable en pleine partie, intégré comme une nouvelle entrée du menu (« Skelos »).
+Un Livre de Skelos numérique pour jouer à la table, sur iPad en paysage (ou sur téléphone), intégré au Compagnon comme une nouvelle entrée du menu : « Skelos ».
 
-## Ce que fait le module
+Le plateau reproduit le vrai livre de l'Overlord : rien n'est calculé à la place du joueur. Les gemmes, les jetons, les tuiles, le sablier et les points de vie se déplacent au doigt, comme les pièces du jeu. L'application garde la partie, permet d'annuler et note tout au Journal.
 
-**Le plateau de l’Overlord**
-- La Rivière de 8 cases, avec les vraies tuiles dessinées par `Tile._cardCode` ; coût de chaque case affiché par un pion.
-- Activation en touchant la tuile puis son pion de coût (passé au rouge) : paiement, tuile au bout de la Rivière, glissement des autres. Blocage si gemmes insuffisantes ou activations du tour épuisées.
-- Énergie, fatigue, récupération ; les gemmes sont conservées (transferts 1 → Fatigue / Énergie ← 1), le total ne change que par les paramètres ou la dépollution.
-- Améliorations ponctuelles (mouvement, relance, défense active, sort), passage en fatigue en fin de tour.
-- Phases Héros / Overlord, compte-tour à partir du tour 0, limite de tours.
-- Points de vie des lieutenants et monstres (appui long sur le cœur), tuiles mortes, renfort, dépollution.
-- Mode solo / coop : pioche de jetons, nombre d’activations égal au nombre de héros, rafraîchissement de la réserve, précisions solo des compétences.
-- Compétences lisibles au survol ou à l’appui long, annulation illimitée, sauvegarde automatique.
-- Paramètres modifiables en cours de partie, appliqués immédiatement (total de gemmes, répartition, récupération, tuile ajoutée au bout de la Rivière…).
+## Le plateau
 
-**Autour du plateau**
-- Accueil, partie libre, scénarios enregistrés.
-- Campagnes : fil des scénarios (préparer, lancer, date, points de victoire, rang selon un barème réglable), compagnie (couleur, archétype libre, héros tombés), cache commune (équipements, sorts, améliorations, liseré à la couleur du héros), journal.
-- Sélecteur de cartes en trois onglets avec sélection multiple ; les cartes d’équipement et de sort sont dessinées par `CardEquipment` et `CardSpell`.
-- Encyclopédie locale des améliorations de campagne (création, import, export).
-- Réglages : image de fond personnelle du plateau (zoom, décalage), export / import de toutes les données.
+Le bureau porte la **piste des tours** en haut. Le livre a ensuite quatre bandes :
 
-**Interface (version 2)**
-- Charte du Compagnon : thèmes clair et sombre (bascule dans l’en-tête), onglets Partie, Campagnes, Scénarios et Améliorations, boîtes de dialogue plein écran, bouton rond de création, panneau de filtres.
-- Jetons du jeu issus des données du Compagnon : pions numérotés pour les coûts de la Rivière, jeton Compte-tour, gemmes rouges ; icônes de mouvement, relance, défense active et sort issues du Compagnon.
-- Au-dessus des tuiles 6 à 8 : tour et activations ; phase, bouton Commencer ou Terminer, annuler et paramètres ; étapes du tour (automatiques pour l’Overlord, rappel pour les Héros).
-- Une description par tuile Événement, saisie à la préparation et affichée au survol ou à l’appui long.
-- Boutons − et + sur tous les champs numériques.
-- Mode plein écran (en-tête et navigation masqués), affichage adapté au téléphone en portrait et en paysage.
-- Icônes personnalisées : l’utilisateur peut charger ses propres images pour le mouvement, la relance et la défense active ; elles restent sur son appareil et ne font pas partie du module.
+1. **Mouvement, Défense active, Relance** : les zones où l'on dépense des gemmes.
+2. **Énergie disponible** (vert), **tuile de repos** avec la Récupération, **Fatigue** (rouge).
+3. **Pions gemmes numérotés 1 à 8** : le coût de chaque case.
+4. **Les tuiles** de la Rivière, avec leurs points de vie, leurs gemmes et leurs cartes.
 
-Principe retenu : l’utilisateur reste maître des règles. L’application propose des valeurs (points de victoire, coûts…) mais tout reste modifiable, sauf les blocages du plateau (gemmes, activations).
+### Gestes
+
+| Geste | Effet |
+|---|---|
+| Glisser une gemme d'une zone à l'autre | déplace une gemme |
+| Appui long sur une zone, puis glisser | prend plusieurs gemmes : le nombre monte tant que le doigt reste posé, la pastille rebondit à chaque gemme |
+| Appui long puis lâcher sans bouger | garde les gemmes « en main » ; l'appui suivant sur une zone ou une tuile les y pose |
+| Glisser des gemmes sur une tuile | les pose sur la tuile ; si la tuile porte des cartes, une fenêtre « tuile + cartes » s'ouvre pour choisir où les poser |
+| Double appui sur la tuile de repos | fin de tour des gemmes : tout ce qui est dépensé passe en Fatigue, puis la Récupération revient vers l'Énergie |
+| Double appui sur la Fatigue | ramène en Fatigue toutes les gemmes dépensées (zones, tuiles, cartes), sans Récupération |
+| Glisser une tuile dans sa bande | la déplace (un cadre pointillé montre où elle se posera) |
+| Appui long sur une tuile | menu : Zoom, Mort, Renfort, Purge |
+| Double appui sur une tuile | zoom de la tuile et de ses cartes |
+| Glisser le sablier ou la fin de partie | les place sur une case de la piste des tours ; l'alarme sonne au dernier tour |
+| Glisser une tuile sur la piste des tours | pose sa pastille de points de vie sur la case de ses PV ; la pastille se déplace ensuite pour changer les PV |
+| Survol ou appui long sur une compétence | sa description |
+
+**Fenêtre « tuile + cartes »** : les cartes défilent au doigt, ou seules quand une gemme approche du bord. Emmener une gemme vers le haut ou le bas, hors de la fenêtre, la ferme.
+
+**Zoom** : la tuile en grand, ses sorts à gauche, ses équipements et tuiles portées à droite. Le cœur des points de vie est sur la tuile, au-dessus de la flamme, avec + et − ; le + en pastille au coin bas-droit ajoute des cartes, la corbeille d'une carte la retire. Glisser vers le haut ou le bas sur la tuile passe à la tuile voisine. Le × ou un appui à côté ferme le zoom.
+
+### Aventure et Coop
+
+L'interrupteur **Aventure / Coop** est dans la barre des onglets.
+
+- **Aventure** : l'Overlord joue avec ses gemmes.
+- **Coop** (solo ou coopératif) : les jetons non tirés sont dans la zone verte ; un appui y tire un jeton au hasard, qui se pose ensuite sur Mouvement, Défense, Relance ou Fatigue. Dans les zones verte et rouge, les gemmes sont à gauche et les jetons à droite, chacun du côté de son nombre. Un double appui sur la Fatigue range les jetons tirés et les gemmes dépensées ; quand le dernier jeton a été tiré, ils redeviennent tous disponibles.
+
+### Mode studio
+
+Le bouton Studio (crayon) prépare ou corrige la partie :
+
+- la **réserve** (bol, à gauche du livre) : y prendre des gemmes en ajoute au livre, y en reposer en retire ;
+- le **tas de tuiles** (à droite) : un appui ouvre le choix des tuiles ; y déposer une tuile la retire ;
+- les − et + de la Récupération, du nombre de héros, des points de vie de départ ;
+- la couleur du socle des tuiles qui en ont plusieurs ;
+- les cartes des tuiles (sorts, équipements, tuiles portées) et le texte des tuiles Événement.
+
+### Outils
+
+Une icône discrète ouvre la bande d'outils : **Annuler** (sans limite), **Recommencer**, **Terminer** le scénario, **Journal**, **Aide**.
+
+### Téléphone
+
+En portrait étroit ou en paysage bas, le livre se découpe en grille (4 tuiles par rang, chaque pion au-dessus de sa case), la piste des tours est réduite au cadre Tour (sablier et alarme : appui long pour − et +) et les points de vie passent sur les tuiles. Le zoom prend presque toute la largeur.
+
+## Autour du plateau
+
+- **Scénarios** : enregistrer la partie comme scénario (disquette), éditer un scénario sur le même livre en mode studio, le jouer.
+- **Campagnes** : fil des scénarios (préparer, lancer, date, points de victoire), compagnie de héros (couleur, héros tombés), cache commune (équipements, sorts, améliorations), vue d'ensemble de l'équipement, fin de scénario avec butin, journal de campagne.
+- **Améliorations** : encyclopédie locale des améliorations de campagne (création, import, export).
+- **Réglages** :
+  - animations ;
+  - piste des tours réduite ;
+  - place des points de vie (piste, tuile ou les deux) ;
+  - fonds du livre : zone verte, zone rouge, tuile de récupération, pions gemmes 1 à 8. Les images d'origine sont fournies, et chacune peut être remplacée par une image personnelle, qui reste sur l'appareil ;
+  - image de fond du bureau ;
+  - export et import de toutes les données.
+
+Principe : **l'utilisateur reste maître des règles**. L'application propose des valeurs (coûts, points de victoire) mais ne bloque rien : comme sur le vrai livre, c'est le joueur qui paie, active et range.
 
 ## Fichiers
 
-Nouveaux, dans `Conan/skelos/` :
-- `skelos.js` : le plateau et la préparation ;
-- `skelos_app.js` : navigation, campagnes, sélecteur, encyclopédie des améliorations, réglages, fin de scénario ;
-- `skelos_ui.js` : interface à la charte du Compagnon (jetons, commandes, étapes, onglets, dialogues, plein écran, icônes personnalisées) ;
-- `skelos_companion.js` : branchement au Compagnon (`Nav.addIcon`, attente des données de l’encyclopédie, hauteur de la barre de navigation) ;
-- `skelos.css` ;
-- `lang/skelos.fr.js`, `lang/skelos.en.js`, `lang/skelos.it.js`.
+Dans `Conan/skelos/` :
 
-Modifiés :
-- `Conan/Files.json` : ajout du CSS et des scripts ;
-- `Conan/general/sw-files.js` : ajout des fichiers du module pour le mode hors ligne (à régénérer avec votre outil si besoin).
+| Fichier | Rôle |
+|---|---|
+| `skelos.js` | objet `Skelos` : état de partie, préparation, tuiles, points de vie, mort / renfort / purge, annulation, appui long, info-bulles |
+| `skelos_app.js` | navigation, campagnes, cache d'objets, sélecteur de cartes, améliorations, réglages, fonds du livre, fin de scénario, import / export |
+| `skelos_ui.js` | interface à la charte du Compagnon : onglets, dialogues plein écran, menu des tuiles, studio, cartes des tuiles, Journal, plein écran, icônes |
+| `skelos_manuel.js` | **le plateau** : le livre, ses gestes, le zoom, la fenêtre des gemmes, la récupération ; `Skelos.renderGame` y est défini |
+| `skelos_anim.js` | cloche du dernier tour |
+| `skelos_companion.js` | branchement au Compagnon (`Nav.addIcon`, `Nav.addAction`, attente des données) |
+| `skelos.css` | tout le style (thèmes clair et sombre du Compagnon) |
+| `lang/skelos.fr.js`, `.en.js`, `.it.js` | textes ; toute chaîne visible passe par `Skelos.t("clé")` |
+| `img/` | icônes de mouvement, relance et défense active ; `img/fond/` : fonds du livre, tuile de récupération, pions gemmes |
 
-Le correctif `skelos.patch` contient l’ensemble (`git apply skelos.patch` à la racine du dépôt).
+Le module est déclaré dans `Conan/Files.json` et, pour le hors ligne, dans `Conan/general/sw-files.js`.
+
+L'ordre de chargement compte : chaque fichier peut surcharger des fonctions des précédents (`skelos.js`, `skelos_app.js`, `skelos_ui.js`, `skelos_anim.js`, `skelos_manuel.js`).
 
 ## Intégration au Compagnon
-- Les données viennent de `Encyclopedia` (tuiles, compétences, extensions, équipements, sorts, héros) ; les boîtes possédées viennent de `Extensions`.
-- Les données propres au module sont dans le `localStorage`, préfixées par `Application` : `Conan_SkelosGame`, `Conan_SkelosScenarios`, `Conan_SkelosCampaigns`, `Conan_SkelosUpgrades`, `Conan_SkelosPrefs`, `Conan_SkelosBackground`.
-- Aucune image ni donnée de Monolith n’est ajoutée. Les pions (sablier, gemmes, médaillons) et l’habillage du plateau sont des créations originales en CSS/SVG.
 
-## Testé
-Avec le dépôt servi en local (Chromium, 1180 × 820, français et anglais) : partie libre, partie classique complète, mode solo, campagne de bout en bout (héros, cache, lancement, paramètres en cours de partie, fin de scénario avec butin et héros tombé), encyclopédie, réglages. Aucune erreur JavaScript.
+- Données du jeu : `Encyclopedia` (tuiles, compétences, extensions, équipements, sorts, héros), boîtes possédées via `Extensions` ; tuiles et cartes dessinées par `Tile`, `CardEquipment` et `CardSpell`.
+- Images de Monolith utilisées avec l'autorisation accordée au projet Compagnon.
+- Données propres au module, dans le `localStorage` (préfixe `Conan_`) : `SkelosGame`, `SkelosScenarios`, `SkelosCampaigns`, `SkelosUpgrades`, `SkelosPrefs`, `SkelosBackground`, `SkelosSkin`.
+
+## Historique
+
+Le module avait d'abord un plateau automatique (panneau de commandes, activation par le pion de coût). Il a été remplacé par le livre manuel. Son dernier état est conservé dans l'étiquette Git `plateau-auto` (`git checkout plateau-auto`).
+
+## Tester
+
+- Servir le dépôt : `python -m http.server 8080` à la racine, puis `http://localhost:8080/Conan/`, onglet « Skelos ». Recharger avec Ctrl+F5 après une modification (le Compagnon met ses fichiers en cache).
+- Console du navigateur : aucune erreur JavaScript.
 
 ## Reste à faire
-- Traduction italienne : `lang/skelos.it.js` est pour l’instant en anglais.
-- Les fonds d’énergie et de fatigue, l’icône de récupération et le dé de relance du Livre de Skelos pourront remplacer les versions actuelles si Monolith fournit ses fichiers : chaque image est définie à un seul endroit (`Skelos.ICON_DEFAULTS` et `skelos.css`).
+
+- Traduction italienne : `lang/skelos.it.js` est encore en anglais.
