@@ -47,7 +47,7 @@ Le bouton Studio (crayon) prépare ou corrige la partie :
 
 - la **réserve** (bol, à gauche du livre) : y prendre des gemmes en ajoute au livre, y en reposer en retire ;
 - le **tas de tuiles** (à droite) : un appui ouvre le choix des tuiles ; y déposer une tuile la retire ;
-- les − et + de la Récupération, du nombre de héros, des points de vie de départ ;
+- les − et + de la Récupération (1 à 8, puis X), du nombre de héros, des points de vie de départ ;
 - la couleur du socle des tuiles qui en ont plusieurs ;
 - les cartes des tuiles (sorts, équipements, tuiles portées) et le texte des tuiles Événement.
 

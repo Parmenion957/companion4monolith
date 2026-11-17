@@ -212,7 +212,10 @@ var Skelos = {
         if (d.mode == "classic") {
             h += "<label>" + t("start_energy") + "<input type='number' min='0' max='40' name='energy' value='" + d.energy + "'></label>";
             h += "<label>" + t("start_fatigue") + "<input type='number' min='0' max='40' name='fatigue' value='" + d.fatigue + "'></label>";
-            h += "<label>" + t("recovery") + "<input type='number' min='0' max='20' name='recovery' value='" + d.recovery + "'></label>";
+            // Récupération : 1 à 8, puis X (valeur −1), comme sur la tuile de repos du livre.
+            h += "<label>" + t("recovery") + "<select name='recovery'>" + [1, 2, 3, 4, 5, 6, 7, 8, -1].map(function(n) {
+                return "<option value='" + n + "'" + (n == d.recovery ? " selected" : "") + ">" + (n < 0 ? "X" : n) + "</option>";
+            }).join("") + "</select></label>";
             h += "<label>" + t("max_activations") + "<input type='number' min='1' max='8' name='maxActivations' value='" + d.maxActivations + "'></label>";
         } else {
             h += "<label>" + t("heroes") + "<input type='number' min='1' max='4' name='heroes' value='" + d.heroes + "'></label>";
@@ -269,7 +272,7 @@ var Skelos = {
         d.title = v("title") || "";
         var m = r.querySelector("[name=mode]:checked"); if (m) d.mode = m.value;
         ["turns", "energy", "fatigue", "recovery", "maxActivations", "heroes"].forEach(function(n) {
-            var x = v(n); if (x !== null && x !== "") d[n] = Math.max(0, parseInt(x, 10) || 0);
+            var x = v(n); if (x !== null && x !== "") d[n] = n == "recovery" && +x == -1 ? -1 : Math.max(0, parseInt(x, 10) || 0);
         });
         if (v("firstPlayer")) d.firstPlayer = v("firstPlayer");
         d.events = v("events") || "";
