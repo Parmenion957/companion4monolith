@@ -552,5 +552,12 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_token': "Token {0} ({1}) → {2}",
     'man_log_tile': "{0} moved to space {1}",
     'man_log_turn': "Hourglass on turn {0}",
-    'man_log_limit': "End of game on turn {0}"
+    'man_log_limit': "End of game on turn {0}",
+    'man_hp_place': "Tile life points (manual book)",
+    'man_hp_track': "On the turn track",
+    'man_hp_tile': "On the tile",
+    'man_hpm': "{0}: {1} LP",
+    'man_hp_already': "{0} already has its marker on the track.",
+    'man_log_hp_on': "{0}: life point marker put on the track ({1})",
+    'man_log_hp_off': "{0}: life point marker removed from the track"
 });

@@ -1659,12 +1659,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mz.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
 .sk-mtitle { position: absolute; top: .6cqw; left: 1cqw; font-family: 'Primary', serif; font-size: 1.6cqw; letter-spacing: .05em; text-transform: uppercase; opacity: .85; pointer-events: none;
     text-shadow: 0 1px 2px rgba(0,0,0,.8); }
-.sk-mgems { position: absolute; inset: 2.8cqw 1.2cqw 1cqw; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: .6cqw 1cqw; pointer-events: none; }
+.sk-mgems { position: absolute; inset: 2.8cqw 1.2cqw 1cqw; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: .2cqw .4cqw; pointer-events: none; }
 .sk-mcount { position: absolute; right: .8cqw; bottom: .5cqw; font-family: 'Motrg', 'Primary', serif; font-size: 2.2cqw; line-height: 1; color: #fff; pointer-events: none;
     text-shadow: 0 0 .3cqw #000, 0 0 .3cqw #000; }
 /* Gemmes par groupes de 3 : deux en bas, une au-dessus */
-.sk-mg3 { position: relative; width: calc(var(--g) * 1.9); height: calc(var(--g) * 1.75); }
-.sk-mg3 img { position: absolute; width: var(--g); height: var(--g); object-fit: contain; filter: drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.65)); }
+.sk-mg3 { position: relative; width: calc(var(--g) * 1.9); height: calc(var(--g) * 1.75); margin: calc(var(--g) * .12);
+    transform: translate(calc(var(--g) * var(--gx, 0)), calc(var(--g) * var(--gy, 0))) rotate(var(--gr, 0deg)); }
+.sk-mg3 img { position: absolute; width: var(--g); height: var(--g); object-fit: contain; filter: drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.65));
+    transform: translate(calc(var(--g) * var(--x, 0)), calc(var(--g) * var(--y, 0))) rotate(var(--r, 0deg)); }
 .sk-mg3 img:nth-child(1) { left: 0; bottom: 0; }
 .sk-mg3 img:nth-child(2) { right: 0; bottom: 0; }
 .sk-mg3 img:nth-child(3) { left: calc(50% - var(--g) / 2); top: 0; }
@@ -1672,10 +1674,10 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mg3 img.sk-mback { border-radius: 50%; }
 
 /* Bande 1 : Mouvement, Défense active, Relance */
-.sk-mb1 { display: flex; justify-content: center; gap: 1.4cqw; }
-.sk-mb1 .sk-mz { width: 11cqw; aspect-ratio: 1.35; --g: 2.2cqw; }
-.sk-mb1 .sk-mgems { inset: 1cqw; }
-.sk-mico { position: absolute; inset: 14%; width: 72%; height: 72%; object-fit: contain; opacity: .9; pointer-events: none; }
+.sk-mb1 { display: flex; justify-content: center; gap: .8cqw; }
+.sk-mb1 .sk-mz { width: 8.6cqw; aspect-ratio: 1; --g: 2.1cqw; border-radius: .7cqw; }
+.sk-mb1 .sk-mgems { inset: .4cqw; }
+.sk-mico { position: absolute; inset: 5%; width: 90%; height: 90%; object-fit: contain; border-radius: .5cqw; opacity: .95; pointer-events: none; }
 .sk-mb1 .sk-mz:not(.empty) .sk-mico { opacity: .45; }
 
 /* Bande 2 : Énergie disponible, tuile de repos, Fatigue */
@@ -1723,3 +1725,12 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mghost { position: fixed; z-index: 100001; pointer-events: none; transform: translate(-50%, -50%) scale(1.06); opacity: .9; container-type: inline-size; }
 .sk-mghost > * { position: static !important; width: 100% !important; height: 100% !important; transform: none !important; opacity: 1 !important; }
 .sk-mghost img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Pastilles des points de vie des tuiles sur la piste des tours : portrait de la tuile cerclé de la couleur du socle.
+   Plusieurs pastilles sur une même case se décalent ; elles passent au-dessus du sablier pour rester attrapables. */
+.sk-mhpm { position: absolute; z-index: 4; width: 86%; aspect-ratio: 1; left: calc(30% + var(--k, 0) * 34%); top: 38%; border-radius: 50%; box-sizing: border-box;
+    border: .3cqw solid var(--c, #8a8a8a); background: #222 center 20% / cover no-repeat; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.6); cursor: grab; touch-action: none; }
+.sk-mhpm.dead { filter: grayscale(1) brightness(.6); }
+.sk-mhpm.sk-mdragging { opacity: .3; }
+.sk-mghost .sk-mhpm { width: 100% !important; height: 100% !important; }
+.sk-mtrack { padding-bottom: 3cqw; }

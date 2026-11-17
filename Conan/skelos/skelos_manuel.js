@@ -37,12 +37,19 @@ var zoneLabel = function(z) {
     return t("boost_" + z);
 };
 
-// Groupes de 3 pour compter d'un coup d'œil.
-var groupsCode = function(n, src, cls) {
-    var h = "";
+// Groupes de 3 pour compter d'un coup d'œil, posés un peu en désordre comme un vrai tas.
+// Le désordre est tiré d'un nombre fixe par zone et par gemme : le tas ne bouge pas d'un affichage à l'autre.
+var jitter = function(seed) {
+    var x = 0; for (var i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) | 0;
+    return function() { x = (x * 1103515245 + 12345) | 0; return ((x >>> 8) & 0xffff) / 0xffff - .5; };
+};
+var groupsCode = function(n, src, cls, seed) {
+    var h = "", r = function(v) { return Math.round(v * 100) / 100; };
     for (var i = 0; i < n; i += 3) {
-        var k = Math.min(3, n - i);
-        h += "<span class='sk-mg3 n" + k + "'>" + new Array(k + 1).join("<img class='" + (cls || "") + "' src='" + src + "' alt='' draggable='false'>") + "</span>";
+        var k = Math.min(3, n - i), rnd = jitter((seed || "") + ":" + i), gems = "";
+        var gs = "--gr:" + r(rnd() * 40) + "deg;--gx:" + r(rnd() * .5) + ";--gy:" + r(rnd() * .7);
+        for (var j = 0; j < k; j++) gems += "<img class='" + (cls || "") + "' src='" + src + "' alt='' draggable='false' style='--r:" + r(rnd() * 70) + "deg;--x:" + r(rnd() * .3) + ";--y:" + r(rnd() * .3) + "'>";
+        h += "<span class='sk-mg3 n" + k + "' style='" + gs + "'>" + gems + "</span>";
     }
     return h;
 };
@@ -65,9 +72,9 @@ var tokCode = function(s) {
 // ---------- Rendu ----------
 var zoneCode = function(z, inner, title) {
     var n, content;
-    if (coop() && z == "energy") { n = poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback"); }
+    if (coop() && z == "energy") { n = poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
     else if (coop()) { var l = tokensIn(z); n = l.length; content = l.map(tokCode).join(""); }
-    else { n = count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem"); }
+    else { n = count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
     var label = zoneLabel(z) + " · " + n;
     return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'>"
         + (inner || "") + (title ? "<span class='sk-mtitle'>" + e(title) + "</span>" : "")
@@ -75,13 +82,36 @@ var zoneCode = function(z, inner, title) {
         + (n ? "<span class='sk-mcount' aria-hidden='true'>" + n + "</span>" : "") + "</div>";
 };
 
+// ---------- Points de vie des tuiles sur la piste des tours (réglage, par défaut) ----------
+// Une tuile glissée sur la piste y pose sa pastille, sur la case de ses points de vie ; la pastille se déplace
+// ensuite sur la piste pour changer les PV. Le cœur disparaît alors de la tuile. Une pastille par groupe de PV partagés.
+S.hpOnTrack = function() { return S.prefs().hpPlace != "tile"; };
+var SOCLE = {gray: "#8a8a8a", red: "#b3161b", green: "#2e8b3e", blue: "#2a63ad", purple: "#7a3d9a", orange: "#e07a1f", black: "#222"};
+var trackHp = function() {
+    var st = S.state, seen = {};
+    return (st.hpTrack || []).map(function(u) { return S.slotByUid(u); }).filter(function(s) {
+        if (!s || S.isEvent(s)) return false;
+        var g = S.hpGroup(s), key = g.map(function(x) { return x.uid; }).sort().join(",");
+        if (seen[key]) return false; seen[key] = true; return true;
+    });
+};
+var onTrack = function(s) { return S.hpOnTrack() && trackHp().some(function(x) { return S.hpGroup(x).indexOf(s) >= 0; }); };
+var hpMarkerCode = function(s, k) {
+    var tile = S.tileOf(s), label = t("man_hpm", S.tileName(s), s.lp || 0);
+    return "<span class='sk-mhpm" + (s.dead ? " dead" : "") + "' data-hpm='" + s.uid + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "' style='--k:" + k
+        + ";--c:" + (SOCLE[s.color] || "#8a8a8a") + ";background-image:url(\"" + S.asset(tile ? tile.image : "") + "\")'></span>";
+};
+
 var trackCode = function() {
-    var st = S.state, last = Math.max(15, st.turns || 0, st.turn || 0), h = "";
+    var st = S.state, hp = S.hpOnTrack() ? trackHp() : [];
+    var last = Math.max(15, st.turns || 0, st.turn || 0, Math.max.apply(Math, [0].concat(hp.map(function(s) { return s.lp || 0; })))), h = "";
     var hour = "<img class='sk-mpiece sk-mhour' data-piece='turn' src='" + S.icon("time") + "' alt='" + e(t("man_hourglass")) + "' title='" + e(t("man_hourglass")) + "' draggable='false'>";
     var end = function(both) { return "<img class='sk-mpiece sk-mend" + (both ? " both" : "") + "' data-piece='end' src='" + S.icon("alarm") + "' alt='" + e(t("man_end")) + "' title='" + e(t("man_end")) + "' draggable='false'>"; };
     for (var i = 0; i <= last; i++) {
         var isEnd = st.turns && st.turns == i;
-        h += "<span class='sk-mcell" + (isEnd ? " end" : "") + "' data-cell='" + i + "'><b>" + i + "</b>" + (st.turn == i ? hour : "") + (isEnd ? end(st.turn == i) : "") + "</span>";
+        var here = hp.filter(function(s) { return (s.lp || 0) == i; });
+        h += "<span class='sk-mcell" + (isEnd ? " end" : "") + "' data-cell='" + i + "'><b>" + i + "</b>" + (st.turn == i ? hour : "") + (isEnd ? end(st.turn == i) : "")
+            + here.map(hpMarkerCode).join("") + "</span>";
     }
     // Sans limite de tours, le marqueur de fin attend à droite de la piste.
     h += "<span class='sk-mpark' data-cell='none' title='" + e(t("turn_limit_none")) + "'>" + (st.turns ? "" : end(false)) + "</span>";
@@ -106,12 +136,21 @@ var holesCode = function() {
     return h;
 };
 
+// Pastille des cartes portées par une tuile (sorts, équipements), comme sur le plateau automatique.
+var cardsBadge = function(s) {
+    var sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length;
+    if (!sp && !eq) return "";
+    return "<span class='sk-cardsbadge' role='img' aria-label='" + e(t("cards_badge", sp, eq)) + "' title='" + e(t("cards_badge", sp, eq)) + "'>"
+        + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>";
+};
+
 var tilesCode = function() {
     var st = S.state;
     return "<div class='sk-mb4' data-band='tiles'>" + st.river.map(function(s) {
         return "<div class='sk-mtile sk-tilebox" + (s.dead ? " dead" : "") + "' data-mtile='" + s.uid + "'" + (S.isEvent(s) ? " data-eventuid='" + s.uid + "'" : "")
             + " role='img' aria-label='" + e(S.tileName(s)) + "'>" + S.tileCode(s)
-            + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + (s.lpMax ? S.hpBadge(s) : "") + "</div>";
+            + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
+            + (s.lpMax && !S.hpOnTrack() ? S.hpBadge(s) : "") + cardsBadge(s) + "</div>";
     }).join("") + "</div>";
 };
 
@@ -130,12 +169,18 @@ S.renderManual = function() {
     root.innerHTML = h;
     S._lastScreen = "game";
     S.placeTabs();
-    // Pas de mode studio sur le livre manuel : il se règle à la main.
-    var tools = root.querySelector(":scope > .sk-tabs .sk-tabtools"); if (tools) tools.remove();
+    // Pas de mode studio sur le livre manuel (il se règle à la main) : seul l'interrupteur Aventure / Coop reste
+    // dans la barre des onglets (le clic est pris en charge par S.placeTabs → S.switchMode).
+    var tools = root.querySelector(":scope > .sk-tabs .sk-tabtools");
+    if (tools) tools.innerHTML = "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
+        var on = st.mode == m[0];
+        return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
+    }).join("") + "</div>";
     S.syncFullscreenButton();
     S.fitDesk();
     if (keep != null) root.scrollTop = keep;
     bind(root.querySelector(".sk-manual"));
+    bindZoomHp();
     showHand();
 };
 
@@ -211,6 +256,37 @@ S.manualPiece = function(which, cell) {
         S.snapshot(); st.turns = v; if (st.scenario) st.scenario.turns = v;
         commit(v ? t("man_log_limit", v) : t("turn_limit_none"));
     }
+};
+
+// Points de vie fixés à la main (pastille sur la piste, ou − / + du zoom) : tout le groupe de PV partagés suit.
+// 0 = toutes les unités sont mortes ; remonter au-dessus de 0 réactive la tuile. La tuile ne change pas de place.
+S.manualSetHp = function(uid, v) {
+    var s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
+    v = Math.max(0, Math.min(40, v));
+    var cur = s.lp || 0, group = S.hpGroup(s), name = S.tileName(s);
+    if (v == cur && s.lpMax) return;
+    S.snapshot();
+    group.forEach(function(g) { g.lp = v; if (!g.lpMax || v > g.lpMax) g.lpMax = Math.max(v, g.lpMax || 0) || null; });
+    S.log(t("log_hp", name, cur, v));
+    if (v == 0) group.forEach(function(g) { if (!g.dead) S.killSlot(g); });
+    else if (group.some(function(g) { return g.dead; })) { group.forEach(function(g) { g.dead = false; }); S.log(t("log_reinforce", name)); }
+    commit();
+};
+// Une tuile posée sur la piste : sa pastille va sur la case de ses PV ; une tuile sans PV prend la case où on l'a lâchée.
+S.manualTrackTile = function(uid, cell) {
+    var st = S.state, s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
+    if (onTrack(s)) { S.toast(t("man_hp_already", S.tileName(s))); return; }
+    S.snapshot();
+    st.hpTrack = (st.hpTrack || []).concat([uid]);
+    if (!s.lpMax && cell != null && cell != "none") S.hpGroup(s).forEach(function(g) { g.lp = +cell; g.lpMax = +cell || null; });
+    commit(t("man_log_hp_on", S.tileName(s), s.lp || 0));
+};
+S.manualUntrack = function(uid) {
+    var st = S.state, s = S.slotByUid(uid); if (!s) return;
+    var group = S.hpGroup(s).map(function(g) { return g.uid; });
+    S.snapshot();
+    st.hpTrack = (st.hpTrack || []).filter(function(u) { return group.indexOf(u) < 0; });
+    commit(t("man_log_hp_off", S.tileName(s)));
 };
 
 // ---------- Main : gemmes ramassées ----------
@@ -289,7 +365,8 @@ var bind = function(board) {
             return;
         }
 
-        var piece = ev.target.closest("[data-piece]"), tok = ev.target.closest("[data-tok]"), tile = ev.target.closest("[data-mtile]");
+        S.hideTip();
+        var piece = ev.target.closest("[data-piece]"), tok = ev.target.closest("[data-tok]"), tile = ev.target.closest("[data-mtile]"), hpm = ev.target.closest("[data-hpm]");
         var g = {moved: false, timer: null, tick: null};
         var far = function(e2) { return Math.abs(e2.clientX - x0) > MOVE || Math.abs(e2.clientY - y0) > MOVE; };
         var on, off;
@@ -303,6 +380,22 @@ var bind = function(board) {
             };
             document.addEventListener("pointermove", on); document.addEventListener("pointerup", off); document.addEventListener("pointercancel", off);
         };
+
+        // Pastille de PV d'une tuile : glissée sur une case de la piste, elle fixe les PV ; lâchée hors de la piste, elle la quitte.
+        if (hpm) {
+            ev.preventDefault();
+            listen(function(e2) {
+                if (!g.moved && far(e2)) { g.moved = true; hpm.classList.add("sk-mdragging"); ghostStart(hpm, e2.clientX, e2.clientY); }
+                if (g.moved) { ghostMove(e2.clientX, e2.clientY); markTarget(under(e2.clientX, e2.clientY, "[data-cell]")); }
+            }, function(e2, cancel) {
+                ghostEnd(); hpm.classList.remove("sk-mdragging");
+                if (cancel || !g.moved) return;
+                var cell = under(e2.clientX, e2.clientY, "[data-cell]");
+                if (cell && cell.dataset.cell != "none") S.manualSetHp(hpm.dataset.hpm, +cell.dataset.cell);
+                else if (!under(e2.clientX, e2.clientY, ".sk-mtrack")) S.manualUntrack(hpm.dataset.hpm);
+            });
+            return;
+        }
 
         // Sablier et fin de partie : sur la piste des tours.
         if (piece) {
@@ -378,20 +471,76 @@ var bind = function(board) {
             if (!tile.hasAttribute("data-eventuid")) g.timer = setTimeout(function() { long = true; S._suppressClick = true; S.openTileMenu(uid); }, 450);
             listen(function(e2) {
                 if (!g.moved && !long && far(e2)) { g.moved = true; clearTimeout(g.timer); tile.classList.add("sk-dragging"); ghostStart(tile, e2.clientX, e2.clientY); }
-                if (g.moved) { e2.preventDefault(); ghostMove(e2.clientX, e2.clientY); }
+                if (g.moved) {
+                    e2.preventDefault(); ghostMove(e2.clientX, e2.clientY);
+                    markTarget(S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null);
+                }
             }, function(e2, cancel) {
                 ghostEnd(); tile.classList.remove("sk-dragging");
                 if (cancel || long) return;
                 if (g.moved) {
                     if (under(e2.clientX, e2.clientY, ".sk-mb4")) S.manualMoveTile(uid, tileIndexAt(e2.clientX));
+                    else if (S.hpOnTrack() && under(e2.clientX, e2.clientY, ".sk-mtrack")) {
+                        var c = under(e2.clientX, e2.clientY, "[data-cell]");
+                        S.manualTrackTile(uid, c ? c.dataset.cell : null);
+                    }
                     return;
                 }
+                // Double appui : le texte d'une tuile Événement se modifie ; une autre tuile s'agrandit, avec ses cartes.
                 var now = Date.now();
-                if (lastTap.uid == uid && now - lastTap.at < 400) { lastTap.uid = null; S.zoomTile(uid); }
+                if (lastTap.uid == uid && now - lastTap.at < 400) {
+                    lastTap.uid = null;
+                    if (tile.hasAttribute("data-eventuid")) S.editEventText(uid); else S.zoomTile(uid);
+                }
                 else { lastTap.uid = uid; lastTap.at = now; }
             });
         }
     });
+    // La description d'un Événement s'efface dès que la souris quitte la tuile.
+    board.addEventListener("mouseout", function(ev) {
+        var ev1 = ev.target.closest("[data-eventuid]"); if (!ev1) return;
+        if (ev.relatedTarget && ev1.contains(ev.relatedTarget)) return;
+        S.hideTip();
+    });
+};
+
+// Zoom d'une tuile depuis le livre manuel : on y ajoute et retire les cartes (comme en studio) et on règle les PV
+// de la partie, sans lancer de sort (les gemmes se déplacent à la main).
+var baseZoom = S.zoomTile;
+S.zoomTile = function(uid, opts) {
+    if (!S.manualOn()) return baseZoom.apply(S, arguments);
+    S.studio = true;
+    try { baseZoom.apply(S, arguments); } finally { S.studio = false; }
+    var ov = S.root.querySelector("#sk-overlay");
+    if (ov) ov.querySelectorAll("[data-zlp]").forEach(function(b) { b.removeAttribute("data-zlp"); b.setAttribute("data-zmhp", b.dataset.n); });
+};
+var zoomBound = false;
+var bindZoomHp = function() {
+    if (zoomBound || !S.root) return; zoomBound = true;
+    S.root.addEventListener("click", function(ev) {
+        var b = ev.target.closest("[data-zmhp]"); if (!b || !S._zoom) return;
+        ev.stopPropagation(); ev.preventDefault();
+        var uid = S._zoom.uid, s = S.slotByUid(uid); if (!s) return;
+        S.manualSetHp(uid, (s.lp || 0) + +b.dataset.zmhp);
+        S.zoomTile(uid, {pos: 0});
+    }, true);
+};
+
+// Événement sans texte : le survol ne montre rien.
+var baseEventTip = S.showEventTip;
+S.showEventTip = function(el) {
+    var has = S.eventTexts().some(function(v) { return v.uid == el.dataset.eventuid; });
+    if (!has) { S.hideTip(); return; }
+    return baseEventTip.apply(S, arguments);
+};
+
+// Livre manuel : une tuile morte reste à sa place, on la déplace à la main.
+var baseKill = S.killSlot;
+S.killSlot = function(slot) {
+    var st = S.state;
+    if (!S.manualOn() || !st || st.mode == "solo") return baseKill.apply(S, arguments);
+    st.mode = "solo";
+    try { return baseKill.apply(S, arguments); } finally { st.mode = "classic"; }
 };
 
 // Un appui hors du livre repose les gemmes en main.

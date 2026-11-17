@@ -565,5 +565,12 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_token': "Jeton {0} ({1}) → {2}",
     'man_log_tile': "{0} déplacée en case {1}",
     'man_log_turn': "Sablier sur le tour {0}",
-    'man_log_limit': "Fin de partie au tour {0}"
+    'man_log_limit': "Fin de partie au tour {0}",
+    'man_hp_place': "Points de vie des tuiles (livre manuel)",
+    'man_hp_track': "Sur la piste des tours",
+    'man_hp_tile': "Sur la tuile",
+    'man_hpm': "{0} : {1} PV",
+    'man_hp_already': "{0} a déjà sa pastille sur la piste.",
+    'man_log_hp_on': "{0} : pastille des PV posée sur la piste ({1})",
+    'man_log_hp_off': "{0} : pastille des PV retirée de la piste"
 });
