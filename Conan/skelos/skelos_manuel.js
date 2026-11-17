@@ -516,11 +516,22 @@ var withGemsBack = function(base, args, holders) {
     var snap = S.snapshot; S.snapshot = function() {};
     try { return base.apply(S, args); } finally { S.snapshot = snap; }
 };
+// PV partagés (même tuile, même socle) : une seule pastille sur la piste pour le groupe. Si la case qui la porte
+// quitte le groupe (retirée, ou socle changé), la pastille passe à une autre case du groupe.
+var passTrack = function(s) {
+    var st = S.state, tr = st && st.hpTrack, i = tr && s ? tr.indexOf(s.uid) : -1;
+    if (i < 0) return;
+    var other = S.hpGroup(s).filter(function(g) { return g !== s; })[0];
+    if (other && tr.indexOf(other.uid) < 0) tr[i] = other.uid;
+};
 var baseRemove = S.studioRemove;
 S.studioRemove = function(uid) {
     var s = S.slotByUid(uid);
+    passTrack(s);
     return withGemsBack(baseRemove, arguments, s ? [s].concat(s.cards || []) : []);
 };
+var baseNextSocle = S.nextSocle;
+S.nextSocle = function(uid) { passTrack(S.slotByUid(uid)); return baseNextSocle.apply(S, arguments); };
 var baseRemoveCard = S.studioRemoveCard;
 S.studioRemoveCard = function(uid, kind, k) {
     var s = S.slotByUid(uid), c = s && S.slotCards(s, kind)[k];
