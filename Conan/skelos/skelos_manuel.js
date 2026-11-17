@@ -230,19 +230,19 @@ var restCode = function() {
     var img = S.skin().rest, aria = " role='group' aria-label='" + e(t("recovery") + (coop() ? "" : " · " + recLabel())) + "'";
     if (coop()) return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_coop_rest_hint")) + "'>" + (img ? "<div class='sk-mrestcard'><img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'></div>" : S.token("recover", "")) + "</div>";
     // Tuile d'origine : la valeur est la gemme du pion numéroté (1 à 8), sinon un chiffre posé sur la gemme vide ;
-    // le − et le + encadrent la gemme, sur la flèche.
+    // le − et le + encadrent la gemme, sur la flèche (en mode studio seulement : en jeu, la valeur est fixée).
     if (img) {
         var gem = S.recoveryGem(st.recovery);
         return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'><div class='sk-mrestcard'>"
             + "<img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'>"
             + (gem ? "<img class='sk-mrecgem' src='" + gem + "' alt='' draggable='false'>" : "<span class='sk-mrecnum'>" + recLabel() + "</span>")
-            + "<button class='sk-pstep sk-mrecm' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
-            + "<button class='sk-pstep sk-mrecp' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
+            + (S.studio ? "<button class='sk-pstep sk-mrecm' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
+            + "<button class='sk-pstep sk-mrecp' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button>" : "") + "</div></div>";
     }
     return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'>"
         + S.token("recover", recLabel())
-        + "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
-        + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
+        + (S.studio ? "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
+        + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div>" : "") + "</div>";
 };
 
 // Bande 3 : un pion gemme rouge numéroté au-dessus de chaque case de tuile.
