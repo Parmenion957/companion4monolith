@@ -1,6 +1,6 @@
 // Livre de Skelos : module de suivi du plateau de l'Overlord pour le Compagnon de Conan.
-// Code sous licence LGPL-3.0, comme le Compagnon. Ce module n'ajoute aucune image ni donnée de Monolith :
-// il utilise celles déjà chargées par le Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell).
+// Code sous licence LGPL-3.0, comme le Compagnon. Images et données du jeu : Monolith, avec l'autorisation accordée au Compagnon ;
+// le module reprend celles du Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell) et ajoute les fonds du livre (img/fond/).
 // Livre de Skelos : navigation, partie libre, campagnes, sélecteur d'objets, encyclopédie, réglages.
 // L'utilisateur reste maître des règles : l'app propose des valeurs, tout reste modifiable.
 (function() {
@@ -16,6 +16,8 @@ document.addEventListener("focusout", function() {
     setTimeout(function() { if (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); } }, 120);
 });
 var KEY_CAMP = Application + "_SkelosCampaigns", KEY_UP = Application + "_SkelosUpgrades", KEY_BG = Application + "_SkelosBackground";
+// Fonds du livre manuel choisis par l'utilisateur (gardés seulement sur cet appareil) : green, red, rest, gem1 … gem8.
+var KEY_SKIN = Application + "_SkelosSkin";
 var HERO_COLORS = ["#e0a43a", "#3fb6a8", "#a58be0", "#e06a5a", "#7fbf6a", "#d98bd0", "#6aa8e0"];
 S.HERO_COLORS = HERO_COLORS;
 var ARCHETYPES = ["guerrier", "voleur", "sorcier", "mercenaire"];
@@ -89,6 +91,11 @@ S.heroNames = function() {
 // Carte originale dessinée par le Compagnon, quand son code est présent.
 S.realCardCode = function(kind, ref) {
     try {
+        // Tuile portée par une autre tuile : référence « id|image ».
+        if (kind == "ti") {
+            var tp = String(ref).split("|"), tl = S.tileOf({tileId: tp[0], img: tp.slice(1).join("|")});
+            if (tl) return "<div class='sk-tilebox sk-cardtile'>" + S.tileCode({tileId: tl.id, img: tl.image, color: tl.colors[0]}) + "</div>";
+        }
         if (kind == "eq" && typeof CardEquipment != "undefined" && typeof EncyclopediaEquipments != "undefined") {
             var q = (Encyclopedia.equipments.list || []).filter(function(x) { return x.id == ref; })[0];
             if (q) return CardEquipment._cardCode(EncyclopediaEquipments._convertEquipmentToStudio(q));
@@ -101,6 +108,7 @@ S.realCardCode = function(kind, ref) {
     return null;
 };
 S.itemName = function(kind, ref) {
+    if (kind == "ti") { var tl = S.tileOf({tileId: String(ref).split("|")[0], img: String(ref).split("|").slice(1).join("|")}); return tl ? (tl.id == "event" ? t("scenario_events") : tl.name) : ref; }
     var x = S.catalog(kind).filter(function(i) { return i.ref == ref; })[0];
     return x ? x.name : ref;
 };
@@ -108,13 +116,6 @@ S.itemName = function(kind, ref) {
 // ---------- Gemmes : conservation et réglage en cours de partie ----------
 S.boostSum = function() { var b = S.state.boosts || {}, n = 0; for (var k in b) n += b[k] || 0; return n; };
 S.gemTotal = function() { return S.state.energy + S.state.fatigue + S.boostSum(); };
-S.transferGem = function(dir) {
-    var st = S.state;
-    if (dir == "tofatigue" && st.energy > 0) { S.snapshot(); st.energy--; st.fatigue++; }
-    else if (dir == "toenergy" && st.fatigue > 0) { S.snapshot(); st.fatigue--; st.energy++; }
-    else return;
-    S.save(); S.renderGame();
-};
 S.newSlot = function(tile) {
     var st = S.state, n = 0;
     st.river.concat(st.removedSlots || []).forEach(function(s) { var k = parseInt(String(s.uid).slice(1), 10); if (k >= n) n = k + 1; });
@@ -623,7 +624,7 @@ S.openItemPicker = function(opts) {
     var pr = S.prefs(), kind = opts.kind || pr.itemKind || "eq", sel = (opts.initial || []).slice(), browse = !!opts.browse, editing = !!opts.initial;
     var ov = S.root.querySelector("#sk-overlay");
     var tabs = (opts.tiles ? [["tile", "tab_tiles"]] : []).concat([["eq", "tab_eq"], ["sp", "tab_sp"], ["up", "tab_up"]]);
-    if (opts.tiles && !pr.itemKind) kind = "tile";
+    if (opts.tiles && !opts.kind && !pr.itemKind) kind = "tile";
     // Choix limité à certains types (cartes d'une tuile en studio : sorts ou équipements).
     if (opts.kinds) { tabs = tabs.filter(function(x) { return opts.kinds.indexOf(x[0]) >= 0; }); if (opts.kinds.indexOf(kind) < 0) kind = opts.kinds[0]; }
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(opts.title) + "</h2><div class='sk-actions sk-pickactions'>"
@@ -657,6 +658,13 @@ S.openItemPicker = function(opts) {
             if (k.length) { if (!bd) { bd = document.createElement("span"); bd.className = "sk-pickbadge"; c.appendChild(bd); } bd.textContent = k.join(" · "); c.classList.add("picked"); }
             else { if (bd) bd.remove(); c.classList.remove("picked"); }
         });
+        // Tuiles choisies (cartes d'une tuile : une tuile peut en porter d'autres) : même repère numéroté.
+        ov.querySelectorAll("[data-tilepick]").forEach(function(c) {
+            var k = []; sel.forEach(function(x, i) { if (x.kind == "ti" && x.ref == c.dataset.tilepick) k.push(i + 1); });
+            var bd = c.querySelector(".sk-pickbadge");
+            if (k.length) { if (!bd) { bd = document.createElement("span"); bd.className = "sk-pickbadge"; c.appendChild(bd); } bd.textContent = k.join(" · "); c.classList.add("picked"); }
+            else { if (bd) bd.remove(); c.classList.remove("picked"); }
+        });
     };
     var draw = function() {
         ov.querySelectorAll("[data-tab]").forEach(function(b) { var on = b.dataset.tab == kind; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
@@ -669,7 +677,7 @@ S.openItemPicker = function(opts) {
                 var nm = x.id == "event" ? t("scenario_events") : x.name; if (nq && S.norm(nm).indexOf(nq) < 0) return;
                 if (!S.inScope(x.origins)) return;
                 var key = x.id + "|" + x.image; if (seen[key]) return; seen[key] = true;
-                out += "<div class='sk-pick sk-tilebox' role='img' aria-label='" + e(nm) + "'>" + S.tileCode({tileId: x.id, color: x.colors[0], img: x.image}) + "</div>";
+                out += "<div class='sk-pick sk-tilebox'" + (browse ? " role='img'" : " role='button' tabindex='0' data-tilepick='" + e(key) + "'") + " aria-label='" + e(nm) + "'>" + S.tileCode({tileId: x.id, color: x.colors[0], img: x.image}) + "</div>";
             });
         } else {
             if (kind == "up") out += "<button class='sk-icard sk-newup' data-newup>+<span>" + t("create_upgrade") + "</span></button>";
@@ -689,6 +697,13 @@ S.openItemPicker = function(opts) {
         var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
         if (ev.target.closest("[data-clear]")) { sel = sel.filter(function(x) { return x.start; }); status(); return; }
         if (ev.target.closest("[data-addsel]")) { var s2 = sel.slice(); close(); opts.onAdd(s2); return; }
+        var tp = !browse && ev.target.closest("[data-tilepick]");
+        if (tp) {
+            var tl = S.tileOf({tileId: tp.dataset.tilepick.split("|")[0], img: tp.dataset.tilepick.split("|").slice(1).join("|")});
+            sel.push({kind: "ti", ref: tp.dataset.tilepick, name: tl ? (tl.id == "event" ? t("scenario_events") : tl.name) : tp.dataset.tilepick});
+            tp.classList.remove("added"); void tp.offsetWidth; tp.classList.add("added");
+            status(); return;
+        }
         var c = ev.target.closest(".sk-icard[data-ref]"); if (!c) return;
         if (browse) { S.showCard(c.dataset.kind + ":" + c.dataset.ref); return; }
         var it = S.catalog(c.dataset.kind).filter(function(x) { return x.ref == c.dataset.ref; })[0]; if (!it) return;
@@ -778,6 +793,56 @@ S.renderEncyclopedia = function() {
 
 // ---------- Réglages ----------
 S.bg = function() { return load(KEY_BG, null); };
+// Fonds du livre manuel : images du module par défaut, remplacées par celles chargées sur l'appareil.
+S.SKIN_DEFAULTS = { green: "skelos/img/fond/fond_vert.webp", red: "skelos/img/fond/fond_rouge.webp", rest: "skelos/img/fond/recuperation.webp" };
+for (var gi = 1; gi <= 8; gi++) S.SKIN_DEFAULTS["gem" + gi] = "skelos/img/fond/gemme_" + gi + ".webp";
+S.skinUser = function() { if (S._skin === undefined) S._skin = load(KEY_SKIN, null); return S._skin || {}; };
+S.skin = function() {
+    var u = S.skinUser(), r = {};
+    Object.keys(S.SKIN_DEFAULTS).forEach(function(k) { r[k] = u[k] || new URL(S.asset(S.SKIN_DEFAULTS[k]), document.baseURI).href; });  // adresse complète : la variable CSS est lue depuis skelos.css
+    r.custom = function(k) { return !!u[k]; };
+    return r;
+};
+// Gemme du pion numéroté, découpée sans le rond, posée sur la tuile de récupération d'origine (1 à 8).
+// Valeur X (−1) : la gemme X du bas de la tuile, reprise en haut.
+S.recoveryGem = function(n) { return !S.skinUser().rest && n >= -1 && n <= 8 && n != 0 ? S.asset("skelos/img/fond/recup_" + (n < 0 ? "x" : n) + ".webp") : null; };
+S.SKIN_KEYS = ["green", "red", "rest", "gem1", "gem2", "gem3", "gem4", "gem5", "gem6", "gem7", "gem8"];
+// Image chargée pour un fond : réduite et compressée (fonds vert et rouge tournés en paysage s'ils sont en portrait),
+// pions gemmes détourés en rond.
+S.loadSkin = function(key, file) {
+    var r = new FileReader();
+    r.onload = function() {
+        var img = new Image();
+        img.onload = function() {
+            var gem = key.indexOf("gem") == 0, turn = (key == "green" || key == "red") && img.height > img.width;
+            var max = gem ? 200 : key == "rest" ? 700 : 1100, w = img.width, hgt = img.height, cv = document.createElement("canvas"), cx = cv.getContext("2d"), url;
+            if (gem) {
+                var side = Math.min(w, hgt), k0 = Math.min(1, max / side);
+                cv.width = cv.height = Math.round(side * k0);
+                cx.beginPath(); cx.arc(cv.width / 2, cv.height / 2, cv.width / 2, 0, Math.PI * 2); cx.clip();
+                cx.drawImage(img, (w - side) / 2, (hgt - side) / 2, side, side, 0, 0, cv.width, cv.height);
+                url = cv.toDataURL("image/png");
+            } else {
+                var k = Math.min(1, max / Math.max(w, hgt)), dw = Math.round(w * k), dh = Math.round(hgt * k);
+                cv.width = turn ? dh : dw; cv.height = turn ? dw : dh;
+                if (turn) { cx.translate(cv.width, 0); cx.rotate(Math.PI / 2); }
+                cx.drawImage(img, 0, 0, dw, dh);
+                url = cv.toDataURL("image/jpeg", 0.82);
+            }
+            var sk = S.skinUser(); sk[key] = url;
+            if (store(KEY_SKIN, sk)) { S._skin = sk; S.renderSettings(); } else { S._skin = undefined; S.toast(t("image_error")); }
+        };
+        img.onerror = function() { S.toast(t("image_error")); };
+        img.src = r.result;
+    };
+    r.readAsDataURL(file);
+};
+S.removeSkin = function(key) {
+    var sk = S.skinUser();
+    if (key) delete sk[key]; else sk = {};
+    try { if (Object.keys(sk).length) store(KEY_SKIN, sk); else localStorage.removeItem(KEY_SKIN); } catch (x) {}
+    S._skin = sk; S.renderSettings();
+};
 S.boardBgStyle = function() {
     var b = S.bg(); if (!b || !b.img) return "";
     return " data-bg style=\"--sk-bgimg:url('" + b.img + "');" + S.bgVars(b) + "\"";
@@ -800,15 +865,40 @@ S.renderSettings = function() {
             + "<label class='sk-fl'>" + t("offset_x") + "<input type='range' min='0' max='100' value='" + (b.x == null ? 50 : b.x) + "' data-bg='x'></label>"
             + "<label class='sk-fl'>" + t("offset_y") + "<input type='range' min='0' max='100' value='" + (b.y == null ? 50 : b.y) + "' data-bg='y'></label>"
             + "<button class='sk-btn' data-bgrm>" + t("remove_background") + "</button>" : "") + "</div>";
+    // Fonds du livre manuel : une image par élément, à charger depuis l'appareil ; sans image, le dessin du module.
+    var sk = S.skin(), skinItem = function(k) {
+        return "<div class='sk-skinitem sk-skin-" + (k.indexOf("gem") == 0 ? "gem" : k) + "'><label class='sk-skinprev' title='" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "'>"
+            + "<img src='" + sk[k] + "' alt=''>"
+            + "<input type='file' accept='image/*' data-skin='" + k + "' hidden></label>"
+            + "<span class='sk-skinname'>" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "</span>"
+            + (sk.custom(k) ? "<button class='sk-btn sk-skinrm' data-skinrm='" + k + "' aria-label='" + e(t("skin_remove")) + "' title='" + e(t("skin_remove")) + "'>&#xf2ed;</button>" : "") + "</div>";
+    };
+    h += "<div class='sk-blk sk-c3 sk-skins'><h3>" + t("skin_title") + "</h3><p>" + t("skin_help") + "</p>"
+        + "<div class='sk-skinrow'>" + ["green", "red", "rest"].map(skinItem).join("") + "</div>"
+        + "<h4>" + t("skin_gems") + "</h4><div class='sk-skingems'>" + [1, 2, 3, 4, 5, 6, 7, 8].map(function(i) { return skinItem("gem" + i); }).join("") + "</div>"
+        + (Object.keys(S.skinUser()).length ? "<button class='sk-btn' data-skinrm=''>" + t("skin_remove_all") + "</button>" : "") + "</div>";
     h += "<div class='sk-blk sk-c2'><h3>" + t("data") + "</h3><p>" + t("data_help") + "</p><button class='sk-btn' data-exp>" + t("export_all") + "</button><button class='sk-btn' data-imp>" + t("import") + "</button>"
         + "<h3 class='sk-mt'>" + t("display") + "</h3>"
-        + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label></div>";
+        + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label>"
+        // Points de vie : sur la piste, sur la tuile, ou les deux ; au moins une case reste cochée.
+        + "<label class='sk-sw'><span>" + t("man_turn_mini") + "</span><input type='checkbox' data-pref='turnmini'" + (pr.turnMini ? " checked" : "") + "></label>"
+        + "<p>" + t("man_turn_mini_help") + "</p>"
+        + "<fieldset class='sk-hpplace'" + (pr.turnMini ? " disabled" : "") + "><legend>" + t("man_hp_place") + "</legend>"
+        + "<label class='sk-sw'><span>" + t("man_hp_track") + "</span><input type='checkbox' data-pref='hpplace' value='track'" + (pr.hpPlace != "tile" && !pr.turnMini ? " checked" : "") + "></label>"
+        + "<label class='sk-sw'><span>" + t("man_hp_tile") + "</span><input type='checkbox' data-pref='hpplace' value='tile'" + (pr.hpPlace == "tile" || pr.hpPlace == "both" || pr.turnMini ? " checked" : "") + "></label></fieldset></div>";
     S.mount(shell("sk-settings", h));
     var scr = S.root.querySelector(".sk-screen");
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
         if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
+        else if (x.dataset.pref == "turnmini") { pr.turnMini = x.checked; S.savePrefs(); S.renderSettings(); }
+        else if (x.dataset.pref == "hpplace") {
+            var tr = scr.querySelector("[data-pref='hpplace'][value='track']").checked, ti = scr.querySelector("[data-pref='hpplace'][value='tile']").checked;
+            if (!tr && !ti) { x.checked = true; return; }
+            pr.hpPlace = tr && ti ? "both" : tr ? "track" : "tile"; S.savePrefs();
+        }
         else if (x.id == "sk-bgfile" && x.files && x.files[0]) S.loadBackground(x.files[0]);
+        else if (x.dataset.skin && x.files && x.files[0]) S.loadSkin(x.dataset.skin, x.files[0]);
         else if (x.dataset.bg) { var bb = S.bg() || {}; bb[x.dataset.bg] = +x.value; store(KEY_BG, bb); S.renderSettings(); }
     });
     scr.addEventListener("input", function(ev) {
@@ -818,6 +908,8 @@ S.renderSettings = function() {
         if (x.dataset.bg == "zoom") scr.querySelector("#sk-zo").textContent = x.value + " %";
     });
     S.screenClick = function(ev) {
+        var srm = ev.target.closest("[data-skinrm]");
+        if (srm) { S.removeSkin(srm.dataset.skinrm); return; }
         if (ev.target.closest("[data-bgrm]")) { try { localStorage.removeItem(KEY_BG); } catch (x) {} S.renderSettings(); }
         else if (ev.target.closest("[data-exp]")) S.exportData(S.allData(), "skelos_sauvegarde.json");
         else if (ev.target.closest("[data-imp]")) S.importData(function(o) {

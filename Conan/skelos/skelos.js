@@ -1,6 +1,6 @@
 // Livre de Skelos : module de suivi du plateau de l'Overlord pour le Compagnon de Conan.
-// Code sous licence LGPL-3.0, comme le Compagnon. Ce module n'ajoute aucune image ni donnée de Monolith :
-// il utilise celles déjà chargées par le Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell).
+// Code sous licence LGPL-3.0, comme le Compagnon. Images et données du jeu : Monolith, avec l'autorisation accordée au Compagnon ;
+// le module reprend celles du Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell) et ajoute les fonds du livre (img/fond/).
 // Livre de Skelos numérique : module pour le Compagnon de Conan.
 // Réutilise Encyclopedia.tiles, Encyclopedia.skills et Tile._cardCode du Compagnon.
 var Skelos = {
@@ -481,7 +481,8 @@ var Skelos = {
         Skelos.state = {
             scenario: JSON.parse(JSON.stringify(d)),
             mode: d.mode, turn: 0, turns: d.turns,
-            energy: d.energy, fatigue: d.fatigue, recovery: d.recovery,
+            // En Coop, pas de gemmes au départ (rares dans ce mode, ajoutées à la main si besoin).
+            energy: d.mode == "solo" ? 0 : d.energy, fatigue: d.mode == "solo" ? 0 : d.fatigue, recovery: d.recovery,
             maxActivations: d.maxActivations, activations: 0,
             heroes: d.heroes,
             pool: river.map(function(s) { return s.uid; }), used: [], removed: [],
@@ -503,88 +504,11 @@ var Skelos = {
         return null;
     },
 
-    // Mode classique : payer, puis replacer la tuile au bout de la Rivière.
-    activate: function(uid) {
-        var st = Skelos.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
-        var slot = st.river[i], cost = i + 1;
-        if (st.phase != "overlord") { Skelos.toast(Skelos.t("activate_only_overlord")); return; }
-        if (st.activations >= st.maxActivations) { Skelos.toast(Skelos.t("too_many_activations", st.maxActivations)); return; }
-        if (st.energy < cost) { Skelos.toast(Skelos.t("not_enough", cost, st.energy)); return; }
-        Skelos.snapshot();
-        st.energy -= cost; st.fatigue += cost; st.activations++;
-        Skelos.markActivation(cost);
-        st.river.splice(i, 1); st.river.push(slot);
-        st.lastEvent = Skelos.isEvent(slot);
-        st.highlight = slot.uid; st.current = slot.uid;
-        Skelos.selected = null;
-        Skelos.log(Skelos.t("log_activate", Skelos.tileName(slot), cost));
-        Skelos.save(); Skelos.renderGame();
-    },
-
     // Pion posé dans le cercle d'activation : rang payé (Aventure) ou jeton tiré (Coop).
     // Seules les dernières entrées comptent : autant que d'activations du tour en cours.
     markActivation: function(n) {
         var st = Skelos.state;
         st.actMarks = (st.actMarks || []).concat([n]).slice(-20);
-    },
-
-    // Mode solo : piocher un jeton au hasard ; la tuile ne bouge pas.
-    drawToken: function() {
-        var st = Skelos.state;
-        if (st.phase != "overlord") { Skelos.toast(Skelos.t("draw_only_overlord")); return; }
-        if (st.activations >= st.heroes) { Skelos.toast(Skelos.t("no_more_activations", st.heroes)); return; }
-        Skelos.snapshot();
-        if (!st.pool.length) {
-            st.pool = st.used.slice(); st.used = [];
-            Skelos.log(Skelos.t("log_refresh"));
-        }
-        if (!st.pool.length) { Skelos.save(); Skelos.renderGame(); return; }
-        var k = Math.floor(Math.random() * st.pool.length);
-        var uid = st.pool.splice(k, 1)[0];
-        st.used.push(uid); st.activations++;
-        var slot = Skelos.slotByUid(uid);
-        Skelos.markActivation(slot.token);
-        st.highlight = uid;
-        st.lastEvent = Skelos.isEvent(slot) && !slot.dead;
-        Skelos.log(Skelos.t("log_activate_solo", slot.token, Skelos.tileName(slot)) + (slot.dead ? " — " + Skelos.t("activation_lost") : ""));
-        Skelos.selected = uid;
-        Skelos.save(); Skelos.renderGame();
-    },
-
-    spend: function(n) {
-        var st = Skelos.state;
-        n = Math.min(n, st.energy); if (n <= 0) return;
-        Skelos.snapshot();
-        st.energy -= n; st.fatigue += n;
-        Skelos.log(Skelos.t("log_spend", n));
-        Skelos.save(); Skelos.renderGame();
-    },
-
-    adjust: function(field, delta) {
-        var st = Skelos.state;
-        Skelos.snapshot();
-        st[field] = Math.max(0, (st[field] || 0) + delta);
-        Skelos.save(); Skelos.renderGame();
-    },
-
-    // Tour de l'Overlord : récupération, puis progression du pion Compte-tour.
-    overlordTurn: function() {
-        var st = Skelos.state;
-        Skelos.snapshot();
-        st.turn++;
-        st.activations = 0; st.lastEvent = false; st.highlight = null;
-        if (st.mode == "classic") {
-            Skelos.clearBoosts();
-            var n = Math.min(st.recovery, st.fatigue);
-            st.fatigue -= n; st.energy += n;
-            st.phase = "overlord"; st.current = null;
-            Skelos.log(Skelos.t("log_recovery", st.turn, n));
-        } else {
-            st.phase = "overlord"; st.current = null;
-            Skelos.log(Skelos.t("log_solo_turn", st.turn));
-        }
-        if (st.turns && st.turn > st.turns) Skelos.toast(Skelos.t("game_over"));
-        Skelos.save(); Skelos.renderGame();
     },
 
     markDead: function(uid) {
@@ -670,32 +594,12 @@ var Skelos = {
 
     BOOSTS: ["move", "reroll", "defense", "spell"],
 
-    // Amélioration ponctuelle : une gemme passe de l'énergie disponible à la zone d'amélioration.
-    boost: function(kind) {
-        var st = Skelos.state;
-        if (st.energy < 1) { Skelos.toast(Skelos.t("not_enough", 1, st.energy)); return; }
-        if (kind == "move" && st.phase != "overlord") { Skelos.toast(Skelos.t("move_only_overlord")); return; }
-        Skelos.snapshot();
-        st.energy--; st.boosts[kind] = (st.boosts[kind] || 0) + 1;
-        Skelos.log(Skelos.t("log_boost", Skelos.t("boost_" + kind)));
-        Skelos.save(); Skelos.renderGame();
-    },
-
     // Les gemmes des améliorations et des sorts rejoignent la fatigue.
     clearBoosts: function() {
         var st = Skelos.state, n = 0;
         Skelos.BOOSTS.forEach(function(k) { n += st.boosts[k] || 0; st.boosts[k] = 0; });
         st.fatigue += n;
         return n;
-    },
-
-    endOverlordTurn: function() {
-        var st = Skelos.state;
-        Skelos.snapshot();
-        var n = Skelos.clearBoosts();
-        st.phase = "heroes"; st.current = null; st.lastEvent = false; st.activations = 0; st.highlight = null;
-        Skelos.log(Skelos.t("log_end_overlord", n));
-        Skelos.save(); Skelos.renderGame();
     },
 
     // Dépolluer la Rivière : 2 gemmes retirées du jeu (fatigue, puis améliorations, puis énergie).
@@ -713,57 +617,6 @@ var Skelos = {
         if (Skelos.selected == uid) Skelos.selected = null;
         Skelos.log(Skelos.t("log_purge", Skelos.tileName(slot)));
         Skelos.save(); Skelos.renderGame();
-    },
-
-    renderGame: function() {
-        Skelos.screen = "game";
-        var st = Skelos.state, t = Skelos.t, e = Skelos.esc, solo = st.mode == "solo";
-        var h = "<div class='skelos-game" + (solo ? " solo" : "") + "'>";
-
-        // Panneau au-dessus de la Rivière : défini par la couche d'interface (skelos_ui.js).
-        h += "<div class='sk-board'" + (Skelos.boardBgStyle ? Skelos.boardBgStyle() : "") + ">" + Skelos.panelCode();
-
-        h += "<div class='sk-river'>";
-        for (var i = 0; i < Skelos.RIVER_SIZE; i++) {
-            var s = st.river[i];
-            h += "<div class='sk-slot" + (s && s.uid == Skelos.selected ? " sel" : "") + (s && s.uid == st.highlight ? " hl" : "") + "'>";
-            h += "<div class='sk-cost'>" + (solo ? (s ? "<span class='sk-token" + (st.removed.indexOf(s.uid) >= 0 ? " gone" : "") + "'>" + s.token + "</span>" : "") : Skelos.costToken(s, i)) + "</div>";
-            h += "<div class='sk-well'>";
-            if (s) {
-                h += "<div class='sk-tilebox" + (s.dead ? " dead" : "") + "' role='button' tabindex='0' data-act='select' data-uid='" + s.uid + "' aria-label='" + e(Skelos.tileName(s)) + "'>" + Skelos.tileCode(s)
-                    + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-                    + (s.lpMax ? Skelos.hpBadge(s) : "") + "</div>";
-            } else h += "<div class='sk-empty'></div>";
-            h += "</div></div>";
-        }
-        h += "</div>";
-        h += "</div>";
-
-        // Plus de panneau du bas : détails et actions des tuiles par appui long (menu contextuel), notes et actions dans le Journal.
-        h += "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
-
-        Skelos.root.innerHTML = h;
-        Skelos.bindGame();
-        if (Skelos.inCompanion && Skelos._lastScreen != "game") Skelos.root.scrollTop = 0;
-        Skelos._lastScreen = "game";
-    },
-
-    // Pion de coût d'une case : il passe au rouge quand la tuile sélectionnée peut être activée ; un appui paie et active.
-    canActivate: function(slot) {
-        var st = Skelos.state, cost = st.river.indexOf(slot) + 1;
-        if (st.phase != "overlord") return Skelos.t("activate_only_overlord");
-        if (st.activations >= st.maxActivations) return Skelos.t("too_many_activations", st.maxActivations);
-        if (st.energy < cost) return Skelos.t("not_enough", cost, st.energy);
-        return null;
-    },
-
-    costToken: function(slot, i) {
-        var t = Skelos.t, e = Skelos.esc;
-        if (!slot) return "<span class='sk-costtok'><span>" + (i + 1) + "</span></span>";
-        var sel = slot.uid == Skelos.selected, why = sel ? Skelos.canActivate(slot) : null, armed = sel && !why;
-        return "<span class='sk-costtok" + (armed ? " armed" : "") + "' data-act='paycost' data-uid='" + slot.uid + "'"
-            + (sel ? " role='button' tabindex='0' aria-label='" + e(armed ? t("activate_named", Skelos.tileName(slot), i + 1) : why) + "'" : "") + ">"
-            + "<span>" + (i + 1) + "</span>" + (armed ? "<i class='sk-costgem' aria-hidden='true'></i>" : "") + "</span>";
     },
 
     fixDice: function(s) {
@@ -866,42 +719,6 @@ var Skelos = {
     hideTip: function() {
         var tip = Skelos.root && Skelos.root.querySelector("#sk-tip");
         if (tip) tip.classList.remove("on");
-    },
-
-    bindGame: function() {
-        var r = Skelos.root;
-        if (!Skelos._pressBound) { Skelos.bindPress(r); Skelos._pressBound = true; }
-        r.querySelector(".skelos-game").addEventListener("click", function(ev) {
-            var b = ev.target.closest("[data-act]"); if (!b) return;
-            if (ev.target.closest(".sk-hpwrap")) return;
-            var uid = b.dataset.uid, n = +b.dataset.n;
-            switch (b.dataset.act) {
-                case "select":
-                    Skelos.selected = (Skelos.selected == uid ? null : uid);
-                    Skelos.renderGame(); break;
-                case "activate": Skelos.activate(uid); break;
-                case "paycost":
-                    if (uid != Skelos.selected) break;
-                    var why = Skelos.canActivate(Skelos.slotByUid(uid));
-                    if (why) Skelos.toast(why); else Skelos.activate(uid);
-                    break;
-                case "draw": Skelos.drawToken(); break;
-                case "spend": Skelos.spend(n); break;
-                case "boost": Skelos.boost(b.dataset.k); break;
-                case "oend": Skelos.endOverlordTurn(); break;
-                case "purge": Skelos.purge(uid); break;
-                case "adj": Skelos.adjust(b.dataset.f, n); break;
-                case "turnplus": Skelos.adjust("turn", 1); break;
-                case "turnminus": if (Skelos.state.turn > 0) Skelos.adjust("turn", -1); break;
-                case "oturn": Skelos.overlordTurn(); break;
-                case "undo": Skelos.undo(); break;
-                case "dead": Skelos.markDead(uid); break;
-                case "reinf": Skelos.reinforce(uid); break;
-                case "rmtoken": Skelos.removeToken(uid); break;
-                case "lp": Skelos.life(uid, n); break;
-                case "xfer": Skelos.transferGem(b.dataset.dir); break;
-            }
-        });
     },
 
     toast: function(msg) {

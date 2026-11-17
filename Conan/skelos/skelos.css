@@ -20,7 +20,7 @@
     box-sizing: border-box;
 }
 .skelos-setup *, .skelos-game * { box-sizing: border-box; }
-.skelos-setup h1, .skelos-setup h2, .skelos-game h2, .skelos-game h3, .sk-title {
+.skelos-setup h1, .skelos-setup h2, .skelos-game h2, .skelos-game h3 {
     font-family: 'Primary', Georgia, serif; font-weight: normal; letter-spacing: .02em; margin: 0;
 }
 .skelos-setup h1 { font-size: 2rem; }
@@ -55,10 +55,6 @@
 .sk-mode legend { color: var(--sk-muted); padding: 0 6px; }
 .sk-mode label { flex-direction: row; align-items: center; color: var(--sk-fg); }
 .sk-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-.sk-scenlist { list-style: none; padding: 0; margin: 0; }
-.sk-scenlist li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--sk-line); }
-.sk-scenlist li span { flex: 1; }
-.sk-scenlist small { color: var(--sk-muted); margin-left: 6px; }
 
 /* La Rivière : 8 cases de coût croissant */
 .sk-river { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
@@ -106,10 +102,6 @@
 .sk-tip .sk-solo { color: #ffb37a; background: rgba(255,121,0,.12); border-radius: 4px; padding: 5px 8px; }
 
 /* Barre de jeu */
-.sk-title { font-size: 1.5rem; flex: 1 1 200px; }
-
-.sk-token { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #cfc6b8; color: #2a1a12; font-family: 'Motrg', serif; font-size: 1.1rem; }
-.sk-token.gone { opacity: .3; text-decoration: line-through; }
 
 .sk-solo { color: #ffb37a; background: rgba(255,121,0,.1); border-radius: 4px; padding: 5px 8px; }
 
@@ -174,7 +166,6 @@
 .sk-board .sk-mini:active { background: #1d1410; }
 
 /* Gemmes taillées */
-.sk-board .sk-gems { gap: 6px; min-height: 22px; }
 
 /* La Rivière : niches creusées et coûts en médaillons de bronze */
 .sk-board .sk-slot { border-radius: 10px; box-shadow: inset 0 4px 12px rgba(0,0,0,.8), inset 0 -1px 0 rgba(255,236,200,.05); }
@@ -188,7 +179,6 @@
 .sk-board .sk-empty { border: 1px dashed rgba(226,196,138,.25); background: transparent; }
 .sk-board .sk-tilebox { box-shadow: 0 3px 8px rgba(0,0,0,.6); }
 .sk-board .sk-slot.sel .sk-tilebox { outline-color: var(--sk-bronze-hi); }
-.sk-board .sk-token { background: radial-gradient(circle at 35% 30%, #efe6d6, #b9ab95); box-shadow: 0 2px 3px rgba(0,0,0,.6); }
 
 /* Panneaux du bas en accord avec le plateau */
 .skelos-game .sk-btn.sk-primary {
@@ -223,7 +213,6 @@
 .sk-board .sk-cost:not(:empty) { width: auto; height: auto; background: none; box-shadow: none; }
 .sk-river-setup .sk-costtok { width: 36px; height: 36px; }
 .sk-river-setup .sk-costtok span { font-size: 1.2rem; }
-.sk-board .sk-token { width: 40px; height: 40px; font-size: 1.3rem; border: 2px solid #8a7a62; }
 
 /* Sélecteur : plusieurs ajouts d'affilée et choix des boîtes possédées */
 .sk-pickdlg .sk-dialog-head { position: sticky; top: -16px; background: inherit; z-index: 2; padding: 4px 0; }
@@ -251,7 +240,6 @@
 .sk-board .sk-slot { padding: 4px 4px 5px; gap: 3px; }
 .sk-board .sk-cost:not(:empty) .sk-costtok { width: 32px; height: 32px; }
 .sk-board .sk-costtok span { font-size: 1.1rem; }
-.sk-board .sk-token { width: 32px; height: 32px; font-size: 1.1rem; }
 
 /* Pion de coût armé : rouge, avec une gemme bien visible à côté */
 .sk-costtok { position: relative; z-index: 2; }
@@ -263,20 +251,13 @@
     animation: sk-armed 1.6s ease-in-out infinite;
 }
 .sk-costtok.armed span { color: #fff3e6; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
-.sk-costgem {
-    position: absolute; left: calc(100% + 8px); top: 50%; width: 22px; height: 22px; margin-top: -11px;
-    transform: rotate(45deg); border-radius: 3px;
-    background:
-        linear-gradient(135deg, rgba(255,255,255,.7) 0 20%, transparent 21%),
-        conic-gradient(from 45deg, #ff5a4a, #b3121a, #6d0710, #c0201f, #ff5a4a);
-    box-shadow: 0 0 0 2px #f2d9a6, 0 0 10px rgba(255,60,40,.8);
-}
+
 @keyframes sk-armed { 50% { box-shadow: 0 0 0 5px rgba(255,90,70,.25), 0 0 20px rgba(255,60,40,.9), inset 0 -3px 4px rgba(0,0,0,.35); } }
 @media (prefers-reduced-motion: reduce) { .sk-board .sk-cost:not(:empty) .sk-costtok.armed { animation: none; } }
 
 /* ===== Grille commune de 8 colonnes, calée sur la Rivière ===== */
 .sk-board { --g: 6px; }
-.sk-board .sk-gems { justify-content: center; }
+
 .sk-board .sk-slot { background: rgba(0,0,0,.38); }
 
 /* ===== Écrans de navigation : accueil, partie libre, campagnes, réglages, fin ===== */
@@ -285,19 +266,16 @@
 .sk-blk { background: rgba(0,0,0,.38); border: 1px solid rgba(226,196,138,.22); border-radius: 10px; padding: 12px; box-shadow: inset 0 3px 10px rgba(0,0,0,.6); color: #efe3d2; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .sk-blk h3 { font-family: 'Primary', Georgia, serif; font-weight: normal; color: #e2c48a; margin: 0; font-size: 1.15rem; letter-spacing: .04em; }
 .sk-blk p { margin: 0; font-size: .92rem; color: rgba(239,227,210,.75); }
-.sk-c2 { grid-column: span 2; } .sk-c3 { grid-column: span 3; } .sk-c4 { grid-column: span 4; } .sk-c5 { grid-column: span 5; } .sk-c8 { grid-column: 1 / -1; }
+.sk-c2 { grid-column: span 2; } .sk-c3 { grid-column: span 3; }  .sk-c5 { grid-column: span 5; } .sk-c8 { grid-column: 1 / -1; }
 .sk-headblk { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 12px; flex-wrap: wrap; }
 .sk-headblk h2 { font-family: 'Primary', Georgia, serif; font-weight: normal; color: #e2c48a; margin: 0; font-size: 1.5rem; flex: 1; min-width: 200px; }
-.sk-title { grid-column: 1 / -1; background: none; border: 0; box-shadow: none; text-align: center; }
-.sk-title h1 { font-family: 'Primary', Georgia, serif; font-weight: normal; color: #e2c48a; margin: 6px 0; font-size: 2.3rem; letter-spacing: .06em; }
-.sk-resume { border-color: #c33a24; background: linear-gradient(180deg, rgba(195,58,36,.22), rgba(0,0,0,.35)); }
-.sk-go { align-self: flex-start; margin-top: auto; }
+
 .sk-screen .sk-btn { color: #efe3d2; border-color: rgba(176,136,79,.6); }
 .sk-screen .sk-btn.sk-primary, .sk-overlay .sk-btn.sk-primary { background: linear-gradient(180deg, #c33a24, #8e1d12); border-color: #5e140c; color: #fff3e6; }
 .sk-btn.sk-sm { min-height: 34px; padding: 3px 10px; font-size: .85rem; }
 .sk-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .sk-mt { margin-top: 10px !important; }
-.sk-mini-list { margin: 0; padding-left: 18px; font-size: .9rem; }
+
 .sk-linkbtn { font: inherit; background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 0; }
 .sk-in { font: inherit; color: #efe3d2; background: rgba(0,0,0,.35); border: 1px solid rgba(226,196,138,.35); border-radius: 6px; padding: 8px 10px; width: 100%; }
 .sk-in.sk-w { max-width: 220px; }
@@ -314,10 +292,7 @@
 .sk-li-t small { display: block; color: rgba(239,227,210,.6); font-size: .8rem; }
 .sk-libtn { width: 100%; text-align: left; background: none; color: inherit; font: inherit; border: 0; border-bottom: 1px solid rgba(176,136,79,.2); cursor: pointer; }
 .sk-dlist { max-height: 45vh; overflow: auto; }
-.sk-pill { font-size: .85rem; padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(226,196,138,.4); color: #e2c48a; }
-.sk-score { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 10px; border: 1px solid rgba(226,196,138,.45); }
-.sk-score b { font-family: 'Motrg', serif; font-size: 1.5rem; font-weight: normal; color: #f6ead8; }
-.sk-score small { font-size: .78rem; line-height: 1.15; }
+
 .sk-sc { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid rgba(176,136,79,.2); }
 .sk-sc.sk-next { border-radius: 8px; }
 .sk-sc-n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: 'Motrg', serif; }
@@ -325,8 +300,7 @@
 .sk-sc-t small { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; color: rgba(239,227,210,.6); font-size: .8rem; margin-top: 2px; }
 .sk-date { font: inherit; font-size: .78rem; color: #e2c48a; border: 1px dashed rgba(226,196,138,.5); border-radius: 6px; padding: 1px 6px; background: none; cursor: pointer; }
 .sk-st { font-size: .8rem; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
-.sk-vp { font-family: 'Motrg', serif; font-size: 1rem; min-width: 40px; padding: 3px 6px; border-radius: 8px; background: rgba(226,196,138,.15); color: #f2d9a6; border: 1px solid rgba(226,196,138,.45); cursor: pointer; }
-.sk-vp.neg { background: rgba(195,58,36,.25); }
+
 .sk-addrow { align-self: flex-start; border-style: dashed !important; }
 .sk-hero { border: 1px solid rgba(176,136,79,.3); border-left: 4px solid var(--hc); border-radius: 0 8px 8px 0; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
 .sk-hero.dead { opacity: .6; }
@@ -349,7 +323,7 @@
 .sk-legend i.sk-k-sp { background: #2c2440; border-color: #7d6aa8; } .sk-legend i.sk-k-up { background: #1f3b34; border-color: #4f9a86; }
 .sk-cat { color: rgba(239,227,210,.6); font-size: .78rem; margin-top: 4px; }
 .sk-empty-t { color: rgba(239,227,210,.4); font-size: .85rem; }
-.sk-clog { margin: 0; padding-left: 18px; font-size: .85rem; color: rgba(239,227,210,.72); }
+
 .sk-heroes-prep { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
 .sk-small { max-width: 560px; margin: 8vh auto 0; border: 1px solid #8a6a3b; display: flex; flex-direction: column; gap: 6px; }
 .sk-small h2 { font-family: 'Primary', serif; font-weight: normal; color: #e2c48a; margin: 0 0 4px; }
@@ -376,7 +350,7 @@
 .sk-bigcard { border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; border: 2px dashed rgba(226,196,138,.5); background: rgba(0,0,0,.3); }
 .sk-bigcard .sk-icard-x { font-size: .95rem; }
 .sk-who { font-size: .9rem; }
-.sk-switches { display: flex; flex-direction: column; max-height: 52vh; overflow: auto; }
+
 .sk-sw { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(176,136,79,.2); font-size: .92rem; cursor: pointer; }
 .sk-sw input { width: 22px; height: 22px; accent-color: #4f9a86; }
 .sk-bgprev { aspect-ratio: 1.6; border-radius: 8px; border: 1px dashed rgba(226,196,138,.45); background-color: rgba(0,0,0,.3); display: grid; place-items: center; color: rgba(239,227,210,.6); background-repeat: no-repeat; }
@@ -428,9 +402,9 @@
 .sk-board, .sk-screen .sk-board { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 8px !important; border-radius: 0 !important; }
 .sk-board::before, .sk-board::after { display: none !important; }
 .sk-board .sk-slot, .sk-blk { background: var(--sk-card) !important; border: 1px solid var(--sk-line) !important; box-shadow: none !important; border-radius: 6px !important; color: var(--body-color) !important; }
-.sk-blk h3, .skelos-setup h1, .skelos-setup h2, .sk-headblk h2, .sk-title h1 {
+.sk-blk h3, .skelos-setup h1, .skelos-setup h2, .sk-headblk h2 {
     font-family: 'Primary', serif !important; color: var(--main-color) !important; text-shadow: none !important; letter-spacing: .03em; }
-.sk-blk p, .sk-help, .sk-clog, .sk-li-t small, .sk-sc-t small, .sk-muted, .sk-fl, .sk-fl small, .sk-legend, .sk-cat, .sk-empty-t { color: var(--sk-muted) !important; }
+.sk-blk p, .sk-help, .sk-li-t small, .sk-sc-t small, .sk-muted, .sk-fl, .sk-fl small, .sk-legend, .sk-cat, .sk-empty-t { color: var(--sk-muted) !important; }
 .sk-btn, .sk-mini, .sk-screen .sk-btn, .sk-overlay .sk-btn {
     background: transparent !important; color: var(--main-color) !important; border: 1px solid var(--main-color) !important; border-radius: 4px !important; box-shadow: none !important; font-family: 'Primary', serif !important; }
 .sk-btn.sk-primary, .sk-screen .sk-btn.sk-primary, .sk-overlay .sk-btn.sk-primary { background: var(--highlight-color) !important; border-color: var(--highlight-color) !important; color: #fff !important; }
@@ -449,10 +423,7 @@
 .sk-ctxbanner { border-left-color: #3f8f7a !important; }
 
 /* Zones : fonds originaux vert (énergie) et rouge (fatigue), gemmes rouges du Compagnon */
-.sk-gems { display: flex !important; flex-wrap: wrap; gap: 3px !important; justify-content: center; min-height: 0 !important; }
-.sk-gemimg { width: 20px; height: 20px; }
-.sk-gemimg.dim { filter: saturate(.55) brightness(.85); }
-.sk-gemmore { color: #fff; font-family: 'Motrg', serif; font-size: .9rem; }
+
 .sk-tokimg { position: relative; display: inline-block; line-height: 0; }
 .sk-tokimg img { width: 50px; height: 50px; object-fit: contain; }
 .sk-tokimg.sk-tokround img { border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
@@ -465,23 +436,11 @@
 .sk-recovtok b { position: relative; font-family: 'Motrg', serif; font-size: 1.7rem; font-weight: normal; }
 
 /* Pions de coût : pions numérotés du jeu */
-.sk-costimgwrap { position: relative; background: none !important; border: 0 !important; box-shadow: none !important; width: auto !important; height: auto !important; display: inline-block; line-height: 0; }
-.sk-costimgwrap .sk-costimg { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
-.sk-board .sk-cost:not(:empty) .sk-costimgwrap.armed { animation: none !important; background: none !important; box-shadow: none !important; cursor: pointer; }
-.sk-costimgwrap.armed .sk-costimg { box-shadow: 0 0 0 3px #d42a1f, 0 0 12px rgba(212,42,31,.7); }
-.sk-costgemimg { position: absolute; left: calc(100% + 6px); top: 50%; width: 24px; height: 24px; margin-top: -12px; }
-.sk-tokenimg { background: none !important; border: 0 !important; width: auto !important; height: auto !important; }
-.sk-tokenimg img { width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
-.sk-token.gone img { opacity: .3; }
 
 /* Améliorations avec icônes */
-.sk-actgem { width: 22px; height: 22px; }
-.sk-actslots { display: inline-flex; gap: 6px; }
-.sk-actslots .sk-actgem { width: 28px; height: 28px; }
-.sk-actempty { width: 28px; height: 28px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
 
 /* Au-dessus des tuiles 6, 7 et 8 */
-.sk-turnbtn { width: 100%; min-height: 40px; border: 0; border-radius: 4px; background: var(--highlight-color); color: #fff; font-family: 'Primary', serif; cursor: pointer; }
+
 .sk-iconbtn { width: 46px; height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 6px; border: 1px solid var(--main-color); background: var(--sk-cardhi);
     color: var(--main-color); font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 18px; line-height: 1; box-shadow: 0 1px 2px rgba(0,0,0,.15); cursor: pointer; }
 .sk-iconbtn:disabled { opacity: .35; cursor: default; }
@@ -499,19 +458,19 @@
 .sk-tabbtn.on { border-bottom-color: var(--highlight-color); }
 .sk-screen.sk-tabbed .sk-board { padding-top: 10px !important; }
 .sk-screen .sk-board { min-height: 0 !important; }
-.sk-resume { border-left: 4px solid var(--highlight-color) !important; }
+
 .sk-seg button { color: var(--main-color) !important; border-color: var(--main-color) !important; }
 .sk-seg button.sk-on { background: var(--main-color) !important; color: var(--body-bg-color) !important; }
 .sk-li, .sk-sc, .sk-libtn { border-bottom-color: var(--sk-line) !important; color: var(--body-color); }
 .sk-sc.sk-next { background: var(--sk-soft) !important; }
 .sk-sc-n { background: var(--main-color) !important; color: var(--body-bg-color) !important; }
-.sk-date, .sk-vp { color: var(--main-color) !important; border-color: var(--main-color) !important; background: transparent !important; }
-.sk-vp.neg { color: #c0392b !important; border-color: #c0392b !important; }
+.sk-date { color: var(--main-color) !important; border-color: var(--main-color) !important; background: transparent !important; }
+
 .sk-st.win { background: #3f8a46 !important; color: #fff !important; } .sk-st.loss { background: #b3261e !important; color: #fff !important; } .sk-st.playing { background: var(--sk-soft) !important; color: var(--main-color) !important; }
-.sk-pill, .sk-arch { color: var(--main-color) !important; border-color: var(--sk-line) !important; }
-.sk-score { background: transparent !important; border-color: var(--sk-line) !important; }
-.sk-score b, .sk-hero-n { color: var(--main-color) !important; }
-.sk-score small { color: var(--sk-muted) !important; }
+.sk-arch { color: var(--main-color) !important; border-color: var(--sk-line) !important; }
+
+.sk-hero-n { color: var(--main-color) !important; }
+
 .sk-hero { background: var(--sk-cardhi) !important; border-color: var(--sk-line) !important; border-left-color: var(--hc) !important; }
 .sk-chip { background: color-mix(in srgb, #8a6a3b 18%, var(--sk-cardhi)) !important; color: var(--body-color) !important; }
 .sk-chip.sk-k-sp { background: color-mix(in srgb, #7d6aa8 22%, var(--sk-cardhi)) !important; }
@@ -589,11 +548,11 @@ html.skelos-full #skelos .skelos-game { padding-top: 10px !important; }
 /* Téléphone en portrait */
 @media (max-width: 600px) {
     .sk-board .sk-river { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-    .sk-turnbtn { font-size: .85rem; min-height: 34px; }
-    .sk-gemimg { width: 14px; height: 14px; }
+
+    
     .sk-tokimg img { width: 38px; height: 38px; }
     .sk-c8 ol { font-size: .74rem; }
-    .sk-costimgwrap .sk-costimg { width: 30px; height: 30px; }
+
     .sk-iconbtn { width: 40px; height: 38px; }
     .sk-upcols { flex-direction: column; }
     .sk-filters-side { width: 100%; }
@@ -602,12 +561,12 @@ html.skelos-full #skelos .skelos-game { padding-top: 10px !important; }
 }
 /* Téléphone en paysage : version compacte, à utiliser de préférence en plein écran */
 @media (max-height: 520px) and (orientation: landscape) {
-    .sk-gems, .sk-c8 ol { display: none !important; }
+    .sk-c8 ol { display: none !important; }
     .sk-tokimg img { width: 32px; height: 32px; }
     .sk-tokimg b { min-width: 20px; height: 20px; font-size: .8rem; }
     .sk-recovtok { width: 40px; height: 40px; } .sk-recovtok b { font-size: 1.1rem; }
     .sk-iconbtn { width: 34px; height: 30px; font-size: 14px; }
-    .sk-costimgwrap .sk-costimg { width: 26px; height: 26px; }
+
 }
 /* Au-dessus de l'en-tête et du menu du Compagnon */
 .sk-dialogscreen { z-index: 20000 !important; }
@@ -617,49 +576,30 @@ html.skelos-dlgopen .header, html.skelos-dlgopen nav.menu, html.skelos-dlgopen n
 html.skelos-dlgopen .contents { top: 0 !important; bottom: 0 !important; }
 .sk-recovtok b { color: var(--main-color) !important; text-shadow: none !important; }
 .sk-recovtok svg { color: var(--main-color); }
-.sk-actempty { border-color: var(--sk-muted) !important; }
-.sk-turnbtn { font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+
 html.skelos-full nav.menu { display: none !important; }
 @media (max-height: 520px) and (orientation: landscape) {
     .sk-board .sk-river { grid-template-columns: repeat(8, minmax(0, 1fr)) !important; gap: 4px !important; }
     .sk-board .sk-slot { padding: 2px !important; }
     .sk-c8 h4 { font-size: .75rem; }
 }
-@media (max-height: 520px) and (orientation: landscape) { .sk-turnbtn { font-size: .72rem; min-height: 28px; } .sk-board { padding-top: 4px !important; } }
+@media (max-height: 520px) and (orientation: landscape) {  .sk-board { padding-top: 4px !important; } }
 
 /* =====================================================================
    Étape 1 — Panneau du plateau : grille de 8 colonnes calée sur la Rivière
    (mêmes colonnes et même écart de 6 px que la Rivière). Remplace les anciens
    blocs .sk-boosts, .sk-zones et .sk-ctrl.
    ===================================================================== */
-.sk-panel {
-    --pg: 6px;
-    --pcard: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 92%, var(--body-color, #000) 8%);
-    --pline: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 80%, var(--body-color, #000) 20%);
-    --pmuted: color-mix(in srgb, var(--body-color, #000) 70%, var(--body-bg-color, #f8f6f6) 30%);
-    --psoft: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 86%, var(--main-color, #542f23) 14%);
-    --pov: #b3261e; --phe: #2a64ad;
-    display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); grid-auto-rows: auto; gap: var(--pg);
-    color: var(--body-color); font-family: 'Secondary', sans-serif;
-}
+
 .sk-board .sk-river { margin-top: var(--pg, 6px) !important; gap: 6px !important; }
-.sk-p { background: var(--pcard); border: 1px solid var(--pline); border-radius: 6px; min-width: 0; box-sizing: border-box; position: relative;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 8px; text-align: center; color: var(--body-color); }
+
 .sk-ptitle { font-family: 'Primary', serif; color: var(--main-color); font-size: 1.05rem; line-height: 1.05; letter-spacing: .03em; }
-.sk-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Placement : rangée haute (≈ 124 px) puis rangée basse */
-.sk-a-tour { grid-column: 1 / 3; grid-row: 1; min-height: 124px; }
-.sk-a-b1 { grid-column: 3; grid-row: 1; } .sk-a-b2 { grid-column: 4; grid-row: 1; } .sk-a-b3 { grid-column: 5; grid-row: 1; } .sk-a-b4 { grid-column: 6; grid-row: 1; }
-.sk-a-tools { grid-column: 7 / 9; grid-row: 1; }
-.sk-a-en { grid-column: 1 / 3; grid-row: 2; } .sk-a-rec { grid-column: 3; grid-row: 2; } .sk-a-fa { grid-column: 4 / 6; grid-row: 2; }
-.sk-a-phase { grid-column: 6 / 8; grid-row: 2; } .sk-a-ov { grid-column: 8; grid-row: 2; }
-.sk-panel.solo .sk-a-played { grid-column: 3 / 7; grid-row: 1; }
-.sk-panel.solo .sk-a-pool { grid-column: 1 / 4; grid-row: 2; } .sk-panel.solo .sk-a-heroes { grid-column: 4 / 6; grid-row: 2; }
+
+ 
 
 /* Pastilles de chiffre agrandies sur les jetons */
-.sk-panel .sk-tokimg img { width: 70px; height: 70px; }
-.sk-panel .sk-tokimg b { min-width: 40px; height: 36px; border-radius: 18px; padding: 0 7px; right: -14px; bottom: -8px; font-size: 1.75rem; -webkit-text-stroke: .6px currentColor; }
 
 /* Cadre Tour : sablier et alarme ; appui long : − et + de part et d'autre */
 .sk-ppair { display: flex; width: 100%; justify-content: space-around; align-items: center; }
@@ -668,149 +608,57 @@ html.skelos-full nav.menu { display: none !important; }
 .sk-ptok .sk-pstep:first-child { right: calc(100% + 6px); } .sk-ptok .sk-pstep:last-child { left: calc(100% + 6px); }
 .sk-ptok.editing .sk-pstep { display: grid; }
 .sk-ptok.editing { z-index: 3; }
-.sk-a-tour.last { background: var(--pov); border-color: #7d1914; }
-.sk-a-tour.last .sk-ptitle { color: #fff; }
-.sk-a-tour.last .sk-tokimg b { background: #fff; color: var(--pov); }
-.sk-a-tour.last .sk-pstep { background: #fff; color: var(--pov); border-color: #fff; }
 
 /* Boutons − et + du panneau */
 .sk-pstep { width: 40px; height: 40px; place-items: center; display: grid; padding: 0; border-radius: 6px; border: 1px solid var(--main-color); background: var(--pcard);
     color: var(--main-color); font: 1.5rem/1 'Secondary', sans-serif; cursor: pointer; touch-action: manipulation; flex: none; }
 .sk-pstep:active { background: var(--psoft); }
-.sk-prow { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 
 /* Améliorations ponctuelles : titre sur deux lignes réservées, icône, compteur de gemmes */
-.sk-pboost { font: inherit; cursor: pointer; justify-content: flex-start; gap: 4px; padding: 6px 6px 8px; touch-action: manipulation; }
-.sk-pboost:hover { border-color: var(--main-color); }
-.sk-pboost:active { background: var(--psoft); }
-.sk-pboost:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 1px; }
-.sk-pboost .sk-ptitle { font-size: clamp(.8rem, 1.2vw, .95rem); min-height: 2.1em; display: flex; align-items: flex-start; justify-content: center; width: 100%; }
-.sk-pboostimg { height: 42px; width: auto; max-width: 80%; object-fit: contain; }
-.sk-pgems { display: flex; align-items: center; gap: 3px; font-family: 'Motrg', serif; color: var(--main-color); font-size: 1.15rem; line-height: 1; }
-.sk-pgems img { width: 22px; height: 22px; }
-.sk-pgems.zero { opacity: .45; }
 
 /* Bloc des quatre boutons 2×2 */
-.sk-a-tools { display: grid; grid-template-columns: 1fr 1fr; gap: var(--pg); padding: 6px; align-items: stretch; }
-.sk-ptool { font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; padding: 4px 2px;
-    border: 1px solid var(--main-color); border-radius: 6px; background: var(--pcard); color: var(--main-color); cursor: pointer; touch-action: manipulation; }
-.sk-ptool i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 22px; line-height: 1; }
-.sk-ptool span { font-family: 'Primary', serif; font-size: .9rem; line-height: 1.1; }
-.sk-ptool:disabled { opacity: .4; cursor: default; }
-.sk-ptool:not(:disabled):active { background: var(--psoft); }
 
 /* Énergie (vert) et Fatigue (rouge) : fonds originaux */
-.sk-a-en { background: radial-gradient(120% 90% at 50% 20%, #3f9a52, #1d5a2b 70%, #123b1c); border-color: #123b1c; }
-.sk-a-fa { background: radial-gradient(120% 90% at 50% 20%, #c94a3c, #8a1f17 70%, #5a120d); border-color: #5a120d; }
-.sk-a-en .sk-ptitle, .sk-a-fa .sk-ptitle { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-.sk-a-en .sk-tokimg b, .sk-a-fa .sk-tokimg b { background: #fff; color: #3a1a12; }
-.sk-pmain { display: flex; justify-content: center; padding-bottom: 6px; }
-.sk-panel .sk-gems { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
-.sk-panel .sk-gemmore { color: #fff; }
-.sk-pbtn { font-family: 'Primary', serif; font-size: .95rem; min-height: 40px; padding: 4px 14px; border-radius: 4px; cursor: pointer;
-    color: #fff; border: 1px solid rgba(255,255,255,.75); background: rgba(255,255,255,.12); touch-action: manipulation; }
-.sk-pbtn:disabled { opacity: .45; cursor: default; }
-.sk-pbtn:not(:disabled):active { background: rgba(255,255,255,.25); }
 
 /* Récupération */
-.sk-a-rec .sk-ptitle { font-size: clamp(.72rem, 1.05vw, .95rem); overflow-wrap: anywhere; }
-.sk-a-rec .sk-recovtok { width: 70px; height: 70px; }
-.sk-ptotal { font-size: .8rem; color: var(--pmuted); line-height: 1.2; }
 
 /* Phase en cours : rouge (Overlord) ou bleu (Héros), étapes en grille 2×2 */
-.sk-a-phase { align-items: stretch; justify-content: flex-start; gap: 8px; padding: 10px 12px; color: #fff; border: 0; text-align: left; }
-.sk-a-phase.ov { background: var(--pov); } .sk-a-phase.he { background: var(--phe); }
-.sk-pphase-t { font-family: 'Primary', serif; font-size: 1.15rem; overflow-wrap: anywhere; line-height: 1.05; border-bottom: 1px solid rgba(255,255,255,.4); padding-bottom: 6px; }
-.sk-a-phase ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; }
-.sk-a-phase li { background: rgba(255,255,255,.16); border-radius: 6px; padding: 6px 8px; font-size: 1.2rem; line-height: 1.1; display: flex; align-items: center; gap: 7px; }
-.sk-pnum { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #3a1a12; display: grid; place-items: center; font-family: 'Motrg', serif; font-size: 1rem; }
-.sk-a-phase:has(li.cur) li:not(.cur) { opacity: .55; }
-.sk-a-phase li.cur { font-weight: bold; background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.45), 0 4px 12px rgba(0,0,0,.35); transform: scale(1.04); position: relative; z-index: 1; }
-.sk-a-phase.ov li.cur { color: var(--pov); } .sk-a-phase.he li.cur { color: var(--phe); }
-.sk-a-phase.ov li.cur .sk-pnum { background: var(--pov); color: #fff; } .sk-a-phase.he li.cur .sk-pnum { background: var(--phe); color: #fff; }
+
+ 
 
 /* Tour de l'Overlord : libellé fixe, liseré rouge, Commencer / Terminer, emplacements d'activation 2 par ligne */
-.sk-a-ov { border-top: 6px solid var(--pov); gap: 8px; }
-.sk-a-ov .sk-ptitle { font-size: .98rem; }
-.sk-a-ov .sk-turnbtn { width: 100%; min-height: 46px; font-size: .8rem; padding: 0 2px; letter-spacing: 0; white-space: normal; overflow: visible; text-overflow: clip;
-    background: var(--highlight-color); color: #fff; border: 0; border-radius: 4px; font-family: 'Primary', serif; cursor: pointer; touch-action: manipulation; }
-.sk-pacts .sk-actslots { display: grid; grid-template-columns: repeat(2, 36px); gap: 10px; justify-content: center; }
-.sk-pacts .sk-actgem, .sk-pacts .sk-actempty { width: 36px; height: 36px; }
 
 /* Solo / coop : jetons joués (bande rouge), jetons disponibles (vert), Héros en jeu */
-.sk-a-played { background: radial-gradient(120% 120% at 50% 10%, #c94a3c, #8a1f17 75%, #5a120d); border-color: #5a120d; }
-.sk-a-played .sk-ptitle { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-.sk-pmarkers { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-.sk-pmarker { width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.45); box-sizing: border-box; }
-.sk-pmarker.empty { display: inline-block; border: 2px dashed rgba(255,255,255,.7); box-shadow: none; }
-.sk-a-pool { background: radial-gradient(120% 90% at 50% 20%, #3f9a52, #1d5a2b 70%, #123b1c); border-color: #123b1c; }
-.sk-a-pool .sk-ptitle { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-.sk-a-pool .sk-prow { gap: 22px; }
-.sk-a-pool .sk-tokimg b { background: #fff; color: #3a1a12; }
-.sk-pdraw { font-size: 1.15rem !important; min-height: 56px; padding: 6px 22px !important; }
-.sk-phint { color: #fff; font-size: .95rem; max-width: 14em; }
-.sk-a-heroes .sk-recovtok { width: 70px; height: 70px; }
-.sk-a-heroes .sk-recovtok svg { inset: 14px; }
 
 /* Cœur des points de vie : au-dessus de l'emplacement de la flamme de renfort */
 .sk-board .sk-hpwrap, .sk-board .sk-hpwrap.withreinf, .sk-board .sk-hpwrap.open, .sk-board .sk-hpwrap.withreinf.open { bottom: 16.8%; }
 
 /* Tablette en portrait et téléphone : grille de 4 colonnes */
-@media (max-width: 900px) {
-    .sk-panel { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .sk-a-tour { grid-column: 1 / 3; grid-row: 1; min-height: 0; } .sk-a-tools { grid-column: 3 / 5; grid-row: 1; }
-    .sk-a-b1 { grid-column: 1; grid-row: 2; } .sk-a-b2 { grid-column: 2; grid-row: 2; } .sk-a-b3 { grid-column: 3; grid-row: 2; } .sk-a-b4 { grid-column: 4; grid-row: 2; }
-    .sk-a-en { grid-column: 1 / 3; grid-row: 3; } .sk-a-fa { grid-column: 3 / 5; grid-row: 3; }
-    .sk-a-rec { grid-column: 1 / 3; grid-row: 4; } .sk-a-ov { grid-column: 3 / 5; grid-row: 4; }
-    .sk-a-rec .sk-ptitle { font-size: .95rem; }
-    .sk-a-phase { grid-column: 1 / 5; grid-row: 5; }
-    .sk-panel.solo .sk-a-played { grid-column: 1 / 5; grid-row: 2; }
-    .sk-panel.solo .sk-a-pool { grid-column: 1 / 3; grid-row: 3; } .sk-panel.solo .sk-a-heroes { grid-column: 3 / 5; grid-row: 3; }
-    .sk-panel.solo .sk-a-ov { grid-column: 1 / 5; grid-row: 4; }
-    .sk-a-ov .sk-turnbtn { font-size: .95rem; }
-    .sk-panel.solo .sk-a-ov { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-    .sk-panel.solo .sk-a-ov .sk-ptitle { width: 100%; }
-    .sk-panel.solo .sk-a-ov .sk-turnbtn { width: auto; flex: 1; min-width: 120px; }
-    .sk-pacts .sk-actslots { grid-template-columns: repeat(4, 30px); gap: 6px; }
-    .sk-pacts .sk-actgem, .sk-pacts .sk-actempty { width: 30px; height: 30px; }
-    .sk-panel .sk-tokimg img { width: 54px; height: 54px; }
-    .sk-panel .sk-tokimg b { min-width: 32px; height: 28px; font-size: 1.3rem; right: -10px; bottom: -6px; }
-    .sk-pphase-t { font-size: 1.3rem; }
-    .sk-a-phase li { font-size: 1rem; }
-    .sk-pmarker { width: 44px; height: 44px; }
-    .sk-pdraw { font-size: 1rem !important; min-height: 46px; padding: 4px 12px !important; }
-}
-@media (max-width: 420px) {
-    .sk-ptool span { font-size: .78rem; }
-    .sk-pboost .sk-ptitle { font-size: .72rem; }
-    .sk-pboostimg { height: 32px; }
-    .sk-panel .sk-gemimg { width: 14px; height: 14px; }
-    .sk-pbtn { font-size: .8rem; padding: 2px 8px; }
-}
+
 /* Téléphone en paysage : version compacte sur 8 colonnes */
 @media (max-height: 520px) and (orientation: landscape) {
-    .sk-panel { --pg: 4px; }
-    .sk-p { padding: 4px; gap: 3px; }
-    .sk-a-tour { min-height: 0; }
+
+    
+
     .sk-ptitle { font-size: .75rem; }
-    .sk-panel .sk-tokimg img { width: 40px; height: 40px; }
-    .sk-panel .sk-tokimg b { min-width: 24px; height: 22px; font-size: 1rem; right: -8px; bottom: -5px; padding: 0 4px; }
+
+    
     .sk-pstep { width: 30px; height: 30px; font-size: 1.1rem; }
-    .sk-pboostimg { height: 26px; }
-    .sk-pboost .sk-ptitle { font-size: .68rem; min-height: 0; }
-    .sk-pgems { font-size: .9rem; } .sk-pgems img { width: 16px; height: 16px; }
-    .sk-ptool { min-height: 34px; } .sk-ptool i { font-size: 15px; } .sk-ptool span { font-size: .68rem; }
-    .sk-panel .sk-gems { display: none; }
-    .sk-pbtn { font-size: .7rem; min-height: 28px; padding: 2px 6px; }
-    .sk-a-rec .sk-recovtok, .sk-a-heroes .sk-recovtok { width: 40px; height: 40px; } .sk-panel .sk-recovtok b { font-size: 1.1rem; }
-    .sk-ptotal { display: none; }
-    .sk-pphase-t { font-size: .95rem; padding-bottom: 3px; }
-    .sk-a-phase { padding: 6px; gap: 4px; } .sk-a-phase ol { gap: 3px; }
-    .sk-a-phase li { font-size: .72rem; padding: 3px 5px; gap: 4px; } .sk-pnum { width: 18px; height: 18px; font-size: .7rem; }
-    .sk-a-ov .sk-ptitle { font-size: .7rem; } .sk-a-ov .sk-turnbtn { min-height: 30px; font-size: .68rem; }
-    .sk-pacts .sk-actslots { grid-template-columns: repeat(2, 24px); gap: 4px; } .sk-pacts .sk-actgem, .sk-pacts .sk-actempty { width: 24px; height: 24px; }
-    .sk-pmarker { width: 32px; height: 32px; }
-    .sk-pdraw { font-size: .8rem !important; min-height: 32px; padding: 2px 8px !important; }
+
+    
+
+      
+
+    
+
+    
+
+     
+
+     
+
+    
+
 }
 
 /* ---------- Étape 2 — Onglets permanents, dessinés comme ceux des autres modules (nav-menu du Compagnon) ---------- */
@@ -848,30 +696,14 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
     #skelos > .sk-tabs.studio { flex-wrap: wrap; }
     #skelos > .sk-tabs.studio .sk-tabbtn { flex: 1 1 30%; }
     #skelos > .sk-tabs.studio .sk-tabtools { order: 2; flex-basis: 100%; justify-content: flex-end; padding: 4px 8px 6px; }
-    .sk-studio .sk-a-tour .sk-ppair { flex-direction: column; gap: 6px; }
+
 }
 
 /* Bloc d'outils : Recommencer et Terminer partagent une case. */
-.sk-ptoolpair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--pg, 4px); min-width: 0; }
-.sk-ptoolpair .sk-ptool { min-width: 0; }
-.sk-ptoolpair .sk-ptool span { display: none; }
-.sk-ptoolpair .sk-ptool i { font-size: 24px; }
 
 /* Bloc Tour en mode studio : − et + de part et d'autre de chaque jeton. */
-.sk-studio .sk-ptok { display: inline-flex; align-items: center; gap: 4px; }
-.sk-studio .sk-ptok .sk-pstep, .sk-studio .sk-ptok .sk-pstep:first-child, .sk-studio .sk-ptok .sk-pstep:last-child { position: relative; left: auto; right: auto; top: auto; margin: 0; width: 30px; height: 30px; display: grid; }
-.sk-studio .sk-a-tour .sk-tokimg img { width: 56px; height: 56px; }
 
 /* Récupération en mode studio : jeton plus petit, − / + de la récupération puis du total de gemmes. */
-.sk-pctr { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.sk-pctr .sk-pstep { width: 30px; height: 30px; flex: none; }
-.sk-a-rec.studio { gap: 4px; justify-content: space-evenly; }
-.sk-a-rec.studio .sk-recovtok { width: 46px; height: 46px; }
-.sk-a-rec.studio .sk-recovtok b { font-size: 1.3rem; }
-.sk-a-rec.studio .sk-tokimg img { width: 46px; height: 46px; }
-.sk-pmaxact { margin-top: 4px; gap: 4px; }
-.sk-pmaxact .sk-pacts .sk-actslots { grid-template-columns: repeat(2, 26px); gap: 6px; }
-.sk-pmaxact .sk-pacts .sk-actgem, .sk-pmaxact .sk-pacts .sk-actempty { width: 26px; height: 26px; }
 
 /* Boutons − et + : signes dessinés au centre, léger relief. */
 .sk-pstep.sk-plus, .sk-pstep.sk-minus, .sk-hpbtn.sk-plus, .sk-hpbtn.sk-minus { position: relative; font-size: 0 !important; color: var(--main-color); }
@@ -879,30 +711,20 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 .sk-plus::after { width: 10%; min-width: 2px; height: 46%; }
 .sk-pstep { box-shadow: 0 2px 0 rgba(0,0,0,.28), 0 3px 6px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.45) !important; }
 .sk-pstep:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0,0,0,.28), inset 0 1px 2px rgba(0,0,0,.2) !important; }
-.sk-a-tour.last .sk-pstep.sk-plus, .sk-a-tour.last .sk-pstep.sk-minus { color: var(--pov); }
+
 /* PV : fond de la couleur principale du thème, signes de la couleur du fond (lisibles en clair et en sombre). */
 .sk-hpbtn { background: var(--main-color) !important; color: var(--body-bg-color) !important; border-color: var(--body-bg-color) !important; box-shadow: 0 2px 3px rgba(0,0,0,.45); }
 .sk-hpbtn.sk-plus, .sk-hpbtn.sk-minus { color: var(--body-bg-color) !important; }
 /* Emplacements d'activation vides : pointillés plus marqués. */
-.sk-actempty { border: 2px dashed var(--main-color) !important; opacity: .75 !important; }
 
 /* Premier joueur, dans le bloc Phase. */
-.sk-pfirst { margin-top: 8px; width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px;
-    border: 1px solid rgba(255,255,255,.75); background: rgba(255,255,255,.12); color: #fff; font: inherit; font-size: .85rem; cursor: pointer; touch-action: manipulation; text-align: left; }
-.sk-pfirst b { font-family: 'Primary', serif; font-weight: normal; }
 
 /* Rivière en mode studio. */
-.sk-studio .sk-river .sk-slot { position: relative; }
-.sk-studio .sk-river .sk-tilebox { touch-action: none; cursor: grab; }
-.sk-studio .sk-empty { position: relative; }
-.sk-studioadd { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 64%; height: 36%; padding: 0; border-radius: 10px;
-    border: 2px dashed var(--main-color); background: var(--body-bg-color); opacity: .75; color: var(--main-color); font: bold 2.4rem/1 sans-serif; cursor: pointer; touch-action: manipulation; }
-.sk-studioadd:hover, .sk-studioadd:focus-visible { opacity: 1; }
+
 .sk-socle { position: absolute; top: 4px; right: 4px; z-index: 3; width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid #fff;
     background: var(--socle); box-shadow: 0 1px 3px rgba(0,0,0,.5); cursor: pointer; touch-action: manipulation; }
 .sk-tilebox.sk-dragging { opacity: .3; }
-.sk-ghost { position: fixed; z-index: 1600; pointer-events: none; opacity: .9; transform: rotate(-3deg) scale(1.04); box-shadow: 0 10px 24px rgba(0,0,0,.45); }
-.sk-studio .sk-river .sk-slot.sk-droptarget { outline: 3px dashed var(--highlight-color); outline-offset: 2px; }
+
 .sk-trash { position: fixed; left: 50%; bottom: calc(var(--sk-bottom, 0px) + 24px); transform: translateX(-50%); z-index: 1550; display: flex; align-items: center; gap: 10px;
     padding: 12px 20px; border-radius: 30px; background: var(--body-bg-color); color: var(--main-color); border: 2px solid var(--main-color); box-shadow: 0 4px 14px rgba(0,0,0,.35); font-family: 'Primary', serif; }
 .sk-trash i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 20px; }
@@ -922,8 +744,6 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 .sk-rankgem img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000); }
 .sk-rankgem b { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Motrg', 'Primary', serif; font-weight: normal; font-size: 100cqw; line-height: 1;
     color: #000; text-shadow: none; }
-.sk-tokenimg .sk-rankgem { width: 34px; height: 34px; }
-.sk-token.gone .sk-rankgem { opacity: .3; }
 
 /* ---------- Étape 4 — Panneau du bas supprimé, menu contextuel des tuiles, Journal ---------- */
 .sk-tilemenu h2 { margin: 0 0 6px; font-family: 'Primary', serif; font-weight: normal; font-size: 1.2rem; color: var(--main-color); }
@@ -937,16 +757,13 @@ html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 .sk-jtime { display: inline-block; min-width: 7.5em; margin-right: 8px; opacity: .7; font-size: .9em; }
 
 /* Cercles d'activation : pion de rang (Aventure) ou jeton tiré (Coop) */
-.sk-pacts .sk-actrank { padding: 2px; }
-.sk-pacts .sk-actmarker { border-radius: 50%; object-fit: contain; }
 
 /* Mode studio : le bouton du tour de l'Overlord est bloqué */
-.sk-turnbtn:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
 
 /* ---------- Étape 6 — Onglet Scénarios ---------- */
 /* Place libre sous la liste : le bouton flottant ne cache jamais la dernière carte. */
 .sk-slist { margin-bottom: 96px; }
-.sk-sbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px; }
+
 .sk-ssearch, .sk-ssearch::placeholder { font-size: 25px !important; font-family: 'Secondary', sans-serif !important; }
 .sk-ssearch { flex: 1 1 260px; min-height: 48px; font-size: 22px !important; background: var(--body-bg-color) !important; color: var(--body-color) !important; border: 1px solid var(--main-color) !important; border-radius: 6px; padding: 0 14px !important; height: 48px; line-height: 48px; box-sizing: border-box; }
 .sk-sseg button { font-family: 'Primary', serif !important; font-size: 17px !important; min-height: 44px; padding: 6px 16px !important; border-radius: 22px !important; }
@@ -1018,8 +835,6 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
     transform: scale(var(--sk-bgzoom, 1)); transform-origin: var(--sk-bgpos, 50% 50%);
 }
 /* Creux : chaque bloc du panneau ; dans la Rivière, un creux rond pour le pion et un creux rectangulaire pour la tuile */
-.skelos-game:not(.sk-screen) .sk-board .sk-p,
-.skelos-game:not(.sk-screen) .sk-board .sk-river .sk-well,
 .skelos-game:not(.sk-screen) .sk-board .sk-river .sk-cost {
     border: 1px solid !important;
     border-color: rgba(0,0,0,.55) rgba(255,255,255,.16) rgba(255,255,255,.4) rgba(0,0,0,.35) !important;
@@ -1027,24 +842,18 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
     box-shadow: inset 0 7px 12px -2px rgba(0,0,0,.55), inset 4px 0 8px -2px rgba(0,0,0,.3), inset 0 -2px 3px rgba(255,255,255,.12),
         0 1px 0 1px rgba(255,255,255,.28), 0 -1px 0 1px rgba(0,0,0,.28) !important;
 }
-.skelos-game:not(.sk-screen) .sk-board .sk-a-ov { border-top: 6px solid var(--pov) !important; }
+
 /* Les creux laissent deviner la pierre */
-.skelos-game:not(.sk-screen) > .sk-board .sk-panel { --pcard: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 72%, transparent); }
-.skelos-game:not(.sk-screen) > .sk-board .sk-river .sk-well,
+
 .skelos-game:not(.sk-screen) > .sk-board .sk-river .sk-cost { background: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 30%, transparent) !important; }
 /* La colonne de la Rivière n'est plus un bloc : seuls ses deux creux sont gravés */
 .skelos-game:not(.sk-screen) .sk-board .sk-river .sk-slot { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important;
     display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .skelos-game:not(.sk-screen) .sk-board .sk-river .sk-cost { width: 46px !important; height: 46px !important; min-height: 0 !important; flex: none; border-radius: 50% !important;
     display: grid !important; place-items: center; margin: 0 !important; padding: 0 !important; background-color: var(--sk-stone); }
-.skelos-game:not(.sk-screen) .sk-board .sk-river .sk-well { align-self: stretch; padding: 5px; background: var(--sk-stone); }
-.skelos-game:not(.sk-screen) .sk-board .sk-river .sk-well .sk-empty { border: 0 !important; }
+
 /* Fonds vert, rouge et bleu translucides : la tablette se voit dessous */
-.skelos-game:not(.sk-screen) .sk-board .sk-a-en, .skelos-game:not(.sk-screen) .sk-board .sk-a-pool { background: radial-gradient(120% 90% at 50% 20%, rgba(63,154,82,.62), rgba(29,90,43,.7) 70%, rgba(18,59,28,.78)); }
-.skelos-game:not(.sk-screen) .sk-board .sk-a-fa { background: radial-gradient(120% 90% at 50% 20%, rgba(201,74,60,.62), rgba(138,31,23,.7) 70%, rgba(90,18,13,.78)); }
-.skelos-game:not(.sk-screen) .sk-board .sk-a-played { background: radial-gradient(120% 120% at 50% 10%, rgba(201,74,60,.62), rgba(138,31,23,.7) 70%, rgba(90,18,13,.78)); }
-.skelos-game:not(.sk-screen) .sk-board .sk-a-phase.ov, .skelos-game:not(.sk-screen) .sk-board .sk-a-tour.last { background: color-mix(in srgb, var(--pov) 70%, transparent); }
-.skelos-game:not(.sk-screen) .sk-board .sk-a-phase.he { background: color-mix(in srgb, var(--phe) 70%, transparent); }
+
 /* Studio : la pastille du socle reste sur la tuile, sous le creux du pion */
 .skelos-game:not(.sk-screen) .sk-board .sk-river .sk-socle { top: 61px; right: 9px; }
 /* Aperçu des Réglages : mention de la tablette par défaut, posée sur la pierre */
@@ -1055,22 +864,10 @@ ul.floatingactions.sk-floatbar { position: fixed; z-index: 40; right: 21px; bott
 /* Plein écran : la tablette descend jusqu'en bas de l'écran (sans défilement) */
 html.skelos-full #skelos .skelos-game:not(.sk-screen) > .sk-board { box-sizing: border-box; min-height: calc(100dvh - var(--sk-boardtop, 50px) - 12px); }
 /* PV partagés : un maillon de chaîne sous le cœur, en mode studio seulement */
-.sk-studio .sk-hpwrap.shared .sk-hp::after { content: "\f0c1"; font-family: "Font Awesome 5 Free"; font-weight: 900; position: absolute; left: 50%; bottom: -5.5cqw; transform: translateX(-50%);
-    font-size: 7cqw; line-height: 1; color: #fff; background: #b3161b; border: 1px solid #f5e8d8; border-radius: 50%; width: 10cqw; height: 10cqw; display: grid; place-items: center; }
+
 /* Améliorations : icône agrandie, collée sous le titre ; le compteur de gemmes reste aligné en bas */
-.sk-pboost { gap: 3px; padding: 4px 6px 4px; }
-.sk-pboost .sk-ptitle { min-height: 0; }
-.sk-pboostimg { height: 56px; max-width: 92%; }
-.sk-pboost .sk-pgems { margin-top: auto; }
-@media (max-width: 420px) { .sk-pboostimg { height: 42px; } }
-@media (max-height: 520px) and (orientation: landscape) { .sk-pboostimg { height: 34px; } }
+
 /* Bloc Phase : étapes dans la police du jeu ; taille commune calculée pour tenir dans chaque case (S.fitPhase) */
-.sk-a-phase ol { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); min-height: 0; }
-.sk-a-phase li { font-family: 'Primary', serif; line-height: 1.05; min-height: 0; min-width: 0; overflow: hidden; letter-spacing: 0; }
-.sk-a-phase li > span:last-child { min-width: 0; flex: 1; overflow-wrap: normal; word-break: normal; hyphens: none; }
-.sk-a-phase li.cur { font-weight: normal; }
-.skelos-game .sk-a-phase li { padding: 4px 6px; gap: 5px; }
-.skelos-game .sk-a-phase .sk-pnum { width: 20px; height: 20px; font-size: .8rem; }
 
 /* =====================================================================
    Étape 9 : onglet Campagnes (cartes, pêle-mêle, ajout de scénario, fil réordonnable)
@@ -1211,7 +1008,6 @@ html.sk-itemdrag, html.sk-itemdrag * { cursor: grabbing !important; user-select:
 .sk-swatch { width: 34px; height: 34px; border-radius: 50%; padding: 0; cursor: pointer; background: var(--sw); border: 2px solid color-mix(in srgb, var(--sw) 60%, #000); }
 .sk-swatch.on { box-shadow: 0 0 0 3px var(--body-bg-color), 0 0 0 6px var(--highlight-color); }
 .sk-swatch:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 3px; }
-.sk-itemcolors .sk-fl .sk-chip { display: inline-flex; width: auto; font-size: 16px; padding: 3px 12px; }
 
 /* Cache commune plus lisible : légende et noms d'objets en plus grand */
 .sk-campaign .sk-legend { font-size: 17px; gap: 14px; margin: 4px 0 8px; color: var(--body-color) !important; }
@@ -1304,25 +1100,15 @@ html:has(.sk-overlay.on .sk-pickdlg) nav.nav, html:has(.sk-overlay.on .sk-pickdl
 
 /* Mode Aventure : glisser une tuile au bout de la Rivière l'active. La tuile se soulève, puis se repose (indépendant du réglage Animations). */
 .skelos-game:not(.solo):not(.sk-studio) .sk-river .sk-tilebox[data-uid] { touch-action: none; cursor: grab; }
-.sk-ghost.sk-lifted { opacity: 1; animation: sk-lift .15s ease-out both; }
+
 @keyframes sk-lift { from { transform: none; box-shadow: 0 1px 3px rgba(0,0,0,.3); } to { transform: rotate(-3deg) scale(1.08); box-shadow: 0 16px 30px rgba(0,0,0,.5); } }
-.sk-ghost.sk-settling { animation: none; transform: none; box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: left .25s ease-out, top .25s ease-out, width .25s ease-out, transform .25s ease-out, box-shadow .25s ease-out; }
-.sk-noanim .sk-ghost.sk-lifted { animation: sk-lift .15s ease-out both !important; }
-.sk-noanim .sk-ghost.sk-settling { animation: none !important; transition: left .25s ease-out, top .25s ease-out, width .25s ease-out, transform .25s ease-out, box-shadow .25s ease-out !important; }
-.sk-river > .sk-slot.sk-dropend { outline: 3px dashed var(--highlight-color); outline-offset: 3px; border-radius: 6px; }
+
 /* Récupération : flèche vers la gauche (Fatigue → Énergie disponible) et chiffre en gros, plus lisible que l'ancien cercle.
    Le total de gemmes est agrandi et descend en bas du cadre. */
 .sk-recovarrow { position: relative; display: block; width: 118px; max-width: 100%; aspect-ratio: 100 / 56; color: var(--main-color); }
 .sk-recovarrow svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
 .sk-recovarrow b { position: absolute; left: 33%; right: 2%; top: 0; bottom: 0; display: grid; place-items: center;
     font-family: 'Motrg', serif; font-weight: normal; font-size: 2.5rem; line-height: 1; color: var(--body-bg-color); }
-.skelos-game .sk-a-rec:not(.studio) { justify-content: space-between; }
-.skelos-game .sk-a-rec:not(.studio) .sk-pmain { padding-bottom: 0; }
-.skelos-game .sk-ptotal { font-family: 'Primary', serif; font-size: 1.05rem; line-height: 1.15; color: var(--body-color); }
-.sk-a-rec.studio .sk-recovarrow { width: 66px; } .sk-a-rec.studio .sk-recovarrow b { font-size: 1.5rem; }
-@media (max-height: 520px) and (orientation: landscape) {
-    .sk-a-rec .sk-recovarrow { width: 70px; } .sk-a-rec .sk-recovarrow b { font-size: 1.5rem; }
-}
 
 /* Restes de l'habillage « grimoire » encore visibles : contours de sélection beige doré remplacés par la couleur de surbrillance du Compagnon. */
 .sk-chip.sk-sel { outline-color: var(--highlight-color); }
@@ -1418,30 +1204,28 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-overlay.sk-zoomon { touch-action: none; }
 .sk-zoomhead { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 12px; color: #fff; text-align: center; font-family: 'Primary', serif; font-size: 18px; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
 .sk-zoomhead span { font-family: 'Secondary', sans-serif; font-size: 15px; opacity: .85; }
-.sk-zoompage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
 .sk-zoomcard { width: min(80vw, calc((100dvh - var(--sk-bottom, 0px) - 200px) * 0.67), 380px); }
 .sk-zoomcard .card { box-shadow: 0 10px 30px rgba(0,0,0,.5); }
 .sk-zoomcard.dead { filter: grayscale(1) brightness(.6); }
-.sk-zoomcard.sk-castable .cost { cursor: pointer; outline: 3px solid var(--highlight-color); outline-offset: 2px; border-radius: 50%; animation: sk-costpulse 1.6s ease-in-out infinite; }
+
 @keyframes sk-costpulse { 50% { outline-color: transparent; } }
-@media (prefers-reduced-motion: reduce) { .sk-zoomcard.sk-castable .cost { animation: none; } }
+
 .sk-zoomnote { margin: 0; color: #fff; font-size: 15px; text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,.7); }
 .sk-zoomcast { container-type: inline-size; width: 300px; max-width: 80vw; display: flex; align-items: center; justify-content: center; gap: 12px; color: #fff; font-size: 26px; }
 .sk-zoomcast .sk-hpbtn { display: flex; width: 48px; height: 48px; font-size: 28px; }
-.sk-zoomadd { width: min(70vw, 260px); aspect-ratio: .67; border: 3px dashed var(--highlight-color); border-radius: 12px; background: var(--body-bg-color); color: var(--body-color);
-    font-family: 'Primary', serif; font-size: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
-.sk-zoomadd span { font-size: 64px; line-height: 1; color: var(--highlight-color); }
+
 /* Studio : pastille corbeille au coin bas droit de la carte. */
 .sk-zoomcard { position: relative; }
 .sk-zoomrm { position: absolute; right: -10px; bottom: -10px; z-index: 3; width: 52px; height: 52px; border-radius: 50%; border: 2px solid #fff; background: #b3261e; color: #fff;
     font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 22px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.5); }
 .sk-zoomdots { display: flex; gap: 6px; align-items: center; }
 .sk-zoomdots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.45); }
-.sk-zoomdots i.sk-dt { width: 11px; height: 11px; }
+
 .sk-zoomdots i.sk-ds { background: rgba(176,120,230,.6); }
 .sk-zoomdots i.sk-de { background: rgba(210,170,90,.6); }
 .sk-zoomdots i.on { background: #fff; box-shadow: 0 0 0 2px var(--highlight-color); }
-.sk-zoomstage { position: relative; isolation: isolate; }
+
 /* Ombres de cartes voisines : un bord de carte qui dépasse derrière, à gauche ou à droite. */
 .sk-shade { position: absolute; z-index: -1; top: 4%; bottom: 4%; width: 40%; border-radius: 12px; background: #2a2230; box-shadow: 0 6px 16px rgba(0,0,0,.6); }
 .sk-shade.sk-sh-l { left: -14px; transform: rotate(-4deg); transform-origin: right center; }
@@ -1451,21 +1235,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-shade.sk-sh-t { background: linear-gradient(#d8d2c8, #9c958a); }
 .sk-zoom:focus { outline: none; }
 /* Sort lancé ce tour : le coût ne clignote plus ; au lancement, les pastilles se remplissent et les gemmes payées s’envolent. */
-.sk-zoomcard.sk-castable.sk-cast .cost { animation: none; outline-color: transparent; }
+
 /* Pastilles de saturation, en languette au milieu du bord haut de la carte (le bandeau de la carte peut porter une explosion) :
    vides, puis rouges à chaque lancement. */
-.sk-satpips { position: absolute; left: 50%; top: 0; transform: translate(-50%, -55%); z-index: 3; display: flex; align-items: center; gap: 6px; padding: 5px 12px;
-    border-radius: 16px; background: rgba(15,8,20,.92); border: 1px solid rgba(255,255,255,.35); pointer-events: none; color: #fff; font: bold 18px/1 system-ui, sans-serif; white-space: nowrap; }
-.sk-satpips i { font-family: "Font Awesome 5 Free"; font-weight: 400; font-style: normal; font-size: 20px; color: rgba(255,255,255,.75); }
-.sk-satpips i.on { font-weight: 900; color: #e3242b; filter: drop-shadow(0 0 3px rgba(0,0,0,.9)); }
-.sk-satpips i.over { outline: 2px solid var(--highlight-color); outline-offset: 1px; border-radius: 4px; }
-.sk-satpips i.new { animation: sk-pipfill .8s ease-out; }
+
 @keyframes sk-pipfill { 0% { transform: scale(1); color: #fff; } 40% { transform: scale(1.9); color: #ff3b30; filter: drop-shadow(0 0 8px #ff3b30); } 100% { transform: scale(1); } }
-.sk-castpaid { position: absolute; left: 6%; top: 4%; z-index: 4; color: #fff; background: #b3261e; border-radius: 14px; padding: 2px 10px; font: bold 22px/1.2 system-ui, sans-serif;
-    pointer-events: none; opacity: 0; animation: sk-castpaid 1.1s ease-out; }
-.sk-castpaid::after { content: " \f3a5"; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 18px; }
+
 @keyframes sk-castpaid { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 25% { opacity: 1; transform: translateY(0) scale(1.15); } 100% { opacity: 0; transform: translateY(-60px) scale(1); } }
-@media (prefers-reduced-motion: reduce) { .sk-satpips i.new, .sk-castpaid { animation: none !important; } }
+
 .sk-zin-left { animation: sk-zinl .22s ease-out; } .sk-zin-right { animation: sk-zinr .22s ease-out; }
 .sk-zin-up { animation: sk-zinu .22s ease-out; } .sk-zin-down { animation: sk-zind .22s ease-out; }
 @keyframes sk-zinl { from { transform: translateX(-40px); opacity: .3; } } @keyframes sk-zinr { from { transform: translateX(40px); opacity: .3; } }
@@ -1632,3 +1409,477 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Page d'une campagne : fiche de héros visée pendant le glisser d'une carte, corbeille au-dessus de tout */
 .sk-hcard.sk-dover .sk-hcard-f { outline: 4px solid var(--highlight-color); outline-offset: 3px; border-radius: 8px; }
 .sk-trash.sk-pgtrash { z-index: 100001; }
+
+/* ---------- Livre de Skelos manuel : bureau (piste des tours) et livre en quatre bandes ---------- */
+/* Les tailles suivent la largeur du bureau (unités cqw) : le livre garde ses proportions de l'iPad au téléphone. */
+.skelos-game.sk-manual { padding: 8px 12px 24px; }
+.sk-desk { container-type: inline-size; max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.6cqw; }
+.sk-manual, .sk-manual * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* Piste des tours, posée sur le bureau */
+.sk-mtrack { display: flex; align-items: center; gap: .5cqw; padding: .8cqw 1cqw; border-radius: 1cqw;
+    background: linear-gradient(180deg, #e3d3ad, #c2a878); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 .3cqw .8cqw rgba(0,0,0,.35); }
+.sk-mcell { position: relative; flex: 1 1 0; min-width: 0; aspect-ratio: 1; border-radius: 50%; box-sizing: border-box; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 42%, #fff8e6, #e6d6b4 70%); border: .32cqw solid #9b1c14; }
+.sk-mcell b { font-family: 'Motrg', 'Primary', serif; font-weight: normal; font-size: 2.4cqw; line-height: 1; color: #3a2a18; }
+.sk-mpark { position: relative; flex: 0 0 auto; width: 5.4cqw; aspect-ratio: 1; margin-left: 1cqw; border-radius: .8cqw; box-sizing: border-box; border: .25cqw dashed rgba(58,42,24,.45); }
+.sk-mpiece { position: absolute; left: -10%; top: -10%; width: 120%; height: 120%; object-fit: contain; z-index: 2; cursor: grab; touch-action: none;
+    filter: drop-shadow(0 .25cqw .35cqw rgba(0,0,0,.6)); }
+.sk-mpiece.both { transform: translate(38%, -38%) scale(.72); z-index: 3; }
+.sk-mcell.sk-mtarget, .sk-mpark.sk-mtarget { box-shadow: 0 0 0 .35cqw #ff7900; }
+
+/* Le livre : la tablette de pierre du module (fond par défaut), chaque zone est un creux */
+.sk-book { position: relative; display: flex; flex-direction: column; gap: 1.2cqw; padding: 1.6cqw; border-radius: 1.4cqw; color: #fff;
+    background: #3a3d3a url(img/tablette.webp) 50% 50% / cover no-repeat; box-shadow: 0 .6cqw 1.6cqw rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 4px rgba(0,0,0,.25); }
+.sk-mz, .sk-mrest, .sk-mhole, .sk-mb4 { box-shadow: inset 0 .35cqw .7cqw rgba(0,0,0,.7), inset 0 -1px 0 rgba(255,255,255,.08); }
+.sk-mz { position: relative; overflow: hidden; border-radius: .9cqw; background: rgba(0,0,0,.2); cursor: pointer; touch-action: none; --g: 3cqw; }
+.sk-mz.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
+.sk-mtitle { position: absolute; top: .6cqw; left: 1cqw; font-family: 'Primary', serif; font-size: 1.6cqw; letter-spacing: .05em; text-transform: uppercase; opacity: .85; pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.sk-mgems { position: absolute; inset: 2.8cqw 1.2cqw 1cqw; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: .2cqw .4cqw; pointer-events: none; }
+.sk-mcount { position: absolute; right: .8cqw; bottom: .5cqw; font-family: 'Motrg', 'Primary', serif; font-size: 2.2cqw; line-height: 1; color: #fff; pointer-events: none;
+    text-shadow: 0 0 .3cqw #000, 0 0 .3cqw #000; }
+/* Gemmes par groupes de 3 : deux en bas, une au-dessus */
+.sk-mg3 { position: relative; width: calc(var(--g) * 1.9); height: calc(var(--g) * 1.75); margin: calc(var(--g) * .12);
+    transform: translate(calc(var(--g) * var(--gx, 0)), calc(var(--g) * var(--gy, 0))) rotate(var(--gr, 0deg)); }
+.sk-mg3 img { position: absolute; width: var(--g); height: var(--g); object-fit: contain; filter: drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.65));
+    transform: translate(calc(var(--g) * var(--x, 0)), calc(var(--g) * var(--y, 0))) rotate(var(--r, 0deg)); }
+.sk-mg3 img:nth-child(1) { left: 0; bottom: 0; }
+.sk-mg3 img:nth-child(2) { right: 0; bottom: 0; }
+.sk-mg3 img:nth-child(3) { left: calc(50% - var(--g) / 2); top: 0; }
+.sk-mg3.n1 img { left: calc(50% - var(--g) / 2); }
+.sk-mg3 img.sk-mback { border-radius: 50%; }
+
+/* Bande 1 : Mouvement, Défense active, Relance */
+.sk-mb1 { display: flex; justify-content: center; gap: .8cqw; }
+.sk-mb1 .sk-mz { width: 8.6cqw; aspect-ratio: 1; --g: 2.1cqw; border-radius: .7cqw; }
+.sk-mb1 .sk-mgems { inset: .4cqw; }
+.sk-mico { position: absolute; inset: 5%; width: 90%; height: 90%; object-fit: contain; border-radius: .5cqw; opacity: .95; pointer-events: none; }
+.sk-mb1 .sk-mz:not(.empty) .sk-mico { opacity: .45; }
+
+/* Bande 2 : Énergie disponible, tuile de repos, Fatigue */
+.sk-mb2 { display: grid; grid-template-columns: 3fr 1.45fr 3fr; gap: 1.4cqw; height: 16.5cqw; }
+.sk-mz-energy { background: linear-gradient(160deg, #3f9a52, #1d5a2b 55%, #123b1c); }
+.sk-mz-fatigue { background: linear-gradient(160deg, #c94a3c, #8a1f17 55%, #5a120d); }
+.sk-mz-fatigue .sk-mgem { filter: saturate(.75) brightness(.9) drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.65)); }
+.sk-mrest { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6cqw; border-radius: .9cqw; padding: 1cqw;
+    background: linear-gradient(170deg, #e3d3ad, #b99b68); color: #3a2a18; }
+
+.sk-mrest .sk-recovarrow { width: 9cqw; color: #9b1c14; }
+.sk-mrest .sk-recovarrow b { font-size: 3.4cqw; color: #fff; }
+
+.sk-mstep { display: flex; align-items: center; gap: .8cqw; }
+.sk-mrest .sk-pstep { width: 3.4cqw; height: 3.4cqw; min-width: 28px; min-height: 28px; font-size: 2cqw; }
+.sk-mrest .sk-recovtok { width: 7cqw; height: 7cqw; border-color: #9b1c14; background: rgba(255,255,255,.35); color: #9b1c14; }
+.sk-mrest .sk-recovtok svg { color: #9b1c14; }
+.sk-mrest .sk-recovtok b { font-size: 3.2cqw; color: #9b1c14 !important; }
+
+/* Bande 3 : pions gemmes rouges numérotés, un par case */
+.sk-mb3 { display: grid; grid-template-columns: repeat(8, 1fr); padding: 0 .5cqw; }
+.sk-mhole { justify-self: center; width: 6.2cqw; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.25); }
+.sk-mhole .sk-rankgem { width: 5.2cqw; height: 5.2cqw; }
+
+/* Bande 4 : espace des tuiles, sans séparation */
+.sk-mb4 { display: flex; align-items: flex-start; min-height: calc((100cqw - 4.2cqw) / 8 / .656); padding: .5cqw; border-radius: .9cqw; background: rgba(0,0,0,.2); }
+.sk-mb4 .sk-mtile { flex: 0 0 12.5%; width: 12.5%; touch-action: none; cursor: grab; }
+.sk-mb4 .sk-mtile .tile.tiletile { border-radius: 0; }
+.sk-mtile.sk-dragging { opacity: .3; }
+
+/* Coop : jetons posés, jetons mis de côté sur le bureau */
+.sk-mtok { width: 5cqw; height: 5cqw; object-fit: contain; pointer-events: auto; cursor: grab; touch-action: none; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); }
+.sk-mb1 .sk-mtok { width: 4.4cqw; height: 4.4cqw; }
+.sk-mtok.sk-mdragging, .sk-mpiece.sk-mdragging { opacity: .3; }
+
+/* Gemmes en main et pièce glissée */
+.sk-mhand { position: fixed; z-index: 100002; pointer-events: none; transform: translate(-50%, -130%); display: flex; align-items: center; gap: 4px; padding: 5px 12px 5px 6px;
+    border-radius: 999px; background: rgba(18,18,18,.88); color: #fff; font-family: 'Motrg', 'Primary', serif; font-size: 24px; line-height: 1; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+.sk-mhand img { width: 34px; height: 34px; object-fit: contain; }
+.sk-mhand.pinned { animation: skmPulse 1.1s ease-in-out infinite; }
+@keyframes skmPulse { 50% { box-shadow: 0 0 0 6px rgba(255,121,0,.55), 0 4px 14px rgba(0,0,0,.5); } }
+.sk-mghost { position: fixed; z-index: 100001; pointer-events: none; transform: translate(-50%, -50%) scale(1.06); opacity: .9; container-type: inline-size; }
+.sk-mghost > * { position: static !important; width: 100% !important; height: 100% !important; transform: none !important; opacity: 1 !important; }
+.sk-mghost img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Pastilles des points de vie des tuiles sur la piste des tours : portrait de la tuile cerclé de la couleur du socle.
+   Plusieurs pastilles sur une même case se décalent ; elles passent au-dessus du sablier pour rester attrapables. */
+.sk-mhpm { position: absolute; z-index: 4; width: 86%; aspect-ratio: 1; left: calc(30% + var(--k, 0) * 34%); top: 38%; border-radius: 50%; box-sizing: border-box;
+    border: .3cqw solid var(--c, #8a8a8a); background: #222 center 20% / cover no-repeat; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.6); cursor: grab; touch-action: none; }
+.sk-mhpm.dead { filter: grayscale(1) brightness(.6); }
+.sk-mhpm.sk-mdragging { opacity: .3; }
+.sk-mghost .sk-mhpm { width: 100% !important; height: 100% !important; }
+.sk-mtrack { padding-bottom: 3cqw; }
+
+/* Livre manuel, mode studio : le livre rétrécit, la réserve de gemmes se pose à sa gauche et le tas de tuiles à sa droite.
+   Le livre mesure ses tailles sur sa propre largeur (cqw) : rétréci, il garde ses proportions. */
+.sk-mmid { display: flex; gap: 1.4cqw; align-items: center; }
+.sk-mmid > .sk-book { flex: 1 1 0; min-width: 0; container-type: inline-size; }
+.sk-mside { flex: 0 0 12cqw; display: flex; flex-direction: column; justify-content: center; align-self: stretch; }
+
+.sk-desk .sk-mz-aside { min-height: 7.5cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); }
+.sk-desk .sk-mz-aside .sk-mtitle { text-shadow: none; }
+.sk-desk .sk-mz-aside .sk-mcount { color: var(--body-color); text-shadow: none; }
+.sk-mz-reserve { height: 30cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); --g: 2.6cqw; }
+.sk-mz-reserve .sk-mtitle { text-shadow: none; font-size: 1.4cqw; }
+.sk-mz-reserve .sk-mgems { inset: 3cqw .6cqw .6cqw; }
+.sk-mpile { position: relative; height: 18cqw; padding: 0; border: 0; border-radius: .9cqw; cursor: pointer; color: var(--body-color);
+    background: color-mix(in srgb, var(--body-color) 10%, transparent); box-shadow: inset 0 .35cqw .7cqw rgba(0,0,0,.35); }
+.sk-mpile .sk-mtitle { text-shadow: none; font-size: 1.4cqw; }
+
+.sk-mpile.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
+
+/* Bande 1 : tas resserrés, sans désordre qui les ferait sortir du cadre de l'icône */
+.sk-mb1 .sk-mgems { inset: .5cqw; gap: .1cqw .2cqw; }
+.sk-mb1 .sk-mg3 { margin: calc(var(--g) * .06); transform: rotate(calc(var(--gr, 0deg) * .3)); }
+.sk-mb1 .sk-mg3 img { transform: translate(calc(var(--g) * var(--x, 0) * .4), calc(var(--g) * var(--y, 0) * .4)) rotate(var(--r, 0deg)); }
+
+/* Tuile de repos : double appui = récupération */
+.sk-mrest { touch-action: manipulation; cursor: pointer; }
+
+/* Gemmes posées sur une tuile ou ses cartes : petit tas sur la tuile, et liste « tuile + cartes » */
+.sk-mtg { position: absolute; right: 3%; top: 3%; z-index: 4; display: flex; align-items: center; gap: 2cqw; padding: 2cqw 5cqw 2cqw 3cqw; border-radius: 10cqw;
+    background: rgba(18,18,18,.85); color: #fff; font-family: 'Motrg', 'Primary', serif; font-size: 11cqw; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,.6); cursor: pointer; touch-action: none; overflow: visible; }
+.sk-mtg img { width: 16cqw; height: 16cqw; object-fit: contain; }
+.sk-mtg b { font-weight: normal; }
+.sk-mtile.sk-mtarget { outline: 3px solid #ff7900; outline-offset: -3px; z-index: 2; }
+.sk-mgpop { position: fixed; z-index: 1000; width: min(340px, calc(100vw - 32px)); padding: 10px; border-radius: 12px; box-sizing: border-box;
+    background: var(--body-bg-color); color: var(--body-color); box-shadow: 0 8px 28px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 8px; }
+.sk-mgphead { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: 'Primary', serif; }
+.sk-mgpclose { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--body-color); font-size: 22px; cursor: pointer; }
+
+/* Tuile portée par une tuile, dans le zoom et la pastille des cartes */
+.sk-cardtile { width: 100%; }
+.sk-cardsbadge .sk-cb-ti { color: #9fd3a0; }
+/* Coop : 4e jeton tiré à droite de Relance */
+.sk-mico4 { display: grid; place-items: center; font-family: 'Motrg', 'Primary', serif; font-size: 4.4cqw; line-height: 1; color: rgba(255,255,255,.35); }
+/* Mode studio : pastille de couleur du socle, en haut à gauche de la tuile (le tas de gemmes est en haut à droite) */
+.sk-mtile .sk-socle { left: 4%; right: auto; top: 4%; width: 20cqw; height: 20cqw; min-width: 18px; min-height: 18px; }
+/* Pastille de PV : pion de vie de l'encyclopédie (image de la tuile recadrée) sur fond blanc */
+.sk-mhpm.tok { overflow: hidden; background: #fff; }
+.sk-mhpm.tok img, .sk-mghost .sk-mhpm.tok img { position: absolute; max-width: none; object-fit: fill; pointer-events: none; }
+.sk-mghost .sk-mhpm { display: block; position: relative !important; left: 0; top: 0; }
+
+/* Objets réalistes du bureau (mode studio) : coupe en bois ancienne pleine de gemmes, tas de tuiles */
+.sk-mobjname { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-family: 'Primary', serif; font-size: 1.3cqw; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--body-color); pointer-events: none; }
+.sk-mz.sk-mz-reserve.sk-mbowl { height: auto; width: 100%; aspect-ratio: 1 / .9; overflow: visible; background: none; box-shadow: none; border-radius: 0; --g: 1.9cqw; }
+.sk-mbowl svg { position: absolute; left: 0; bottom: 16%; width: 100%; height: auto; pointer-events: none; }
+.sk-mbowl-back { z-index: 1; }
+.sk-mbowl .sk-mgems { z-index: 2; inset: 8% 13% 51% 13%; flex-wrap: wrap-reverse; align-content: flex-start; gap: 0; }
+.sk-mbowl-front { z-index: 3; filter: drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.4)); }
+.sk-mbowl.sk-mtarget { outline: none; }
+.sk-mbowl.sk-mtarget .sk-mbowl-front { filter: drop-shadow(0 0 .5cqw #ff7900) drop-shadow(0 0 .2cqw #ff7900); }
+.sk-mpile { height: auto; width: 100%; aspect-ratio: 1 / 1.35; background: none; box-shadow: none; }
+.sk-mstack { position: absolute; left: 18%; top: 6%; width: 64%; aspect-ratio: .656; }
+.sk-mslab { position: absolute; inset: 0; border-radius: .5cqw; box-sizing: border-box; overflow: hidden;
+    background: linear-gradient(160deg, #d9c39a, #a88b5c); border: 1px solid #6e5634; box-shadow: 0 .15cqw .25cqw rgba(0,0,0,.35); }
+.sk-mslab:nth-child(1) { transform: translate(5%, 7%) rotate(4deg); background: #8f7550; }
+.sk-mslab:nth-child(2) { transform: translate(-3%, 5%) rotate(-3deg); background: #9c8058; }
+.sk-mslab:nth-child(3) { transform: translate(3%, 3.4%) rotate(2deg); }
+.sk-mslab:nth-child(4) { transform: translate(-1%, 1.8%) rotate(-1deg); }
+.sk-mslab.sk-mtop { transform: rotate(-2deg); background: #fff; box-shadow: 0 .3cqw .6cqw rgba(0,0,0,.45); }
+.sk-mslab.sk-mtop img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sk-mplus { position: absolute; right: -14%; top: -8%; z-index: 2; width: 3.2cqw; height: 3.2cqw; border-radius: 50%; display: grid; place-items: center;
+    background: var(--highlight-color); color: #fff; font-size: 2.4cqw; line-height: 1; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.45); }
+.sk-mpile.sk-mtarget { outline: none; }
+.sk-mpile.sk-mtarget .sk-mtop { box-shadow: 0 0 0 .3cqw #ff7900, 0 .3cqw .6cqw rgba(0,0,0,.45); }
+.sk-mgphead b { font-size: 15px; line-height: 1.2; font-weight: normal; }
+/* Pion de vie en main (tuile sortie de sa bande, ou pastille prise sur la piste) : agrandi pour être reconnu */
+.sk-mghost.sk-mghost-hp { opacity: 1; transform: translate(-50%, -65%); animation: skmGrow .18s ease-out; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); }
+.sk-mghost.sk-mghost-hp .sk-mhpm { border-width: 4px; }
+@keyframes skmGrow { from { transform: translate(-50%, -65%) scale(.45); } }
+/* Bol de bronze antique (remplace la coupe en bois) */
+.sk-mz.sk-mz-reserve.sk-mbowl { aspect-ratio: 1 / 1; }
+.sk-mbowl svg { bottom: 15%; }
+.sk-mbowl .sk-mgems { inset: 13% 14% 53% 14%; flex-wrap: wrap; align-content: flex-end; }
+.sk-mbowl-front { filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.35)); }
+.sk-mz.sk-mz-reserve.sk-mbowl { --g: 1.45cqw; }
+.sk-mbowl .sk-mgems { inset: 21% 13% 53% 13%; align-content: center; }
+
+/* Gemmes d'une tuile et de ses cartes : la tuile et les cartes montrées comme sur la table */
+.sk-mgpop { width: auto; max-width: calc(100vw - 32px); }
+.sk-mgcards { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; }
+.sk-mgpop .sk-mz.sk-mgcard { flex: 0 0 120px; width: 120px; overflow: visible; background: none; box-shadow: none; border-radius: 8px; --g: 22px; }
+.sk-mgcard .sk-mgface { pointer-events: none; }
+.sk-mgcard .sk-mgface .sk-tilebox, .sk-mgcard .sk-mgface .sk-cardscale { width: 100%; }
+.sk-mgcard .sk-mgems { inset: 30% 6% 22% 6%; z-index: 2; }
+.sk-mgcard .sk-mcount { z-index: 3; right: 6px; bottom: 6px; font-size: 18px; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+.sk-mgcard.sk-mtarget { outline: 3px solid #ff7900; outline-offset: 2px; }
+/* Pièces qui volent (double appui sur la tuile de repos) */
+.sk-mfly { position: fixed; left: 0; top: 0; z-index: 100003; pointer-events: none; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); }
+
+/* Livre manuel, zoom d'une tuile : la tuile au centre, ses cartes en petit sur deux pistes qui défilent */
+.sk-mzoom { --mzw: min(36vw, calc((100dvh - var(--sk-bottom, 0px) - 190px) * 0.656), 440px); width: 100vw; }
+.sk-mzrow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; width: 100%; padding: 0 12px; box-sizing: border-box; }
+.sk-mzcenter { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.sk-mzoom .sk-zoombox { width: var(--mzw); position: relative; }
+.sk-mzfoot { display: flex; align-items: center; justify-content: center; gap: 14px; transform: translateX(-10px); }
+.sk-mzfoot .sk-zoomhp { width: auto; }
+.sk-mzadd { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; border: 2px solid #fff; background: var(--highlight-color); color: #fff;
+    font-size: 32px; line-height: 1; display: grid; place-items: center; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.5); padding: 0; }
+.sk-mztrack { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; height: calc(var(--mzw) / .656); width: calc(var(--mzw) * .56); }
+.sk-mztrack-l { justify-self: end; }
+.sk-mztrack-r { justify-self: start; }
+.sk-mztrack.empty { visibility: hidden; }
+.sk-mzlist { flex: 1 1 0; min-height: 0; width: 100%; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; display: flex; flex-direction: column; gap: 10px;
+    padding: 12px 14px 12px 4px; box-sizing: border-box; overscroll-behavior: contain; }
+.sk-mzlist::-webkit-scrollbar { display: none; }
+.sk-mztrack.more .sk-mzlist { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%); }
+.sk-mzc { position: relative; flex: 0 0 auto; width: 100%; scroll-snap-align: start; cursor: zoom-in; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+.sk-mzc .sk-cardscale, .sk-mzc .sk-tilebox { width: 100%; pointer-events: none; }
+.sk-mzoom .sk-mzrm { width: 36px; height: 36px; right: -8px; bottom: -8px; font-size: 15px; }
+.sk-mzrot { flex: 0 0 auto; width: 40px; height: 30px; border-radius: 15px; border: 0; background: rgba(255,255,255,.85); color: #222; cursor: pointer;
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+
+.sk-mzbig { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(0,0,0,.55); cursor: zoom-out; animation: skmBigIn .16s ease-out; }
+.sk-mzbigcard { width: min(80vw, calc((100dvh - var(--sk-bottom, 0px) - 80px) * .67), 460px); pointer-events: none; filter: drop-shadow(0 12px 30px rgba(0,0,0,.6)); }
+.sk-mzbigcard .sk-cardscale, .sk-mzbigcard .sk-tilebox { width: 100%; }
+@keyframes skmBigIn { from { opacity: 0; transform: scale(.92); } }
+.sk-mzoom { --mzw: min(34vw, calc((100dvh - var(--sk-bottom, 0px) - 270px) * 0.656), 440px); }
+.sk-mzfoot .sk-zoomhp { width: 240px; max-width: 60vw; }
+/* Livre manuel : la pastille des cartes d'une tuile s'ouvre d'un appui */
+.sk-mtile .sk-cardsbadge { pointer-events: auto; cursor: pointer; touch-action: manipulation; }
+/* Coop : gemmes posées avec les jetons (tas à part, toujours visible, et son nombre en bas à gauche) */
+.sk-mcgems { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+.sk-mgcount { position: absolute; left: .8cqw; bottom: .5cqw; display: flex; align-items: center; gap: .3cqw; font-family: 'Motrg', 'Primary', serif; font-size: 1.8cqw; line-height: 1; color: #fff;
+    text-shadow: 0 0 .3cqw #000, 0 0 .3cqw #000; pointer-events: none; z-index: 2; }
+.sk-mgcount img { width: 2cqw; height: 2cqw; object-fit: contain; }
+.sk-mb1 .sk-mgcount { font-size: 1.4cqw; left: .4cqw; bottom: .3cqw; }
+.sk-manual.solo .sk-mb1 .sk-mtok { width: 3.6cqw; height: 3.6cqw; }
+/* Coop, zone verte : le tas de gemmes se prend d'un appui (le reste de la zone tire un jeton) */
+.sk-manual.solo .sk-mz-energy .sk-mcgems { pointer-events: auto; cursor: grab; }
+
+/* Plateau automatique : pastille des cartes cliquable ; sort agrandi avec son lancement */
+.sk-river .sk-cardsbadge { pointer-events: auto; cursor: pointer; }
+.sk-mzbig { align-content: center; gap: 14px; }
+.sk-mzcast { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: default; }
+.sk-mzcast .sk-zoomnote { margin: 0; color: #fff; text-shadow: 0 1px 3px #000; }
+/* Réglage des points de vie : deux cases (piste, tuile) */
+.sk-hpplace { border: 0; margin: 10px 0 0; padding: 0; color: var(--body-color); }
+.sk-hpplace legend { padding: 0; margin-bottom: 4px; }
+.sk-mzbig { bottom: var(--sk-bottom, 0px); }
+.sk-mzbigcast .sk-mzbigcard { width: min(80vw, calc((100dvh - var(--sk-bottom, 0px) - 190px) * .67), 460px); }
+
+/* Outils de la partie hors du plateau : une icône discrète dans la barre des onglets ouvre une bande d'icônes */
+.sk-toolsico { border-color: transparent; background: transparent; opacity: .75; }
+.sk-toolsico:hover, .sk-toolsico.on { opacity: 1; }
+.sk-toolbar { position: absolute; right: 8px; top: calc(100% + 6px); z-index: 36; display: flex; gap: 6px; padding: 6px; border-radius: 10px;
+    background: var(--body-bg-color); border: 1px solid var(--main-color); box-shadow: 0 4px 14px rgba(0,0,0,.35);
+    visibility: hidden; opacity: 0; transform: translateY(-6px); transition: opacity .15s, transform .15s, visibility 0s .15s; }
+.sk-toolbar.on { visibility: visible; opacity: 1; transform: none; transition: opacity .15s, transform .15s; }
+.sk-tbtn { width: 44px; height: 44px; padding: 0; border-radius: 8px; border: 1px solid var(--main-color); background: var(--body-bg-color); color: var(--main-color);
+    font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 18px; cursor: pointer; display: grid; place-items: center; }
+.sk-tbtn:hover:not(:disabled) { background: var(--highlight-color); border-color: var(--highlight-color); color: #fff; }
+.sk-tbtn:disabled { opacity: .4; cursor: not-allowed; }
+.sk-tbtn:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sk-toolbar, .sk-toolbar.on { transition: none; } }
+/* Plateau automatique sans bloc d'outils : le Tour de l'Overlord monte dans la rangée haute, la phase s'élargit */
+
+/* Livre manuel : place d'arrivée d'une tuile glissée dans sa bande (cadre pointillé, comme le plateau automatique) */
+.sk-mb4 { position: relative; }
+.sk-mspot { position: absolute; top: -.2cqw; bottom: -.2cqw; left: calc(-.2cqw + (100% - 1cqw) / 8 * var(--i, 0)); width: calc((100% - 1cqw) / 8 + 1.4cqw); box-sizing: border-box; box-shadow: 0 0 1.2cqw var(--highlight-color);
+    outline: 4px dashed var(--highlight-color); outline-offset: -4px; border-radius: .8cqw; background: color-mix(in srgb, var(--highlight-color) 18%, transparent);
+    pointer-events: none; z-index: 4; transition: left .12s ease-out; }
+@media (prefers-reduced-motion: reduce) { .sk-mspot { transition: none; } }
+
+/* Livre manuel, piste des tours réduite : le cadre Tour du plateau automatique, à gauche de la bande 1
+   (les cases Mouvement, Défense, Relance restent centrées) */
+.sk-mb1 { position: relative; }
+.sk-mturn { position: absolute; left: .4cqw; top: 0; bottom: 0; width: 25cqw; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4cqw;
+    padding: .5cqw; border-radius: .9cqw; background: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 82%, transparent); border: 1px solid color-mix(in srgb, var(--main-color, #542f23) 35%, transparent);
+    box-shadow: 0 .3cqw .8cqw rgba(0,0,0,.35); color: var(--body-color); }
+.sk-mturn .sk-ptitle { font-family: 'Primary', serif; color: var(--main-color); font-size: 1.9cqw; line-height: 1; letter-spacing: .03em; }
+.sk-mturn .sk-ppair { display: flex; width: 100%; justify-content: space-around; align-items: center; }
+.sk-mturn .sk-tokimg { cursor: pointer; touch-action: none; }
+.sk-mturn .sk-tokimg img { width: 5.4cqw; height: 5.4cqw; }
+.sk-mturn .sk-tokimg b { min-width: 2.9cqw; height: 2.6cqw; border-radius: 1.3cqw; padding: 0 .5cqw; right: -1cqw; bottom: -.6cqw; font-size: 1.8cqw; }
+.sk-mturn .sk-ptok .sk-pstep { width: 3.4cqw; height: 3.4cqw; margin-top: -1.7cqw; font-size: 2cqw; padding: 0; }
+.sk-mturn .sk-ptok .sk-pstep:first-child { right: calc(100% + .3cqw); } .sk-mturn .sk-ptok .sk-pstep:last-child { left: calc(100% + .3cqw); }
+
+/* Zoom (double appui) : gemmes de la tuile à droite, sous le nom ; celles d'une carte à cheval sur sa tranche haute */
+
+.sk-mzlist { padding-top: 22px; scroll-padding-top: 22px; gap: 24px; }
+
+/* Gemmes d'une tuile sur le plateau : toutes (tuile et cartes) posées sur le corps de la tuile, en tas de trois */
+.sk-mtile .sk-mtg, .sk-mtile .sk-mtg.sk-mz { right: auto; top: auto; inset: 30% 8% 26% 8%; padding: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible;
+    display: block; font-size: 0; }
+.sk-mtile .sk-mtg .sk-mgems { inset: 0; gap: 0; }
+.sk-mtile .sk-mtg .sk-mg3 img { width: var(--g); height: var(--g); filter: drop-shadow(0 .5cqw .7cqw rgba(0,0,0,.75)); }
+
+/* Vue éclatée (zoom, dépose sur une tuile à cartes) : languette de gemmes rouges, comme les sorts du plateau automatique.
+   Sur une carte, à cheval sur sa tranche haute ; sur la tuile, à droite sous le nom. */
+.sk-gpips { position: absolute; right: 10%; top: 0; transform: translateY(-55%); z-index: 3; display: flex; align-items: center; gap: 5px; padding: 5px 11px;
+    border-radius: 16px; background: rgba(15,8,20,.92); border: 1px solid rgba(255,255,255,.35); pointer-events: none; color: #fff; font: bold 17px/1 system-ui, sans-serif;
+    white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.sk-gpips i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 18px; color: #e3242b; filter: drop-shadow(0 0 3px rgba(0,0,0,.9)); }
+.sk-gpips.sk-gpips-tile { top: 13%; right: 4%; transform: none; }
+.sk-mgcard .sk-gpips { padding: 3px 8px; gap: 3px; font-size: 14px; right: 6%; }
+.sk-mgcard .sk-gpips i { font-size: 14px; }
+.sk-mgcard .sk-gpips.sk-gpips-tile { top: 12%; }
+.sk-mgcards { padding-top: 16px; }
+
+/* Fonds choisis dans les réglages (fond vert, fond rouge, tuile de récupération, pions gemmes) */
+.sk-manual.sk-has-green .sk-mz-energy { background: #1d5a2b var(--sk-green) 50% 50% / cover no-repeat; }
+.sk-manual.sk-has-red .sk-mz-fatigue { background: #8a1f17 var(--sk-red) 50% 50% / cover no-repeat; }
+.sk-manual.sk-has-rest .sk-mrest { background: #6b5a3a var(--sk-rest) 50% 50% / cover no-repeat; position: relative; }
+
+.sk-mrankimg { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); }
+
+/* Réglages : vignettes des fonds */
+.sk-skins h4 { margin: 12px 0 6px; font-family: 'Primary', serif; color: var(--main-color); }
+.sk-skinrow, .sk-skingems { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.sk-skinitem { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 104px; font-size: .85rem; text-align: center; color: var(--body-color); }
+.sk-skingems .sk-skinitem { width: 72px; }
+.sk-skinprev { width: 104px; height: 70px; border-radius: 8px; border: 1px dashed var(--main-color); display: grid; place-items: center; overflow: hidden; cursor: pointer;
+    background: color-mix(in srgb, var(--body-color) 8%, transparent); color: var(--main-color); }
+.sk-skin-rest .sk-skinprev { width: 80px; height: 80px; }
+.sk-skingems .sk-skinprev { width: 60px; height: 60px; border-radius: 50%; }
+.sk-skinprev img { width: 100%; height: 100%; object-fit: cover; }
+.sk-skinprev:focus-within { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+.sk-skinrm { position: absolute; top: -6px; right: -6px; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 50%; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 12px; }
+.sk-mhole .sk-mrankimg { width: 5.8cqw; height: 5.8cqw; }
+.sk-manual.sk-has-rest .sk-mrest { background: #2b2620 var(--sk-rest) 50% 50% / contain no-repeat; }
+.sk-manual.sk-has-rest .sk-mrest .sk-mstep { position: absolute; left: .6cqw; bottom: .6cqw; gap: .4cqw; }
+.sk-manual.sk-has-rest .sk-mrest .sk-pstep { width: 2.8cqw; height: 2.8cqw; min-width: 24px; min-height: 24px; font-size: 1.6cqw; }
+.sk-skins .sk-skinrm { font-family: "Font Awesome 5 Free" !important; font-weight: 900 !important; font-size: 12px !important; line-height: 1; background: var(--body-bg-color); }
+.sk-manual.sk-has-rest .sk-mrest .sk-pstep { background: rgba(255,255,255,.88); color: #3a2a18; }
+/* Seules les gemmes elles-mêmes se prennent : à côté, l'appui reste pour la tuile (double appui = zoom, glisser = déplacer) */
+.sk-mtile .sk-mtg, .sk-mtile .sk-mtg .sk-mgems, .sk-mtile .sk-mtg .sk-mg3 { pointer-events: none; }
+.sk-mtile .sk-mtg .sk-mg3 img { pointer-events: auto; cursor: grab; }
+
+/* Tuile de récupération d'origine : image entière, gemme du pion numéroté posée sur la gemme vide, − et + sur la flèche. */
+.sk-manual.sk-has-rest .sk-mrest { background: none; padding: .4cqw; box-shadow: none; }
+.sk-mrestcard { position: relative; height: 100%; max-width: 100%; aspect-ratio: 452 / 438; container-type: inline-size; }
+.sk-mrestcard .sk-mrestimg { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 4%; }
+.sk-mrestcard .sk-mrecgem { position: absolute; left: 39.82%; top: 47.95%; width: 19.91%; height: 17.35%; pointer-events: none; }
+.sk-mrestcard .sk-mrecnum { position: absolute; left: 50.1%; top: 56.7%; transform: translate(-50%, -50%); font: italic 900 13cqw/1 Georgia, serif;
+  color: #141018; -webkit-text-stroke: .6cqw #fff; paint-order: stroke; pointer-events: none; }
+.sk-manual.sk-has-rest .sk-mrestcard .sk-pstep { position: absolute; top: 56.7%; transform: translate(-50%, -50%); width: 17cqw; height: 17cqw; padding: 0; line-height: 1;
+  min-width: 26px; min-height: 26px; font-size: 13cqw; font-weight: 700; border-radius: 50%; background: rgba(255,255,255,.92); color: #3a2a18; }
+.sk-mrestcard .sk-mrecm { left: 25%; }
+.sk-mrestcard .sk-mrecp { left: 75%; }
+.sk-manual.sk-has-rest .sk-mrestcard .sk-pstep { width: 20cqw; height: 20cqw; }
+.sk-mrestcard .sk-pstep::before, .sk-mrestcard .sk-pstep::after { width: 56% !important; height: 14% !important; border-radius: 2px; }
+.sk-mrestcard .sk-plus::after { width: 14% !important; height: 56% !important; }
+
+/* Livre manuel sur téléphone (portrait) : découpage du plateau automatique. Le cadre Tour et la tuile de récupération
+   en haut, Mouvement / Défense / Relance dessous, Énergie et Fatigue côte à côte, puis les tuiles sur deux rangs de 4,
+   chaque rang sous ses pions numérotés. Les bandes 1 et 2 s'effacent (display: contents) pour que leurs cases
+   se rangent dans la grille du livre. */
+.sk-mph { display: none; }
+@media (max-width: 600px) {
+    .sk-manual .sk-desk { gap: 3cqw; }
+    .sk-manual .sk-book { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 40cqw 22cqw 40cqw auto; gap: 2.4cqw; padding: 2.4cqw; border-radius: 3cqw; }
+    .sk-manual .sk-mb1, .sk-manual .sk-mb2 { display: contents; }
+    .sk-manual .sk-mturn { position: relative; left: auto; top: auto; bottom: auto; width: auto; grid-column: 1 / 4; grid-row: 1; padding: 2cqw; gap: 2.4cqw; border-radius: 2.4cqw; }
+    .sk-manual .sk-mturn .sk-ptitle { font-size: 5.4cqw; }
+    .sk-manual .sk-mturn .sk-tokimg img { width: 14cqw; height: 14cqw; }
+    .sk-manual .sk-mturn .sk-tokimg b { min-width: 7cqw; height: 6.4cqw; border-radius: 3.2cqw; padding: 0 1.2cqw; right: -2.4cqw; bottom: -1.4cqw; font-size: 4.4cqw; }
+    .sk-manual .sk-mturn .sk-ptok .sk-pstep { width: 8cqw; height: 8cqw; margin-top: -4cqw; }
+    .sk-manual .sk-mrest { grid-column: 4 / 7; grid-row: 1; height: auto; min-height: 0; border-radius: 2.4cqw; }
+    .sk-manual .sk-mb1 .sk-mz { width: auto; height: auto; aspect-ratio: auto; grid-row: 2; grid-column: span 2; border-radius: 2cqw; --gz: 2.6; }
+    .sk-manual .sk-mb1 .sk-mgems { inset: 1cqw; }
+    .sk-manual .sk-mb1 .sk-mico { border-radius: 1.4cqw; }
+    .sk-manual .sk-mz-energy { grid-column: 1 / 4; grid-row: 3; }
+    .sk-manual .sk-mz-fatigue { grid-column: 4 / 7; grid-row: 3; }
+    .sk-manual .sk-mz { --g: 6.4cqw; border-radius: 2cqw; }
+    .sk-manual .sk-mgems { inset: 2cqw; }
+    .sk-manual .sk-mcount { font-size: 5cqw; right: 2cqw; bottom: 1.4cqw; }
+    .sk-manual .sk-mb3 { display: none; }
+    .sk-manual .sk-mb4 { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto 33.4cqw auto 33.4cqw;
+        gap: 1.4cqw 1.6cqw; min-height: 0; padding: 1.6cqw; border-radius: 2cqw; }
+    .sk-manual .sk-mb4 .sk-mtile { width: auto; grid-column: var(--c); grid-row: var(--r); }
+    .sk-manual .sk-mph { display: grid; grid-column: var(--c); grid-row: var(--r); justify-self: center; width: 12cqw; }
+    .sk-manual .sk-mph .sk-rankgem { width: 10cqw; height: 10cqw; }
+    .sk-manual .sk-mspot { grid-column: var(--c) / span 1; grid-row: var(--r) / span 1; left: -1cqw; right: -1cqw; top: -1cqw; bottom: -1cqw; width: auto; border-radius: 1.6cqw; transition: none; }
+    /* Studio : le livre en entier, la réserve et le tas de tuiles dessous, côte à côte */
+    .sk-manual .sk-mmid { flex-wrap: wrap; }
+    .sk-manual .sk-mmid > .sk-book { flex: 1 0 100%; order: -1; }
+    .sk-manual .sk-mside { flex: 1 1 0; height: 30cqw; }
+}
+@media (max-width: 600px) {
+    .sk-manual .sk-mph .sk-mrankimg { width: 11cqw; height: 11cqw; }
+    .sk-manual .sk-mph { background: none; box-shadow: none; }
+    .sk-modesw button { padding: 0 7px; font-size: calc(var(--primary-size) * .66rem); }
+}
+
+/* Zoom d'une tuile : la tuile plus grande, ses cartes collées à elle (colonnes à leur taille, centrées) */
+.sk-mzoom { --mzw: min(40vw, calc((100dvh - var(--sk-bottom, 0px) - 190px) * 0.656), 500px); }
+.sk-mzrow { grid-template-columns: auto auto auto; justify-content: center; gap: 12px; }
+/* Téléphone en paysage : toute la hauteur pour la tuile, les PV et le + passent à sa droite, en colonne */
+@media (max-height: 500px) and (orientation: landscape) {
+    .sk-mzoom { --mzw: min(30vw, calc((100dvh - var(--sk-bottom, 0px) - 50px) * 0.656)); gap: 2px; }
+    .sk-mzoom .sk-zoomhead { font-size: 14px; }
+    .sk-mzcenter { flex-direction: row; gap: 8px; }
+    .sk-mzfoot { flex-direction: column; transform: none; gap: 8px; }
+    .sk-mzfoot .sk-zoomhp { width: 170px; max-width: none; }
+    .sk-mzlist { padding-top: 18px; scroll-padding-top: 18px; gap: 18px; }
+}
+/* Téléphone en portrait : la tuile en haut, ses cartes dessous sur deux rangées qui défilent de côté
+   (les sorts, puis les tuiles portées et les équipements) */
+@media (max-width: 600px) {
+    .sk-mzoom { --mzw: min(54vw, calc((100dvh - var(--sk-bottom, 0px) - 420px) * 0.656)); gap: 6px; max-height: calc(100dvh - var(--sk-bottom, 0px)); overflow-y: auto; }
+    .sk-mzrow { grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 6px; padding: 0 6px; }
+    .sk-mzcenter { grid-row: 1; }
+    .sk-mzoom .sk-mztrack { width: 100%; height: auto; justify-self: stretch; flex-direction: row; }
+    .sk-mzoom .sk-mztrack.empty { display: none; }
+    .sk-mzoom .sk-mzlist { flex-direction: row; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; padding: 16px 8px 4px; scroll-padding: 0 8px;
+        justify-content: safe center; gap: 10px; }
+    .sk-mzoom .sk-mzc { width: 24vw; scroll-snap-align: start; }
+    .sk-mzoom .sk-mzrot { display: none; }
+    .sk-mzoom .sk-mztrack.more .sk-mzlist { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+        mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
+    .sk-mzoom .sk-mzrm { width: 30px; height: 30px; right: -4px; bottom: -4px; font-size: 13px; }
+}
+@media (max-width: 600px) {
+    #skelos > .sk-tabs .sk-tabbtn { padding: 0 4px; font-size: calc(var(--primary-size) * .74rem); }
+}
+
+/* Zoom du livre : bouton de sortie fixe ; le voile laisse défiler les cartes (WebKit applique le touch-action
+   des parents aux listes qui défilent) et seul le glisser sur la tuile passe à la tuile voisine. */
+.sk-overlay.sk-zoomon.sk-mzon { touch-action: manipulation; }
+.sk-mzoom .sk-zoombox { touch-action: none; }
+.sk-mzoom .sk-mzlist { touch-action: pan-y; }
+.sk-mzclose { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); z-index: 11;
+    width: 44px; height: 44px; padding: 0; border: 2px solid #fff; border-radius: 50%; background: rgba(20,20,20,.75); color: #fff;
+    font-size: 28px; line-height: 1; display: grid; place-items: center; cursor: pointer; touch-action: manipulation; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.sk-mzclose:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+@media (max-width: 600px) {
+    .sk-mzoom .sk-mzlist { touch-action: pan-x; scroll-snap-type: x proximity; }
+}
+
+/* Zoom : tuile plus grosse. Sur tablette et en paysage, les PV et le + passent à droite de la tuile pour lui laisser
+   toute la hauteur ; sur téléphone en portrait, la tuile prend presque toute la largeur (les cartes défilent dessous). */
+.sk-mzoom { --mzw: min(42vw, calc((100dvh - var(--sk-bottom, 0px) - 150px) * 0.656), 600px); gap: 4px; }
+.sk-mzcenter { flex-direction: row; gap: 10px; }
+.sk-mzfoot { flex-direction: column; transform: none; gap: 10px; }
+.sk-mzfoot .sk-zoomhp { width: 170px; max-width: none; }
+@media (max-width: 600px) {
+    .sk-mzoom { --mzw: min(84vw, calc((100dvh - var(--sk-bottom, 0px) - 150px) * 0.656)); }
+    .sk-mzcenter { flex-direction: column; gap: 8px; }
+    .sk-mzfoot { flex-direction: row; gap: 14px; }
+    .sk-mzfoot .sk-zoomhp { width: 220px; }
+}
+@media (min-width: 601px) and (min-height: 501px) { .sk-mzfoot .sk-zoomhp { width: 220px; } }
+
+/* PV du livre manuel : au-dessus des dés, comme sur le plateau automatique ; dans le zoom, au même endroit sur la tuile. */
+.sk-mtile .sk-hpwrap, .sk-mtile .sk-hpwrap.withreinf, .sk-mtile .sk-hpwrap.open, .sk-mtile .sk-hpwrap.withreinf.open { bottom: 16.8%; }
+/* Zoom : le calque des PV couvre la tuile (unités en % de sa largeur) ; le cœur a la taille et la place de celui
+   de la tuile du livre, à hauteur de la flamme ; le + et le − s'empilent à sa gauche. */
+.sk-zoombox .sk-zoomhp.sk-zoomhp-on { position: absolute; inset: 0; width: auto; max-width: none; z-index: 3; pointer-events: none; display: block; }
+.sk-zoomhp-on .sk-hpwrap, .sk-zoomhp-on .sk-hpwrap.withreinf { position: absolute !important; right: 1.2cqw; bottom: 22.4cqw; pointer-events: auto; touch-action: manipulation;
+    display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 1.2cqw; row-gap: 1.2cqw; padding: 1.4cqw; border-radius: 7cqw; }
+.sk-zoomhp-on .sk-hpbtn { width: 11cqw; height: 11cqw; }
+.sk-zoomhp-on .sk-hpwrap > .sk-hpbtn:last-child { grid-column: 1; grid-row: 1; }
+.sk-zoomhp-on .sk-hpwrap > .sk-hpbtn:first-child { grid-column: 1; grid-row: 2; }
+.sk-zoomhp-on .sk-hp { grid-column: 2; grid-row: 1 / span 2; width: 22cqw; height: 20cqw; }
+.sk-zoomhp-on .sk-hp b { font-size: 11cqw; }
+
+/* + d'ajout de cartes : pastille au coin bas-droit de la tuile zoomée, comme la corbeille des cartes. */
+.sk-zoombox .sk-mzadd.sk-mzadd-on { position: absolute; right: -8px; bottom: -8px; z-index: 4; width: 36px; height: 36px; font-size: 24px; touch-action: manipulation; }
+@media (max-width: 600px) { .sk-zoombox .sk-mzadd.sk-mzadd-on { right: -4px; bottom: -4px; width: 30px; height: 30px; font-size: 20px; } }
+
+/* Main de gemmes : à chaque gemme prise en plus, la pastille rebondit et lance une onde. */
+.sk-mhand.bump img, .sk-mhand.bump b { animation: skmBump .26s ease-out; }
+.sk-mhand.bump::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 3px solid rgba(255,121,0,.9); animation: skmRing .45s ease-out forwards; pointer-events: none; }
+@keyframes skmBump { 40% { transform: scale(1.35); } }
+@keyframes skmRing { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.7); } }

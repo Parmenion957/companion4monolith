@@ -1,6 +1,6 @@
 // Livre de Skelos : module de suivi du plateau de l'Overlord pour le Compagnon de Conan.
-// Code sous licence LGPL-3.0, comme le Compagnon. Ce module n'ajoute aucune image ni donnée de Monolith :
-// il utilise celles déjà chargées par le Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell).
+// Code sous licence LGPL-3.0, comme le Compagnon. Images et données du jeu : Monolith, avec l'autorisation accordée au Compagnon ;
+// le module reprend celles du Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell) et ajoute les fonds du livre (img/fond/).
 //
 // Interface à la charte du Compagnon : jetons du jeu, commandes au-dessus des tuiles 6 à 8, étapes du tour,
 // onglets, boîtes de dialogue plein écran, boutons − et +, descriptions des tuiles Événement, icônes du module.
@@ -25,12 +25,6 @@ S.icon = function(k) { return S.asset(S.ICON_DEFAULTS[k]); };
 try { localStorage.removeItem(Application + "_SkelosIcons"); } catch (x) {}
 S.marker = function(n) { return S.asset("data/tokens/img/marker-" + Math.max(1, Math.min(13, n)) + ".webp"); };
 
-S.gems = function(n, cls) {
-    var h = "", dim = cls == "off";
-    for (var i = 0; i < Math.min(n, 14); i++) h += "<img class='sk-gemimg" + (dim ? " dim" : "") + "' src='" + S.icon("gem") + "' alt=''>";
-    if (n > 14) h += "<span class='sk-gemmore'>+" + (n - 14) + "</span>";
-    return h;
-};
 S.token = function(kind, value, extra, cls) {
     if (kind == "gem") return "<span class='sk-tokimg" + (cls == "dim" ? " dim" : "") + "'><img src='" + S.icon("gem") + "' alt=''><b>" + value + "</b></span>";
     if (kind == "hourglass") return "<span class='sk-tokimg sk-tokround'><img src='" + S.icon("time") + "' alt=''><b>" + value + "</b>" + (extra ? "<small>" + e(extra.replace(/\s/g, "")) + "</small>" : "") + "</span>";
@@ -40,19 +34,6 @@ S.token = function(kind, value, extra, cls) {
     if (kind == "recover") return "<span class='sk-recovarrow'><svg viewBox='0 0 100 56' aria-hidden='true'><path d='M2 28 34 2v12h64v28H34v12z' fill='currentColor' stroke-linejoin='round'/></svg><b>" + value + "</b></span>";
     return "<span class='sk-recovtok'><b>" + value + "</b></span>";
 };
-// Cercles d'activation : le pion de rang payé (Aventure) ou le jeton tiré (Coop) prend la place d'un cercle vide.
-S.activationSlots = function(used, max) {
-    var st = S.state, solo = st && st.mode == "solo", marks = used ? ((st && st.actMarks) || []).slice(-used) : [];
-    var h = "<span class='sk-actslots'>";
-    for (var i = 0; i < max; i++) {
-        var n = i < used ? marks[i - (used - marks.length)] : null;
-        if (i >= used) h += "<span class='sk-actempty'></span>";
-        else if (!n) h += "<img class='sk-actgem' src='" + S.icon("gem") + "' alt=''>";
-        else if (solo) h += "<img class='sk-actgem sk-actmarker' src='" + S.marker(n) + "' alt='" + n + "'>";
-        else h += S.rankToken(n, "sk-actgem sk-actrank");
-    }
-    return h + "</span>";
-};
 
 // Pion de coût : pion numéroté du jeu, cerclé de rouge avec une gemme quand la tuile choisie peut être payée.
 // Rang d'une case de la Rivière : gemme rouge numérotée dans un anneau (composée en CSS avec la gemme du Compagnon).
@@ -60,155 +41,40 @@ S.activationSlots = function(used, max) {
 S.rankToken = function(n, cls) {
     return "<span class='sk-rankgem" + (cls ? " " + cls : "") + "' role='img' aria-label='" + n + "'><img src='" + S.icon("gem") + "' alt=''><b>" + n + "</b></span>";
 };
-S.costToken = function(slot, i) {
-    var img = S.rankToken(i + 1, "sk-costimg");
-    if (!slot) return "<span class='sk-costtok sk-costimgwrap'>" + img + "</span>";
-    var sel = slot.uid == S.selected, why = sel ? S.canActivate(slot) : null, armed = sel && !why;
-    return "<span class='sk-costtok sk-costimgwrap" + (armed ? " armed" : "") + "' data-act='paycost' data-uid='" + slot.uid + "'"
-        + (sel ? " role='button' tabindex='0' aria-label='" + e(armed ? t("activate_named", S.tileName(slot), i + 1) : why) + "'" : "") + ">"
-        + img + (armed ? "<img class='sk-costgemimg' src='" + S.icon("gem") + "' alt=''>" : "") + "</span>";
-};
 
-// ---------- Panneau du plateau : grille de 8 colonnes calée sur la Rivière ----------
-// Classique : Tour (1-2) · Mouvement, Relance, Défense active, Sort (3 à 6) · boutons (7-8)
-//             Énergie (1-2) · Récupération (3) · Fatigue (4-5) · Phase en cours (6-7) · Tour de l'Overlord (8)
-// Solo / coop : Tour (1-2) · Jetons joués (3 à 6) · boutons (7-8)
-//             Jetons disponibles (1 à 3) · Héros en jeu (4-5) · Phase en cours (6-7) · Tour de l'Overlord (8)
-var title = function(k) { return "<div class='sk-ptitle'>" + e(t(k)) + "</div>"; };
 
-// Jeton du cadre Tour (sablier ou alarme) : − et + de part et d'autre en mode studio seulement.
-S.turnTokenCode = function(kind) {
-    var st = S.state, turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = !!S.studio;
-    var minus = turn ? "turnminus" : "turnsminus", plus = turn ? "turnplus" : "turnsplus", tab = open ? 0 : -1;
-    var label = turn ? t("turn") + " " + st.turn : (st.turns ? t("turn_limit") + " " + st.turns : t("turn_limit_none"));
-    return "<span class='sk-ptok" + (open ? " editing" : "") + "' data-turnwrap='" + kind + "'>"
-        + "<button class='sk-pstep' data-act='" + minus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_prev" : "aria_limit_minus")) + "'>−</button>"
-        + "<span class='sk-tokimg sk-tokround' data-turnkind='" + kind + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "'>"
-        + "<img src='" + S.icon(turn ? "time" : "alarm") + "' alt=''><b>" + val + "</b></span>"
-        + "<button class='sk-pstep' data-act='" + plus + "' tabindex='" + tab + "' aria-label='" + e(t(turn ? "aria_turn_next" : "aria_limit_plus")) + "'>+</button></span>";
-};
-S.turnBlockCode = function() {
-    var st = S.state, last = st.turns && st.turn >= st.turns;
-    var flag = !st.turns ? "" : st.turn > st.turns ? t("game_over_short") : st.turn == st.turns ? t("last_turn") : "";
-    return "<div class='sk-p sk-a-tour" + (last ? " last" : "") + "'" + (flag ? " title='" + e(flag) + "'" : "") + ">" + title("turn")
-        + "<div class='sk-ppair'>" + S.turnTokenCode("turn") + S.turnTokenCode("turns") + "</div>"
-        + (flag ? "<span class='sk-vh'>" + e(flag) + "</span>" : "") + "</div>";
-};
 
-// Améliorations ponctuelles : un appui dépense une gemme ; compteur de gemmes sous l'icône.
-S.boostBlockCode = function(k, n) {
-    var st = S.state, cur = st.current && S.slotByUid(st.current), tile = cur && S.tileOf(cur), tip = t("boost_cost_" + k), cnt = st.boosts[k] || 0;
-    if (k == "move" && cur && tile && !S.isEvent(cur) && st.phase == "overlord") tip = t("boost_ctx_short", parseInt(tile.movement, 10) || 0);
-    return "<button class='sk-p sk-pboost sk-a-b" + n + "' data-act='boost' data-k='" + k + "' title='" + e(tip) + "' aria-label='" + e(t("boost_" + k) + " · " + cnt + " " + t("gems_word")) + "'>"
-        + "<span class='sk-ptitle'>" + e(t("boost_" + k)) + "</span><img class='sk-pboostimg' src='" + S.icon(k) + "' alt=''>"
-        + "<span class='sk-pgems" + (cnt ? "" : " zero") + "'><img src='" + S.icon("gem") + "' alt=''><b>" + cnt + "</b></span></button>";
-};
 
-// Bloc d'outils : Annuler · [Recommencer | Terminer] · Journal · Aide.
-S.toolsBlockCode = function() {
-    var b = function(act, icon, label, aria, off) {
-        return "<button class='sk-ptool' data-act='" + act + "'" + (off ? " disabled" : "") + " title='" + e(t(aria)) + "' aria-label='" + e(t(aria)) + "'><i aria-hidden='true'>" + icon + "</i><span>" + e(t(label)) + "</span></button>";
+
+// Bande d'outils sous la barre des onglets (icônes seules, nom au survol).
+S.toolbarCode = function() {
+    var b = function(act, icon, aria, off) {
+        return "<button class='sk-tbtn' data-studio='tool' data-tool='" + act + "'" + (off ? " disabled" : "") + " title='" + e(t(aria)) + "' aria-label='" + e(t(aria)) + "'>" + icon + "</button>";
     };
-    return "<div class='sk-p sk-a-tools'>" + b("undo", "&#xf0e2;", "undo", "undo", !S.undoStack.length)
-        + "<div class='sk-ptoolpair'>" + b("restart", "&#xf2f9;", "tool_restart", "restart_game") + b("end", "&#xf11e;", "tool_end", "menu_end", !!S.editing) + "</div>"
-        + b("journal", "&#xf02d;", "log", "log") + b("help", "&#xf128;", "help", "help") + "</div>";
+    return "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
+        + b("undo", "&#xf0e2;", "undo", !S.undoStack.length) + b("restart", "&#xf2f9;", "restart_game") + b("end", "&#xf11e;", "menu_end", !!S.editing)
+        + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>";
 };
-
-// Phase en cours : quatre étapes en grille 2×2 ; seule l'étape en cours est en gras.
-S.phaseBlockCode = function() {
-    var st = S.state, solo = st.mode == "solo", ov = st.phase != "heroes", pre = ov ? (solo ? "solo_short_" : "ov_short_") : "he_short_", cur = -1;
-    if (st.phase == "overlord") cur = solo ? (st.highlight ? 3 : 2) : 3;
-    return "<div class='sk-p sk-a-phase " + (ov ? "ov" : "he") + "' role='group' aria-label='" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "'>"
-        + "<div class='sk-pphase-t'>" + e(t(ov ? "phase_title_overlord" : "phase_title_heroes")) + "</div><ol>" + [1, 2, 3, 4].map(function(i) {
-            return "<li" + (i == cur ? " class='cur' aria-current='step'" : "") + "><span class='sk-pnum' aria-hidden='true'>" + i + "</span><span>" + e(t(pre + i)) + "</span></li>";
-        }).join("") + "</ol>" + (S.studio ? S.firstPlayerCode() : "") + "</div>";
+S.syncToolbar = function() {
+    var r = S.root; if (!r) return;
+    var bar = r.querySelector("#sk-toolbar"), ico = r.querySelector(".sk-toolsico");
+    if (bar) bar.classList.toggle("on", !!S._toolsOpen);
+    if (ico) { ico.classList.toggle("on", !!S._toolsOpen); ico.setAttribute("aria-expanded", !!S._toolsOpen); }
 };
-
-// Tour de l'Overlord : Commencer / Terminer et emplacements d'activation.
-S.overlordBlockCode = function() {
-    var st = S.state, ov = st.phase == "overlord", max = st.mode == "solo" ? st.heroes : st.maxActivations;
-    return "<div class='sk-p sk-a-ov'>" + title("steps_overlord_title")
-        // En mode studio, le tour ne se joue pas : il faut d'abord sortir du mode.
-        + "<button class='sk-turnbtn' data-act='" + (ov ? "oend" : "oturn") + "'" + (S.studio ? " disabled" : "") + " title='" + e(t(S.studio ? "studio_exit_first" : ov ? "end_overlord_turn" : "start_overlord_turn")) + "'>" + e(t(ov ? "btn_end" : "btn_start")) + "</button>"
-        + (S.studio && st.mode != "solo" ? "<div class='sk-pctr sk-pmaxact'><button class='sk-pstep' data-act='studiomaxact' data-n='-1' aria-label='" + e(t("aria_act_minus")) + "'>−</button>" : "")
-        + "<div class='sk-pacts' role='img' aria-label='" + e(t("activations") + " " + st.activations + " / " + max) + "'>" + S.activationSlots(st.activations, max) + "</div>"
-        + (S.studio && st.mode != "solo" ? "<button class='sk-pstep' data-act='studiomaxact' data-n='1' aria-label='" + e(t("aria_act_plus")) + "'>+</button></div>" : "") + "</div>";
-};
-
-S.panelCode = function() {
-    var st = S.state, solo = st.mode == "solo", h = "<div class='sk-panel" + (solo ? " solo" : "") + "'>";
-    h += S.turnBlockCode();
-    if (!solo) {
-        h += S.BOOSTS.map(function(k, i) { return S.boostBlockCode(k, i + 1); }).join("");
-        h += S.toolsBlockCode();
-        h += "<div class='sk-p sk-a-en'>" + title("energy") + "<div class='sk-pmain'>" + S.token("gem", st.energy) + "</div><div class='sk-gems'>" + S.gems(st.energy, "on") + "</div>"
-            + "<button class='sk-pbtn' data-act='xfer' data-dir='tofatigue'" + (st.energy ? "" : " disabled") + ">" + e(t("to_fatigue")) + "</button></div>";
-        // Mode studio : − / + de la récupération, puis − / + du total de gemmes en dessous.
-        if (S.studio) h += "<div class='sk-p sk-a-rec studio'>" + title("recovery")
-            + "<div class='sk-pctr'><button class='sk-pstep' data-act='adj' data-f='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>" + S.token("recover", st.recovery)
-            + "<button class='sk-pstep' data-act='adj' data-f='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div>"
-            + title("gems_total_title")
-            + "<div class='sk-pctr'><button class='sk-pstep' data-act='studiogem' data-n='-1' aria-label='" + e(t("gem_remove")) + "'>−</button>" + S.token("gem", S.gemTotal())
-            + "<button class='sk-pstep' data-act='studiogem' data-n='1' aria-label='" + e(t("gem_add")) + "'>+</button></div></div>";
-        else h += "<div class='sk-p sk-a-rec'>" + title("recovery") + "<div class='sk-pmain'>" + S.token("recover", st.recovery) + "</div>"
-            + "<div class='sk-ptotal'>" + e(t("gem_total", S.gemTotal())) + "</div></div>";
-        h += "<div class='sk-p sk-a-fa'>" + title("fatigue") + "<div class='sk-pmain'>" + S.token("gem", st.fatigue, "", "dim") + "</div><div class='sk-gems'>" + S.gems(st.fatigue, "off") + "</div>"
-            + "<button class='sk-pbtn' data-act='xfer' data-dir='toenergy'" + (st.fatigue ? "" : " disabled") + ">" + e(t("to_energy")) + "</button></div>";
-    } else {
-        var slots = st.used.length + st.pool.length;
-        h += "<div class='sk-p sk-a-played'>" + title("tokens_used") + "<div class='sk-pmarkers'>"
-            + st.used.map(function(u) { var s = S.slotByUid(u); return "<img class='sk-pmarker' src='" + S.marker(s.token) + "' alt='" + s.token + "'>"; }).join("")
-            + new Array(Math.max(0, slots - st.used.length) + 1).join("<span class='sk-pmarker empty'></span>") + "</div></div>";
-        h += S.toolsBlockCode();
-        h += "<div class='sk-p sk-a-pool'>" + title("tokens_pool") + "<div class='sk-prow'>" + S.token("bag", st.pool.length)
-            + (st.phase == "overlord" ? "<button class='sk-btn sk-primary sk-pdraw' data-act='draw'>" + e(t("draw_token")) + "</button>" : "<span class='sk-phint'>" + e(t("draw_only_overlord")) + "</span>") + "</div></div>";
-        h += "<div class='sk-p sk-a-heroes'>" + title("heroes") + "<div class='sk-prow'>"
-            + (S.studio ? "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='-1' aria-label='" + e(t("aria_heroes_minus")) + "'>−</button>" : "") + S.token("heroes", st.heroes)
-            + (S.studio ? "<button class='sk-pstep' data-act='adj' data-f='heroes' data-n='1' aria-label='" + e(t("aria_heroes_plus")) + "'>+</button>" : "") + "</div></div>";
+S.runTool = function(act) {
+    switch (act) {
+        case "undo": S.undo(); break;
+        case "restart": S.restartGame(); break;
+        case "end": S.renderEnd(); break;
+        case "journal": S.openJournal(); break;
+        case "help": S.openGameHelp(); break;
     }
-    h += S.phaseBlockCode() + S.overlordBlockCode();
-    return h + "</div>";
 };
 
-// Limite de tours réglée depuis le plateau : même effet que dans les paramètres.
-S.adjustTurns = function(d) {
-    var st = S.state, v = Math.max(0, (st.turns || 0) + d);
-    if (v == (st.turns || 0)) return;
-    S.snapshot();
-    st.turns = v; st.scenario.turns = v;
-    S.save(); S.renderGame();
-};
-// Boutons propres au nouveau panneau.
-var origBindGame = S.bindGame;
-S.bindGame = function() {
-    origBindGame.apply(S, arguments);
-    S.root.querySelector(".skelos-game").addEventListener("click", function(ev) {
-        var b = ev.target.closest("[data-act]"); if (!b) return;
-        switch (b.dataset.act) {
-            case "turnsplus": S.adjustTurns(1); break;
-            case "turnsminus": S.adjustTurns(-1); break;
-            case "journal": S.openJournal(); break;
-            case "help": S.openGameHelp(); break;
-        }
-    });
-};
 
-// Après le rendu du plateau : fonds des zones, jetons du mode solo, tuiles Événement, carte des événements.
-var origRenderGame = S.renderGame;
-S.renderGame = function() {
-    origRenderGame.apply(S, arguments);
-    var st = S.state, r = S.root;
-    r.querySelectorAll(".sk-token").forEach(function(tk) {
-        var n = parseInt(tk.textContent, 10); if (!n) return;
-        tk.innerHTML = S.rankToken(n); tk.classList.add("sk-tokenimg");
-    });
-    st.river.forEach(function(s) {
-        if (!S.isEvent(s)) return;
-        var box = r.querySelector(".sk-tilebox[data-uid='" + s.uid + "']"); if (box) box.setAttribute("data-eventuid", s.uid);
-    });
-    S.placeTabs();
-    S.syncFullscreenButton();
-};
+
+
+
 S.eventTexts = function() {
     var st = S.state, out = [];
     st.river.forEach(function(s, i) {
@@ -692,15 +558,21 @@ S.placeTabs = function() {
             + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>"
             + (S.editing && S.editing.sid && !S.editing.cid ? "<button class='sk-tabico sk-danger' data-studio='del' title='" + e(t("delete_scenario")) + "' aria-label='" + e(t("delete_scenario")) + "'>&#xf2ed;</button>" : "");
     }
+    // Outils de la partie (Annuler, Recommencer, Terminer, Journal, Aide) : hors du plateau, dans une bande qu'une icône
+    // discrète fait apparaître ; un nouvel appui sur l'icône la referme. Les deux plateaux (automatique et manuel) la partagent.
+    g += "<button class='sk-tabico sk-toolsico" + (S._toolsOpen ? " on" : "") + "' data-studio='tools' aria-expanded='" + !!S._toolsOpen + "' aria-controls='sk-toolbar'"
+        + " title='" + e(t("tools_bar")) + "' aria-label='" + e(t("tools_bar")) + "'>&#xf142;</button>";
     g += "<button class='sk-tabico" + (S.studio ? " on" : "") + "' data-studio='toggle' aria-pressed='" + S.studio + "'" + (S.editing ? " disabled" : "")
         + " title='" + e(t(S.editing ? "studio_locked" : "studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>";
     nav.classList.add("withtools");
     nav.classList.toggle("studio", S.studio);
-    nav.insertAdjacentHTML("beforeend", g);
+    nav.insertAdjacentHTML("beforeend", g + S.toolbarCode());
     nav.addEventListener("click", function(ev) {
         var b = ev.target.closest("[data-studio]"); if (!b) return;
         ev.stopPropagation();
-        if (b.dataset.studio == "toggle") S.toggleStudio();
+        if (b.dataset.studio == "tools") { S._toolsOpen = !S._toolsOpen; S.syncToolbar(); }
+        else if (b.dataset.studio == "tool") S.runTool(b.dataset.tool);
+        else if (b.dataset.studio == "toggle") S.toggleStudio();
         else if (b.dataset.studio == "save") S.openSaveScenario();
         else if (b.dataset.studio == "mode") S.switchMode(b.dataset.mode);
         else if (b.dataset.studio == "del") S.deleteEditedScenario();
@@ -726,57 +598,7 @@ S.markSteppers = function(scope) {
 // Rang des tuiles (pions numérotés du mode coop) : il reste attaché à la case, pas à la tuile.
 S.renumberRiver = function() { S.state.river.forEach(function(s, i) { s.token = i + 1; }); };
 
-// Après le rendu : + des emplacements vides, tuiles déplaçables, PV, pastille de socle.
-var studioRenderGame = S.renderGame;
-S.renderGame = function() {
-    studioRenderGame.apply(S, arguments);
-    var r = S.root, st = S.state, game = r.querySelector(".skelos-game");
-    if (!game) return;
-    game.classList.toggle("sk-studio", !!S.studio);
-    S.markSteppers(r);
-    if (!S.studio) return;
-    r.querySelectorAll(".sk-river > .sk-slot").forEach(function(el, i) {
-        var s = st.river[i];
-        el.setAttribute("data-si", i);
-        if (!s) {
-            var em = el.querySelector(".sk-empty");
-            if (em) em.innerHTML = "<button class='sk-studioadd' data-act='studioadd' title='" + e(t("add_tile")) + "' aria-label='" + e(t("add_tile")) + "'>+</button>";
-            return;
-        }
-        var box = el.querySelector(".sk-tilebox");
-        box.setAttribute("data-act", "studiotile");
-        box.setAttribute("aria-label", S.tileName(s) + " — " + t(S.isEvent(s) ? "event_edit_hint" : "drag_hint"));
-        var old = box.querySelector(".sk-hpwrap"); if (old) old.remove();
-        if (!S.isEvent(s) && !s.dead) box.insertAdjacentHTML("beforeend", S.studioHpCode(s));
-        var socles = S.socles(S.tileOf(s));
-        if (socles.length > 1) {
-            var c = socles.indexOf(s.color) >= 0 ? s.color : socles[0];
-            el.insertAdjacentHTML("beforeend", "<button class='sk-socle' data-act='studiosocle' data-uid='" + s.uid + "' style='--socle:" + SOCLE[c] + "'"
-                + " title='" + e(t("socle_next", S.socleName(c))) + "' aria-label='" + e(t("socle_next", S.socleName(c))) + "'></button>");
-        }
-    });
-};
 
-// Actions du plateau en mode studio, et Recommencer / Terminer du bloc d'outils.
-var studioBindGame = S.bindGame;
-S.bindGame = function() {
-    studioBindGame.apply(S, arguments);
-    S.root.querySelector(".skelos-game").addEventListener("click", function(ev) {
-        var b = ev.target.closest("[data-act]"); if (!b) return;
-        var uid = b.dataset.uid, n = +b.dataset.n;
-        switch (b.dataset.act) {
-            case "restart": S.restartGame(); break;
-            case "end": S.renderEnd(); break;
-            case "studioadd": S.studioPick(); break;
-            case "studiotile": var s = S.slotByUid(uid); if (s && S.isEvent(s)) S.editEventText(uid); break;
-            case "studiolp": S.studioLife(uid, n); break;
-            case "studiosocle": S.nextSocle(uid); break;
-            case "studiogem": S.studioGem(n); break;
-            case "studiomaxact": S.studioMaxAct(n); break;
-            case "studiofirst": S.toggleFirstPlayer(); break;
-        }
-    });
-};
 
 var origRenderEndLog = S.renderEnd;
 S.renderEnd = function(keep) {
@@ -819,37 +641,7 @@ S.nextSocle = function(uid) {
     S.adoptSharedHp(s);
     commit();
 };
-S.studioGem = function(d) {
-    var st = S.state;
-    if (d < 0 && !st.fatigue && !st.energy) { S.toast(t("gem_none_left")); return; }
-    S.snapshot();
-    if (d > 0) st.fatigue++; else if (st.fatigue > 0) st.fatigue--; else st.energy--;
-    S.log(t(d > 0 ? "log_gem_added" : "log_gem_removed", S.gemTotal()));
-    commit();
-};
-S.studioMaxAct = function(d) {
-    var st = S.state, v = Math.max(1, Math.min(8, (st.maxActivations || 1) + d));
-    if (v == st.maxActivations) return;
-    S.snapshot();
-    st.maxActivations = v; st.scenario.maxActivations = v;
-    commit();
-};
 
-// Premier joueur : réglé dans le bloc Phase ; avant le premier tour, la phase suit.
-S.firstPlayerCode = function() {
-    var ov = S.state.scenario.firstPlayer == "overlord";
-    return "<button class='sk-pfirst' data-act='studiofirst' aria-label='" + e(t("first_player") + " : " + t(ov ? "first_overlord" : "first_heroes")) + "'>"
-        + "<span>" + e(t("first_player")) + "</span><b>" + e(t(ov ? "first_overlord" : "first_heroes")) + "</b></button>";
-};
-S.toggleFirstPlayer = function() {
-    var st = S.state, fp = st.scenario.firstPlayer == "overlord" ? "heroes" : "overlord";
-    S.snapshot();
-    st.scenario.firstPlayer = fp;
-    // Le bloc Phase suit toujours ; un tour de l'Overlord entamé repart de zéro (Annuler permet de revenir).
-    st.phase = fp == "overlord" ? "start" : "heroes";
-    st.activations = 0; st.current = null; st.highlight = null; st.lastEvent = false;
-    commit();
-};
 
 // Aventure (gemmes) ⟷ Coop (jetons tirés au sac) : l'Overlord repart de zéro, tuiles, PV et tour conservés.
 S.switchMode = function(mode) {
@@ -867,6 +659,8 @@ S.switchMode = function(mode) {
         } else {
             st.pool = st.river.map(function(s) { return s.uid; }); st.used = []; st.removed = [];
             st.heroes = st.heroes || 4;
+            // En Coop, les gemmes sont rares : on part de zéro (le mode studio du livre manuel en ajoute au besoin).
+            st.energy = 0; st.fatigue = 0; st.boosts = {move: 0, reroll: 0, defense: 0, spell: 0};
         }
         if (st.phase == "overlord") st.phase = "start";
         S.log(t("log_mode", t(mode == "classic" ? "mode_adventure" : "mode_coop")));
@@ -930,157 +724,6 @@ S.saveScenarioFromDialog = function() {
     Nav.closeDialog();
 };
 
-// Glisser-déposer des tuiles en mode studio : les autres se décalent ; la corbeille retire la tuile.
-S.bindStudioDrag = function(root) {
-    var drag = null;
-    var clean = function() {
-        if (!drag) return;
-        if (drag.ghost) drag.ghost.remove();
-        if (drag.trash) drag.trash.remove();
-        drag.box.classList.remove("sk-dragging");
-        root.querySelectorAll(".sk-droptarget").forEach(function(x) { x.classList.remove("sk-droptarget"); });
-        drag = null;
-    };
-    var targetAt = function(x, y) {
-        var el = document.elementFromPoint(x, y);
-        if (!el) return null;
-        if (el.closest(".sk-trash")) return {trash: true};
-        var slot = el.closest(".sk-studio .sk-river > .sk-slot");
-        return slot ? {slot: slot, i: +slot.getAttribute("data-si")} : null;
-    };
-    root.addEventListener("pointerdown", function(ev) {
-        if (!S.studio || S.screen != "game" || drag) return;
-        if (ev.pointerType == "mouse" && ev.button != 0) return;
-        var box = ev.target.closest(".sk-studio .sk-river .sk-tilebox[data-uid]");
-        if (!box || ev.target.closest("button")) return;
-        drag = {box: box, uid: box.dataset.uid, x: ev.clientX, y: ev.clientY, id: ev.pointerId, on: false};
-    });
-    root.addEventListener("pointermove", function(ev) {
-        if (!drag || ev.pointerId != drag.id) return;
-        if (!drag.on) {
-            if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) < 8) return;
-            drag.on = true;
-            var rc = drag.box.getBoundingClientRect();
-            drag.dx = drag.x - rc.left; drag.dy = drag.y - rc.top;
-            drag.ghost = drag.box.cloneNode(true);
-            drag.ghost.className = "sk-tilebox sk-ghost"; drag.ghost.removeAttribute("data-act"); drag.ghost.removeAttribute("tabindex");
-            drag.ghost.style.width = rc.width + "px";
-            document.body.appendChild(drag.ghost);
-            drag.box.classList.add("sk-dragging");
-            root.insertAdjacentHTML("beforeend", "<div class='sk-trash' aria-hidden='true'><i>&#xf2ed;</i><span>" + e(t("drop_remove")) + "</span></div>");
-            drag.trash = root.querySelector(".sk-trash");
-            try { drag.box.setPointerCapture(ev.pointerId); } catch (x) {}
-            S.hideTip(); S.closeHp();
-        }
-        ev.preventDefault();
-        drag.ghost.style.left = (ev.clientX - drag.dx) + "px"; drag.ghost.style.top = (ev.clientY - drag.dy) + "px";
-        var tg = targetAt(ev.clientX, ev.clientY);
-        root.querySelectorAll(".sk-droptarget").forEach(function(x) { x.classList.remove("sk-droptarget"); });
-        drag.trash.classList.toggle("hot", !!(tg && tg.trash));
-        if (tg && tg.slot) tg.slot.classList.add("sk-droptarget");
-        // Défilement près des bords (téléphone).
-        if (ev.clientY < 70) root.scrollTop -= 12; else if (ev.clientY > window.innerHeight - 70) root.scrollTop += 12;
-    });
-    root.addEventListener("pointerup", function(ev) {
-        if (!drag || ev.pointerId != drag.id) return;
-        if (!drag.on) { drag = null; return; }
-        var tg = targetAt(ev.clientX, ev.clientY), uid = drag.uid;
-        clean();
-        S._suppressClick = true; setTimeout(function() { S._suppressClick = false; }, 60);
-        if (!tg) return;
-        if (tg.trash) S.studioRemove(uid); else S.studioMove(uid, tg.i);
-    });
-    root.addEventListener("pointercancel", clean);
-    // Le glisser natif des images (souris) annulerait le nôtre.
-    root.addEventListener("dragstart", function(ev) { if (S.studio && ev.target.closest(".sk-river")) ev.preventDefault(); });
-};
-// Mode Aventure, en partie : glisser une tuile au bout de la Rivière l'active, exactement comme la gemme rouge
-// (mêmes contrôles, mêmes gemmes payées, même journal). La tuile se soulève pendant le glisser et se repose
-// à sa nouvelle place, ou revient à l'ancienne si l'activation est refusée. Indépendant du réglage Animations.
-S.bindActivateDrag = function(root) {
-    var drag = null;
-    var allowed = function() { return S.screen == "game" && !S.studio && S.state && S.state.mode != "solo"; };
-    var slots = function() { return [].slice.call(root.querySelectorAll(".sk-river > .sk-slot")); };
-    var clean = function(keep) {
-        if (!drag) return;
-        if (!keep) drag.box.classList.remove("sk-dragging");
-        root.querySelectorAll(".sk-dropend").forEach(function(x) { x.classList.remove("sk-dropend"); });
-        drag = null;
-    };
-    // Bout de la Rivière : la case de la dernière tuile, une case vide après elle, ou à droite de la dernière tuile.
-    var atEnd = function(x, y) {
-        var all = slots(), n = S.state.river.length, last = all[n - 1]; if (!last) return null;
-        var el = document.elementFromPoint(x, y), slot = el && el.closest(".sk-river > .sk-slot");
-        if (slot && all.indexOf(slot) >= n - 1) return last;
-        var rc = last.getBoundingClientRect();
-        return x > rc.right && y > rc.top - rc.height * .25 && y < rc.bottom + rc.height * .25 ? last : null;
-    };
-    // La tuile soulevée se pose sur le rectangle d'arrivée, puis disparaît.
-    var settle = function(ghost, rc, done) {
-        ghost.classList.add("sk-settling");
-        ghost.style.left = rc.left + "px"; ghost.style.top = rc.top + "px"; ghost.style.width = rc.width + "px";
-        var end = function() { if (!ghost.parentNode) return; ghost.remove(); if (done) done(); };
-        ghost.addEventListener("transitionend", end); setTimeout(end, 320);
-    };
-    root.addEventListener("pointerdown", function(ev) {
-        if (!allowed() || drag) return;
-        if (ev.pointerType == "mouse" && ev.button != 0) return;
-        var box = ev.target.closest(".sk-river .sk-tilebox[data-uid]");
-        if (!box || ev.target.closest("button, .sk-hpwrap, [data-hp], [data-skill]")) return;
-        drag = {box: box, uid: box.dataset.uid, x: ev.clientX, y: ev.clientY, id: ev.pointerId, on: false};
-    });
-    root.addEventListener("pointermove", function(ev) {
-        if (!drag || ev.pointerId != drag.id) return;
-        if (!drag.on) {
-            if (Math.abs(ev.clientX - drag.x) + Math.abs(ev.clientY - drag.y) < 10) return;
-            drag.on = true;
-            var rc = drag.box.getBoundingClientRect();
-            drag.from = rc; drag.dx = drag.x - rc.left; drag.dy = drag.y - rc.top;
-            drag.ghost = drag.box.cloneNode(true);
-            drag.ghost.className = "sk-tilebox sk-ghost sk-lifted"; drag.ghost.removeAttribute("data-act"); drag.ghost.removeAttribute("tabindex");
-            drag.ghost.style.width = rc.width + "px";
-            document.body.appendChild(drag.ghost);
-            drag.box.classList.add("sk-dragging");
-            try { drag.box.setPointerCapture(ev.pointerId); } catch (x) {}
-            S.hideTip(); S.closeHp();
-        }
-        ev.preventDefault();
-        drag.ghost.style.left = (ev.clientX - drag.dx) + "px"; drag.ghost.style.top = (ev.clientY - drag.dy) + "px";
-        root.querySelectorAll(".sk-dropend").forEach(function(x) { x.classList.remove("sk-dropend"); });
-        var end = atEnd(ev.clientX, ev.clientY); if (end) end.classList.add("sk-dropend");
-        if (ev.clientY < 70) root.scrollTop -= 12; else if (ev.clientY > window.innerHeight - 70) root.scrollTop += 12;
-    });
-    root.addEventListener("pointerup", function(ev) {
-        if (!drag || ev.pointerId != drag.id) return;
-        if (!drag.on) { drag = null; return; }
-        var uid = drag.uid, ghost = drag.ghost, from = drag.from, src = drag.box, end = atEnd(ev.clientX, ev.clientY);
-        clean(true);
-        S._suppressClick = true; setTimeout(function() { S._suppressClick = false; }, 60);
-        var why = end ? S.canActivate(S.slotByUid(uid)) : null;
-        if (!end || why) {
-            if (why) S.toast(why);
-            settle(ghost, from, function() { src.classList.remove("sk-dragging"); });
-            return;
-        }
-        // La vraie tuile est masquée le temps que la tuile soulevée la rejoigne au bout de la Rivière.
-        S._animSkip = uid; S.activate(uid); S._animSkip = null;
-        var box = root.querySelector(".sk-river .sk-tilebox[data-uid='" + uid + "']");
-        if (!box) { ghost.remove(); return; }
-        box.classList.add("sk-dragging");
-        settle(ghost, box.getBoundingClientRect(), function() { box.classList.remove("sk-dragging"); });
-    });
-    root.addEventListener("pointercancel", function() { if (drag && drag.ghost) drag.ghost.remove(); clean(); });
-    root.addEventListener("dragstart", function(ev) { if (allowed() && ev.target.closest(".sk-river")) ev.preventDefault(); });
-};
-S.studioMove = function(uid, to) {
-    var st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
-    to = Math.min(to, st.river.length - 1);
-    if (i < 0 || to == i) return;
-    S.snapshot();
-    st.river.splice(to, 0, st.river.splice(i, 1)[0]);
-    S.renumberRiver();
-    commit();
-};
 S.studioRemove = function(uid) {
     var st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
     if (i < 0) return;
@@ -1151,85 +794,6 @@ S.castSpell = function(uid, ref, n) {
 };
 
 // ---------- Zoom d'une tuile ----------
-// La tuile au centre ; glisser vers la droite fait venir ses sorts, vers la gauche ses équipements ;
-// glisser vers le haut ou le bas passe à la tuile suivante ou précédente de la Rivière.
-// La « main des sorts » (bouton Sort) est le même zoom, limité aux tuiles vivantes qui ont des sorts.
-// En studio, un + au bout de chaque côté ajoute un sort (à gauche) ou un équipement (à droite).
-S.zoomTile = function(uid, opts) {
-    opts = opts || {};
-    var s = S.slotByUid(uid); if (!s) return;
-    var hand = !!opts.hand, studio = S.studio, game = !studio;
-    var sp = S.slotCards(s, "sp"), eq = S.slotCards(s, "eq");
-    var minPos = -sp.length - (studio ? 1 : 0), maxPos = eq.length + (studio ? 1 : 0);
-    var pos = Math.max(minPos, Math.min(maxPos, opts.pos == null ? (hand ? -1 : 0) : opts.pos));
-    S._zoom = {uid: uid, pos: pos, hand: hand};
-    S.hideTip(); S.closeHp && S.closeHp();
-    var title = S.tileName(s), body = "", after = "";
-    if (pos == 0) {
-        // Points de vie à taille du doigt : en studio, les PV de départ ; en partie, les PV restants (0 = unités mortes, comme sur le plateau).
-        var hpCode = "";
-        if (!S.isEvent(s)) {
-            if (studio) { if (!s.dead) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
-            else if (s.lpMax) hpCode = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
-        }
-        body = "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + "</div>";
-        after = hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "";
-    } else if (pos == minPos && studio) {
-        body = "<button class='sk-zoomadd' data-zadd='sp'><span>+</span>" + e(t("add_spell")) + "</button>";
-    } else if (pos == maxPos && studio) {
-        body = "<button class='sk-zoomadd' data-zadd='eq'><span>+</span>" + e(t("add_eq")) + "</button>";
-    } else {
-        var kind = pos < 0 ? "sp" : "eq", list = kind == "sp" ? sp : eq, k = Math.abs(pos) - 1, c = list[k];
-        var real = S.realCardCode(kind, c.ref) || "<div class='sk-bigcard sk-k-" + kind + "'><span class='sk-icard-n'>" + e(S.itemName(kind, c.ref)) + "</span></div>";
-        var foot = "", cast = 0, cls = "", pips = "";
-        if (kind == "sp" && game) {
-            var d = S.spellData(c.ref), cost = d ? parseInt(d.cost, 10) : NaN;
-            cast = S.castCount(uid, c.ref);
-            if (cast) cls += " sk-cast";
-            var anim = S._justCast == uid + "|" + c.ref, fresh = anim ? S._lastCastN : 0;
-            if (anim) { cls += " sk-castanim"; S._justCast = null; }
-            // Pastilles de saturation : la saturation est le nombre de gemmes au plus sur le sort ce tour (2 / 4 : 2 gemmes par lancement, 4 au plus).
-            // Une pastille vide par gemme possible ; chaque lancement remplit en rouge autant de pastilles que son coût.
-            // Au-delà de la saturation, des pastilles en plus, cerclées (non bloquant). Sans saturation : une gemme rouge et le nombre posé.
-            var sat = d ? parseInt(d.saturation, 10) || 0 : 0;
-            if (sat > 0 || cast) {
-                var slots = sat > 0 ? Math.max(sat, cast) : 1;
-                pips = "<span class='sk-satpips' role='img' aria-label='" + e(sat > 0 ? t("spell_gems", cast, sat) : t("spell_gems_nosat", cast)) + "'>";
-                for (var q = 0; q < slots; q++) pips += "<i class='" + (q < cast ? "on" : "") + (sat > 0 && q >= sat ? " over" : "") + (fresh && (sat > 0 ? q >= cast - fresh && q < cast : true) ? " new" : "") + "'>&#xf3a5;</i>";
-                pips += (!sat ? "<b>" + cast + "</b>" : "") + "</span>";
-            }
-            if (s.dead) foot = "<p class='sk-zoomnote'>" + e(t("spell_tile_dead")) + "</p>";
-            else if (cost > 0) foot = "<p class='sk-zoomnote'>" + e(sat > 0 && cast >= sat ? t("spell_sat_full", sat) : t(cast ? "spell_cast_done" : "spell_cast_hint", cost)) + "</p>";
-            else foot = "<div class='sk-zoomcast'><button class='sk-hpbtn' data-zx='-1' aria-label='−'>−</button><b data-zxv>1</b><button class='sk-hpbtn' data-zx='1' aria-label='+'>+</button>"
-                + "<button class='sk-btn sk-primary' data-zcastx='" + e(c.ref) + "'>" + e(t("cast_spell")) + "</button></div>";
-        }
-        // Studio : une pastille corbeille au coin bas droit de la carte la retire de la tuile.
-        var rm = studio ? "<button class='sk-zoomrm' data-zrm='" + kind + ":" + k + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button>" : "";
-        var paid = cls.indexOf("sk-castanim") >= 0 && S.state.mode != "solo" ? "<span class='sk-castpaid' aria-hidden='true'>−" + S._lastCastN + "</span>" : "";
-        body = "<div class='sk-zoomcard" + (kind == "sp" && game && !s.dead ? " sk-castable" : "") + (s.dead && kind == "sp" ? " dead" : "") + cls + "' data-zcard='" + kind + ":" + e(c.ref) + "'><span class='sk-cardscale'>" + real + "</span>" + rm + paid + pips + "</div>"; after = foot;
-    }
-    // Repères : un point par carte, la tuile au milieu, les sorts à gauche, les équipements à droite (les pages « + » du studio n'en ont pas).
-    // Ils se placent juste sous la carte, au-dessus des points de vie, pour rester visibles.
-    var dots = "";
-    for (var p = -sp.length; p <= eq.length; p++) dots += "<i class='" + (p == 0 ? "sk-dt" : p < 0 ? "sk-ds" : "sk-de") + (p == pos ? " on" : "") + "'></i>";
-    var ring = S.zoomRing(hand), idx = ring.indexOf(uid);
-    var dir = opts.dir ? " sk-zin-" + opts.dir : "";
-    // Ombres de cartes derrière la carte en cours, à gauche et à droite, quand il y a quelque chose de ce côté
-    // (violet : un sort ; or : un équipement ; neutre : la tuile ou une page « + » du studio).
-    var shadeOf = function(p) { return p == 0 || p < -sp.length || p > eq.length ? "sk-sh-t" : p < 0 ? "sk-sh-sp" : "sk-sh-eq"; };
-    var shade = (pos > minPos ? "<i class='sk-shade sk-sh-l " + shadeOf(pos - 1) + "' aria-hidden='true'></i>" : "")
-        + (pos < maxPos ? "<i class='sk-shade sk-sh-r " + shadeOf(pos + 1) + "' aria-hidden='true'></i>" : "");
-    var ov = S.root.querySelector("#sk-overlay");
-    ov.innerHTML = "<div class='sk-zoom' role='dialog' tabindex='-1' aria-label='" + e(title) + "'>"
-        // En-tête : seulement la position de la tuile dans la Rivière (les points du bas situent la carte).
-        + "<div class='sk-zoomhead'>" + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
-        + "<div class='sk-zoompage" + dir + "'><div class='sk-zoomstage'>" + shade + body + "</div>"
-        + (sp.length + eq.length ? "<div class='sk-zoomdots' aria-hidden='true'>" + dots + "</div>" : "") + after + "</div>"
-        + "</div>";
-    ov.classList.add("on", "sk-zoomon");
-    S.bindZoom(ov);
-    ov.querySelector(".sk-zoom").focus({preventScroll: true});
-};
 // Nombre de gemmes posées ce tour sur un sort d'une tuile (remis à zéro quand les gemmes rejoignent la fatigue).
 S.castCount = function(uid, ref) { var c = S.state && S.state.cast; return (c && c[uid + "|" + ref]) || 0; };
 // Tuiles parcourues de haut en bas : toutes les tuiles de la Rivière, ou seulement celles qui ont des sorts (main des sorts).
@@ -1246,134 +810,36 @@ S.zoomGo = function(dir) {
 };
 S.zoomShut = function() {
     var ov = S.root && S.root.querySelector("#sk-overlay"); S._zoom = null; S.hideTip();
-    if (ov) { ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; ov.onpointerdown = null; ov.onpointerup = null; }
+    if (ov) { ov.classList.remove("on", "sk-zoomon", "sk-mzon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; ov.onpointerdown = null; ov.onpointerup = null; }
 };
-S.bindZoom = function(ov) {
-    // Le zoom se redessine à chaque glissement : le repère « vient de glisser » vit hors du redessin.
-    var sx = 0, sy = 0, down = false;
-    ov.onkeydown = function(ev) {
-        if (ev.key == "Escape") { S.zoomShut(); return; }
-        var m = {ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down"}[ev.key];
-        if (m) { ev.preventDefault(); S.zoomGo(m); }
-    };
-    ov.onpointerdown = function(ev) { down = true; sx = ev.clientX; sy = ev.clientY; };
-    ov.onpointerup = function(ev) {
-        if (!down) return; down = false;
-        var dx = ev.clientX - sx, dy = ev.clientY - sy;
-        if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return;
-        S._zswipeAt = Date.now();
-        // Le doigt glisse vers la droite : la page de gauche arrive (sorts) ; vers la gauche : celle de droite (équipements).
-        if (Math.abs(dx) > Math.abs(dy)) S.zoomGo(dx > 0 ? "left" : "right");
-        else S.zoomGo(dy < 0 ? "down" : "up");
-    };
-    ov.onclick = function(ev) {
-        if (S._zswipeAt && Date.now() - S._zswipeAt < 450) { S._zswipeAt = 0; ev.stopPropagation(); return; }
-        var z = S._zoom; if (!z) return;
-        var uid = z.uid, go = ev.target.closest("[data-zgo]");
-        if (go) { ev.stopPropagation(); if (!go.disabled) S.zoomGo(go.dataset.zgo); return; }
-        var lp = ev.target.closest("[data-zlp], [data-zhp]");
-        if (lp) {
-            ev.stopPropagation();
-            if (lp.hasAttribute("data-zlp")) S.studioLife(uid, +lp.dataset.n); else S.life(uid, +lp.dataset.n);
-            S.zoomTile(uid, {pos: 0, hand: z.hand}); return;
-        }
-        if (ev.target.closest(".sk-studiohp")) return;
-        // Sort à coût fixe : un appui sur le coût le lance (le chiffre de saturation recouvre en partie le coût, il compte aussi).
-        var cost = ev.target.closest(".sk-zoomcard.sk-castable .cost, .sk-zoomcard.sk-castable .saturation, .sk-zoomcard.sk-castable .cost-and-saturation");
-        if (cost) {
-            ev.stopPropagation();
-            var card = cost.closest("[data-zcard]"), ref = card.dataset.zcard.split(":").slice(1).join(":"), d = S.spellData(ref), n = d ? parseInt(d.cost, 10) : 0;
-            if (n > 0 && S.castSpell(uid, ref, n)) S.zoomTile(uid, {pos: z.pos, hand: z.hand});
-            return;
-        }
-        // Coût variable (X) : choisir le nombre de gemmes, puis Lancer.
-        var xs = ev.target.closest("[data-zx]");
-        if (xs) { ev.stopPropagation(); var v = ov.querySelector("[data-zxv]"), nv = Math.max(1, Math.min(9, (+v.textContent || 1) + (+xs.dataset.zx))); v.textContent = nv; return; }
-        var cx = ev.target.closest("[data-zcastx]");
-        if (cx) { ev.stopPropagation(); if (S.castSpell(uid, cx.dataset.zcastx, +ov.querySelector("[data-zxv]").textContent || 1)) S.zoomTile(uid, {pos: z.pos, hand: z.hand}); return; }
-        var add = ev.target.closest("[data-zadd]");
-        if (add) { ev.stopPropagation(); S.studioAddCards(uid, add.dataset.zadd); return; }
-        var rm = ev.target.closest("[data-zrm]");
-        if (rm) { ev.stopPropagation(); var p = rm.dataset.zrm.split(":"); S.studioRemoveCard(uid, p[0], +p[1]); return; }
-        if (ev.target.closest("[data-zcard]")) return;
-        var sk = ev.target.closest("[data-skill]");
-        if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
-        if (ev.target.closest(".sk-tip, .sk-zoomcast, .sk-zoomhead, .sk-zoomdots")) return;
-        S.zoomShut();
-    };
-};
-// Studio : cartes d'une tuile. Le côté décide du type : à gauche les sorts de l'Overlord, à droite les équipements.
-S.studioAddCards = function(uid, kind) {
+// Studio : cartes d'une tuile. Les deux « + » ouvrent le même choix : sorts de l'Overlord, équipements ou tuiles,
+// une ou plusieurs d'un coup. Les sorts se rangent à gauche, les tuiles puis les équipements à droite.
+S.studioAddCards = function(uid, side) {
     var back = function(pos) { S.zoomTile(uid, {pos: pos}); };
+    var right = function(s) { return S.slotCards(s, "eq").length + S.slotCards(s, "ti").length; };
     S.zoomShut();
-    S.openItemPicker({title: t(kind == "sp" ? "add_spell" : "add_eq"), kind: kind, kinds: [kind],
-        filter: kind == "sp" ? function(it) { return it.data && it.data.forOverlord; } : null,
-        onClose: function() { back(kind == "sp" ? -1 : 1); },
+    S.openItemPicker({title: t("add_cards"), kind: side == "sp" ? "sp" : "eq", kinds: ["sp", "eq", "tile"], tiles: true,
+        filter: function(it) { return it.kind != "sp" || (it.data && it.data.forOverlord); },
+        onClose: function() { back(side == "sp" ? -1 : 1); },
         onAdd: function(sel) {
             var s = S.slotByUid(uid); if (!s || !sel.length) { back(0); return; }
             S.snapshot();
             s.cards = (s.cards || []).concat(sel.map(function(x) { return {kind: x.kind, ref: x.ref}; }));
             commit();
-            back(kind == "sp" ? -S.slotCards(s, "sp").length : S.slotCards(s, "eq").length);
+            var onlySp = sel.every(function(x) { return x.kind == "sp"; });
+            back(onlySp || (side == "sp" && sel.some(function(x) { return x.kind == "sp"; })) ? -S.slotCards(s, "sp").length : right(s));
         }});
 };
 S.studioRemoveCard = function(uid, kind, k) {
     var s = S.slotByUid(uid); if (!s) return;
     var c = S.slotCards(s, kind)[k]; if (!c) return;
+    var side = kind == "sp" ? S.slotCards(s, "sp") : S.slotCards(s, "ti").concat(S.slotCards(s, "eq")), at = side.indexOf(c);
     S.snapshot();
     s.cards.splice(s.cards.indexOf(c), 1);
     commit();
-    var n = S.slotCards(s, kind).length;
-    S.zoomTile(uid, {pos: n ? (kind == "sp" ? -Math.min(k + 1, n) : Math.min(k + 1, n)) : 0});
+    var n = side.length - 1;
+    S.zoomTile(uid, {pos: n ? (kind == "sp" ? -Math.min(at + 1, n) : Math.min(at + 1, n)) : 0});
 };
-// Double appui sur une tuile de la Rivière : le premier appui l'a sélectionnée, le second la désélectionne, puis le zoom s'ouvre.
-S.bindTileZoom = function(root) {
-    var last = {uid: null, at: 0};
-    root.addEventListener("click", function(ev) {
-        if (S.screen != "game") return;
-        // Studio : un appui sur le cœur ouvre la tuile en grand, pour régler les points de vie.
-        var heart = S.studio && ev.target.closest(".sk-river .sk-studiohp .sk-hp");
-        if (heart) { var hb = heart.closest(".sk-tilebox[data-uid]"); if (hb) { S.zoomTile(hb.dataset.uid); return; } }
-        if (ev.target.closest(".sk-hpwrap, [data-hp], button")) return;
-        var box = ev.target.closest(".sk-river .sk-tilebox[data-uid]"); if (!box || box.hasAttribute("data-eventuid")) { last.uid = null; return; }
-        var uid = box.dataset.uid, now = Date.now();
-        if (last.uid == uid && now - last.at < 400) { last.uid = null; S.zoomTile(uid); return; }
-        last.uid = uid; last.at = now;
-    });
-};
-S.bindTileMenu = function(root) {
-    var timer = null, sx = 0, sy = 0;
-    var tileAt = function(target) {
-        if (S.studio || S.screen != "game") return null;
-        if (target.closest("[data-skill], .sk-hpwrap, [data-hp], button")) return null;
-        var box = target.closest(".sk-river .sk-tilebox[data-uid]"); if (!box) return null;
-        var s = S.slotByUid(box.dataset.uid);
-        return s && !S.isEvent(s) ? s.uid : null;
-    };
-    var stop = function() { clearTimeout(timer); timer = null; };
-    root.addEventListener("pointerdown", function(ev) {
-        if (ev.pointerType == "mouse" && ev.button != 0) return;
-        var uid = tileAt(ev.target); if (!uid) return;
-        sx = ev.clientX; sy = ev.clientY; stop();
-        timer = setTimeout(function() { timer = null; S._suppressClick = true; S.openTileMenu(uid); }, 450);
-    });
-    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) stop(); });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, stop); });
-    root.addEventListener("contextmenu", function(ev) {
-        var uid = tileAt(ev.target); if (!uid) return;
-        ev.preventDefault(); stop(); S.openTileMenu(uid);
-    });
-};
-
-// Activation d'une tuile Événement : l'alerte qui était sur la poignée du panneau devient un message.
-["activate", "drawToken"].forEach(function(k) {
-    var orig = S[k];
-    S[k] = function() {
-        var before = S.state && S.state.log.length;
-        orig.apply(S, arguments);
-        if (S.state && S.state.lastEvent && S.state.log.length != before) S.toast(t("event_activated"));
-    };
-});
 
 // ---------- Journal : notes du scénario, textes des Événements, puis toutes les actions ----------
 S.openJournal = function() {
@@ -1457,10 +923,6 @@ S.init = function(root) {
     S.bindEventTips(root);
     S.bindCardTips(root);
     S.applyItemColors(); S.fixAllHeroColors();
-    S.bindStudioDrag(root);
-    S.bindActivateDrag(root);
-    S.bindTileMenu(root);
-    S.bindTileZoom(root);
     // Onglets : hors de l'écran, ils ont leur propre écoute.
     root.addEventListener("click", function(ev) {
         var b = ev.target.closest(".sk-tabs [data-nav]"); if (!b) return;
@@ -2155,81 +1617,19 @@ S.bindCardTips = function(root) {
 };
 
 // ---------- Bloc Phase : étapes écrites aussi grand que possible, même taille pour les quatre ----------
-// La plus grande taille qui tient dans chaque case est cherchée, puis la plus petite de ces tailles est appliquée
-// partout. Recalculé à chaque rendu, au changement de taille de l'écran et quand la police du jeu a chargé.
-S.fitPhase = function() {
-    var r = S.root; if (!r) return;
-    var lis = Array.prototype.slice.call(r.querySelectorAll(".sk-a-phase li")); if (!lis.length) return;
-    var best = lis.map(function(li) {
-        var sp = li.lastElementChild;
-        var fits = function(px) { sp.style.fontSize = px + "px"; return li.scrollHeight <= li.clientHeight + 1 && sp.scrollWidth <= sp.clientWidth + 1; };
-        var lo = 7, hi = 44;
-        while (hi - lo > 0.5) { var mid = (lo + hi) / 2; if (fits(mid)) lo = mid; else hi = mid; }
-        return Math.floor(lo * 2) / 2;
-    });
-    var px = Math.min.apply(Math, best);
-    lis.forEach(function(li) { li.lastElementChild.style.fontSize = px + "px"; });
-};
-var fitRenderGame = S.renderGame;
-S.renderGame = function() { fitRenderGame.apply(S, arguments); S.fitPhase(); };
-// Le plateau se redessine en entier à chaque action : le temps du redessin, la page raccourcit et le défilement
-// du module recule (sélectionner une tuile de la dernière rangée faisait remonter l'écran d'une demi-tuile).
-// On garde la position de défilement d'un redessin à l'autre, tant qu'on reste sur le plateau.
-// (Avant les animations, qui mesurent les tuiles après le redessin.)
-var scrollRenderGame = S.renderGame;
-S.renderGame = function() {
-    var root = S.root, keep = root && S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
-    scrollRenderGame.apply(S, arguments);
-    if (keep == null || !S.root || S.screen != "game") return;
-    S.root.scrollTop = keep;
-    requestAnimationFrame(function() { if (S.screen == "game" && Math.abs(S.root.scrollTop - keep) > 1) S.root.scrollTop = keep; });
-};
-var fitTimer = null;
-window.addEventListener("resize", function() { clearTimeout(fitTimer); fitTimer = setTimeout(S.fitPhase, 120); });
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(function() { S.fitPhase(); });
 })();
 
 // ---------- Étape 24 : sorts et équipements des tuiles ----------
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
-// Bouton Sort : s'il reste des sorts sur des tuiles vivantes, il ouvre la main des sorts ; sinon il ajoute une gemme, comme avant.
-// Appui long : une gemme sans ouvrir la main (sort hors des cartes).
-var baseBoost = S.boost;
-S.boost = function(kind) {
-    if (kind == "spell" && !S._forceGem && !S.studio) {
-        var hand = S.spellSlots();
-        if (hand.length) { S.zoomTile(hand[0].uid, {hand: true, pos: -1}); return; }
-    }
-    S._forceGem = false;
-    return baseBoost.apply(S, arguments);
+// Pastille au coin des tuiles qui portent des cartes : nombre de sorts, d'équipements et de tuiles portées.
+S.cardsBadgeCode = function(s) {
+    var sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length, ti = S.slotCards(s, "ti").length;
+    if (!sp && !eq && !ti) return "";
+    var lbl = t("cards_badge3", sp, eq, ti);
+    return "<span class='sk-cardsbadge' role='img' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'>"
+        + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (ti ? "<i class='sk-cb-ti'>&#xf24d;</i>" + ti : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>";
 };
-S.bindSpellPress = function(root) {
-    var timer = null, sx = 0, sy = 0;
-    root.addEventListener("pointerdown", function(ev) {
-        var b = ev.target.closest("[data-act='boost'][data-k='spell']"); if (!b || S.studio) return;
-        if (ev.pointerType == "mouse" && ev.button != 0) return;
-        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
-        timer = setTimeout(function() { timer = null; S._suppressClick = true; S._forceGem = true; S.boost("spell"); if (navigator.vibrate) navigator.vibrate(20); }, 450);
-    });
-    root.addEventListener("pointermove", function(ev) { if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; } });
-    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); timer = null; }); });
-    root.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-act='boost'][data-k='spell']")) ev.preventDefault(); });
-};
-var baseInit = S.init;
-S.init = function(root) { var r = baseInit.apply(S, arguments); S.bindSpellPress(root); return r; };
-// Pastille au coin des tuiles qui portent des cartes : nombre de sorts et d'équipements.
-S.decorateCards = function() {
-    if (!S.root || !S.state) return;
-    S.root.querySelectorAll(".sk-river .sk-tilebox[data-uid]").forEach(function(box) {
-        var s = S.slotByUid(box.dataset.uid), sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length;
-        var old = box.querySelector(".sk-cardsbadge"); if (old) old.remove();
-        if (!sp && !eq) return;
-        box.insertAdjacentHTML("beforeend", "<span class='sk-cardsbadge' role='img' aria-label='" + e(t("cards_badge", sp, eq)) + "' title='" + e(t("cards_badge", sp, eq)) + "'>"
-            + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>");
-    });
-};
-var cardsRender = S.renderGame;
-S.renderGame = function() { var r = cardsRender.apply(S, arguments); if (S.screen == "game") S.decorateCards(); return r; };
 // Fin du tour de l'Overlord : les gemmes des sorts rejoignent la fatigue, les sorts lancés redeviennent disponibles.
 var baseClearCast = S.clearBoosts;
 S.clearBoosts = function() { var r = baseClearCast.apply(S, arguments); if (S.state) S.state.cast = {}; return r; };
