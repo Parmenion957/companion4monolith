@@ -1989,3 +1989,18 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Seules les gemmes elles-mêmes se prennent : à côté, l'appui reste pour la tuile (double appui = zoom, glisser = déplacer) */
 .sk-mtile .sk-mtg, .sk-mtile .sk-mtg .sk-mgems, .sk-mtile .sk-mtg .sk-mg3 { pointer-events: none; }
 .sk-mtile .sk-mtg .sk-mg3 img { pointer-events: auto; cursor: grab; }
+
+/* Tuile de récupération d'origine : image entière, gemme du pion numéroté posée sur la gemme vide, − et + sur la flèche. */
+.sk-manual.sk-has-rest .sk-mrest { background: none; padding: .4cqw; box-shadow: none; }
+.sk-mrestcard { position: relative; height: 100%; max-width: 100%; aspect-ratio: 452 / 438; container-type: inline-size; }
+.sk-mrestcard .sk-mrestimg { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 4%; }
+.sk-mrestcard .sk-mrecgem { position: absolute; left: 39.82%; top: 47.95%; width: 19.91%; height: 17.35%; pointer-events: none; }
+.sk-mrestcard .sk-mrecnum { position: absolute; left: 50.1%; top: 56.7%; transform: translate(-50%, -50%); font: italic 900 13cqw/1 Georgia, serif;
+  color: #141018; -webkit-text-stroke: .6cqw #fff; paint-order: stroke; pointer-events: none; }
+.sk-manual.sk-has-rest .sk-mrestcard .sk-pstep { position: absolute; top: 56.7%; transform: translate(-50%, -50%); width: 17cqw; height: 17cqw; padding: 0; line-height: 1;
+  min-width: 26px; min-height: 26px; font-size: 13cqw; font-weight: 700; border-radius: 50%; background: rgba(255,255,255,.92); color: #3a2a18; }
+.sk-mrestcard .sk-mrecm { left: 25%; }
+.sk-mrestcard .sk-mrecp { left: 75%; }
+.sk-manual.sk-has-rest .sk-mrestcard .sk-pstep { width: 20cqw; height: 20cqw; }
+.sk-mrestcard .sk-pstep::before, .sk-mrestcard .sk-pstep::after { width: 56% !important; height: 14% !important; border-radius: 2px; }
+.sk-mrestcard .sk-plus::after { width: 14% !important; height: 56% !important; }

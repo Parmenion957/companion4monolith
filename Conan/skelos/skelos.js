@@ -576,7 +576,7 @@ var Skelos = {
         st.activations = 0; st.lastEvent = false; st.highlight = null;
         if (st.mode == "classic") {
             Skelos.clearBoosts();
-            var n = Math.min(st.recovery, st.fatigue);
+            var n = Math.max(0, Math.min(st.recovery, st.fatigue));  // X (−1, livre manuel) : rien d'automatique
             st.fatigue -= n; st.energy += n;
             st.phase = "overlord"; st.current = null;
             Skelos.log(Skelos.t("log_recovery", st.turn, n));

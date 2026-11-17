@@ -217,15 +217,27 @@ var syncTurnMini = function() {
     });
 };
 
+// Récupération : un nombre, ou X (valeur −1) que le joueur règle lui-même.
+var recLabel = function() { return S.state.recovery < 0 ? "X" : S.state.recovery; };
 var restCode = function() {
     var st = S.state;
     // Coop : pas de nombre au centre, seulement la tuile de repos (double appui : ranger les jetons tirés).
     // Sans texte écrit : le nom et l'aide restent en info-bulle. Avec une image de tuile de récupération (réglages),
     // la flèche dessinée laisse place à l'image et la valeur passe en chiffre dans le coin.
-    var img = S.skin().rest, aria = " role='group' aria-label='" + e(t("recovery") + (coop() ? "" : " · " + st.recovery)) + "'";
-    if (coop()) return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_coop_rest_hint")) + "'>" + (img ? "" : S.token("recover", "")) + "</div>";
+    var img = S.skin().rest, aria = " role='group' aria-label='" + e(t("recovery") + (coop() ? "" : " · " + recLabel())) + "'";
+    if (coop()) return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_coop_rest_hint")) + "'>" + (img ? "<div class='sk-mrestcard'><img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'></div>" : S.token("recover", "")) + "</div>";
+    // Tuile d'origine : la valeur est la gemme du pion numéroté (1 à 8), sinon un chiffre posé sur la gemme vide ;
+    // le − et le + encadrent la gemme, sur la flèche.
+    if (img) {
+        var gem = S.recoveryGem(st.recovery);
+        return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'><div class='sk-mrestcard'>"
+            + "<img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'>"
+            + (gem ? "<img class='sk-mrecgem' src='" + gem + "' alt='' draggable='false'>" : "<span class='sk-mrecnum'>" + recLabel() + "</span>")
+            + "<button class='sk-pstep sk-mrecm' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
+            + "<button class='sk-pstep sk-mrecp' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
+    }
     return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'>"
-        + (img ? "<span class='sk-mcount sk-mrestn'>" + st.recovery + "</span>" : S.token("recover", st.recovery))
+        + S.token("recover", recLabel())
         + "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
         + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
 };
@@ -345,7 +357,7 @@ S.renderManual = function() {
     var keep = S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
     S.screen = "game"; S.selected = null;
     var mini = S.turnMini();
-    var sk = S.skin(), skv = ["green", "red", "rest"].filter(function(k) { return sk[k]; });
+    var sk = S.skin(), skv = ["green", "red", "rest"];
     var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + (mini ? " sk-mmini" : "") + skv.map(function(k) { return " sk-has-" + k; }).join("") + "'"
         + (skv.length ? " style=\"" + skv.map(function(k) { return "--sk-" + k + ":url('" + sk[k] + "')"; }).join(";") + "\"" : "") + "><div class='sk-desk'>" + (mini ? "" : trackCode())
         + "<div class='sk-mmid'>" + reserveCode() + "<div class='sk-book'>"
@@ -423,7 +435,7 @@ var spentToFatigue = function() {
 S.manualRecover = function() {
     var st = S.state; if (coop()) return;
     var onTiles = st.river.reduce(function(a, s) { return a + tileGems(s); }, 0);
-    var spent = S.boostSum() + onTiles, back = Math.min(st.recovery || 0, st.fatigue + spent), fat0 = st.fatigue, en0 = st.energy;
+    var spent = S.boostSum() + onTiles, back = Math.max(0, Math.min(st.recovery || 0, st.fatigue + spent)), fat0 = st.fatigue, en0 = st.energy;
     if (!spent && !back) { S.toast(t("man_recover_none")); return; }
     // Avant de changer l'état : d'où partent les gemmes (zones, tas posés sur les tuiles).
     var paths = spentPaths();
@@ -761,7 +773,7 @@ var bind = function(board) {
             return;
         }
         var b = ev.target.closest("[data-mact]"); if (!b) return;
-        var f = b.dataset.mact, v = Math.max(f == "heroes" ? 1 : 0, (S.state[f] || 0) + +b.dataset.n);
+        var f = b.dataset.mact, v = Math.max(f == "heroes" ? 1 : f == "recovery" ? -1 : 0, (S.state[f] || 0) + +b.dataset.n);
         if (f == "heroes") v = Math.min(4, v);
         if (v == S.state[f]) return;
         S.snapshot(); S.state[f] = v; commit();

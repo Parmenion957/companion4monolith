@@ -800,7 +800,19 @@ S.renderEncyclopedia = function() {
 
 // ---------- Réglages ----------
 S.bg = function() { return load(KEY_BG, null); };
-S.skin = function() { if (S._skin === undefined) S._skin = load(KEY_SKIN, null); return S._skin || {}; };
+// Fonds du livre manuel : images du module par défaut, remplacées par celles chargées sur l'appareil.
+S.SKIN_DEFAULTS = { green: "skelos/img/fond/fond_vert.webp", red: "skelos/img/fond/fond_rouge.webp", rest: "skelos/img/fond/recuperation.webp" };
+for (var gi = 1; gi <= 8; gi++) S.SKIN_DEFAULTS["gem" + gi] = "skelos/img/fond/gemme_" + gi + ".webp";
+S.skinUser = function() { if (S._skin === undefined) S._skin = load(KEY_SKIN, null); return S._skin || {}; };
+S.skin = function() {
+    var u = S.skinUser(), r = {};
+    Object.keys(S.SKIN_DEFAULTS).forEach(function(k) { r[k] = u[k] || new URL(S.asset(S.SKIN_DEFAULTS[k]), document.baseURI).href; });  // adresse complète : la variable CSS est lue depuis skelos.css
+    r.custom = function(k) { return !!u[k]; };
+    return r;
+};
+// Gemme du pion numéroté, découpée sans le rond, posée sur la tuile de récupération d'origine (1 à 8).
+// Valeur X (−1) : la gemme X du bas de la tuile, reprise en haut.
+S.recoveryGem = function(n) { return !S.skinUser().rest && n >= -1 && n <= 8 && n != 0 ? S.asset("skelos/img/fond/recup_" + (n < 0 ? "x" : n) + ".webp") : null; };
 S.SKIN_KEYS = ["green", "red", "rest", "gem1", "gem2", "gem3", "gem4", "gem5", "gem6", "gem7", "gem8"];
 // Image chargée pour un fond : réduite et compressée (fonds vert et rouge tournés en paysage s'ils sont en portrait),
 // pions gemmes détourés en rond.
@@ -824,7 +836,7 @@ S.loadSkin = function(key, file) {
                 cx.drawImage(img, 0, 0, dw, dh);
                 url = cv.toDataURL("image/jpeg", 0.82);
             }
-            var sk = S.skin(); sk[key] = url;
+            var sk = S.skinUser(); sk[key] = url;
             if (store(KEY_SKIN, sk)) { S._skin = sk; S.renderSettings(); } else { S._skin = undefined; S.toast(t("image_error")); }
         };
         img.onerror = function() { S.toast(t("image_error")); };
@@ -833,7 +845,7 @@ S.loadSkin = function(key, file) {
     r.readAsDataURL(file);
 };
 S.removeSkin = function(key) {
-    var sk = S.skin();
+    var sk = S.skinUser();
     if (key) delete sk[key]; else sk = {};
     try { if (Object.keys(sk).length) store(KEY_SKIN, sk); else localStorage.removeItem(KEY_SKIN); } catch (x) {}
     S._skin = sk; S.renderSettings();
@@ -863,15 +875,15 @@ S.renderSettings = function() {
     // Fonds du livre manuel : une image par élément, à charger depuis l'appareil ; sans image, le dessin du module.
     var sk = S.skin(), skinItem = function(k) {
         return "<div class='sk-skinitem sk-skin-" + (k.indexOf("gem") == 0 ? "gem" : k) + "'><label class='sk-skinprev' title='" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "'>"
-            + (sk[k] ? "<img src='" + sk[k] + "' alt=''>" : "<span>" + e(k.indexOf("gem") == 0 ? k.slice(3) : t("skin_default")) + "</span>")
+            + "<img src='" + sk[k] + "' alt=''>"
             + "<input type='file' accept='image/*' data-skin='" + k + "' hidden></label>"
             + "<span class='sk-skinname'>" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "</span>"
-            + (sk[k] ? "<button class='sk-btn sk-skinrm' data-skinrm='" + k + "' aria-label='" + e(t("skin_remove")) + "' title='" + e(t("skin_remove")) + "'>&#xf2ed;</button>" : "") + "</div>";
+            + (sk.custom(k) ? "<button class='sk-btn sk-skinrm' data-skinrm='" + k + "' aria-label='" + e(t("skin_remove")) + "' title='" + e(t("skin_remove")) + "'>&#xf2ed;</button>" : "") + "</div>";
     };
     h += "<div class='sk-blk sk-c3 sk-skins'><h3>" + t("skin_title") + "</h3><p>" + t("skin_help") + "</p>"
         + "<div class='sk-skinrow'>" + ["green", "red", "rest"].map(skinItem).join("") + "</div>"
         + "<h4>" + t("skin_gems") + "</h4><div class='sk-skingems'>" + [1, 2, 3, 4, 5, 6, 7, 8].map(function(i) { return skinItem("gem" + i); }).join("") + "</div>"
-        + (Object.keys(sk).length ? "<button class='sk-btn' data-skinrm=''>" + t("skin_remove_all") + "</button>" : "") + "</div>";
+        + (Object.keys(S.skinUser()).length ? "<button class='sk-btn' data-skinrm=''>" + t("skin_remove_all") + "</button>" : "") + "</div>";
     h += "<div class='sk-blk sk-c2'><h3>" + t("data") + "</h3><p>" + t("data_help") + "</p><button class='sk-btn' data-exp>" + t("export_all") + "</button><button class='sk-btn' data-imp>" + t("import") + "</button>"
         + "<h3 class='sk-mt'>" + t("display") + "</h3>"
         + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label>"
