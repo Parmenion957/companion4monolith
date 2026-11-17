@@ -1820,3 +1820,10 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mghost.sk-mghost-hp { opacity: 1; transform: translate(-50%, -65%); animation: skmGrow .18s ease-out; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); }
 .sk-mghost.sk-mghost-hp .sk-mhpm { border-width: 4px; }
 @keyframes skmGrow { from { transform: translate(-50%, -65%) scale(.45); } }
+/* Bol de bronze antique (remplace la coupe en bois) */
+.sk-mz.sk-mz-reserve.sk-mbowl { aspect-ratio: 1 / 1; }
+.sk-mbowl svg { bottom: 15%; }
+.sk-mbowl .sk-mgems { inset: 13% 14% 53% 14%; flex-wrap: wrap; align-content: flex-end; }
+.sk-mbowl-front { filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.35)); }
+.sk-mz.sk-mz-reserve.sk-mbowl { --g: 1.45cqw; }
+.sk-mbowl .sk-mgems { inset: 21% 13% 53% 13%; align-content: center; }

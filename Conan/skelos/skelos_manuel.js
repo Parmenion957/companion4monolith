@@ -171,26 +171,30 @@ var cardsBadge = function(s) { return S.cardsBadgeCode(s); };
 // Réserve : y prendre des gemmes en ajoute au livre, y en reposer en retire. Tas de tuiles : un appui ouvre le choix
 // des tuiles (ajoutées au bout), une tuile glissée dessus quitte le livre.
 // Le livre rétrécit en mode studio : la réserve se pose à sa gauche, le tas de tuiles à sa droite.
-// Objets réalistes posés sur le bureau (dessins originaux) : une coupe en bois ancienne pleine de gemmes à gauche,
-// un tas de tuiles à droite. La coupe est la réserve : y prendre des gemmes en ajoute au livre, y en reposer en retire.
-var BOWL_BACK = "<svg class='sk-mbowl-back' viewBox='0 0 100 70' aria-hidden='true'><defs><radialGradient id='skmbIn' cx='50%' cy='40%' r='60%'>"
-    + "<stop offset='0' stop-color='#2a160a'/><stop offset='1' stop-color='#5a341a'/></radialGradient></defs>"
-    + "<ellipse cx='50' cy='24' rx='44' ry='12' fill='url(#skmbIn)'/></svg>";
-var BOWL_FRONT = "<svg class='sk-mbowl-front' viewBox='0 0 100 70' aria-hidden='true'><defs>"
-    + "<linearGradient id='skmbWood' x1='0' x2='1' y1='0' y2='0'><stop offset='0' stop-color='#3b200d'/><stop offset='.28' stop-color='#8a5426'/>"
-    + "<stop offset='.5' stop-color='#a76a33'/><stop offset='.75' stop-color='#7a4520'/><stop offset='1' stop-color='#341b0a'/></linearGradient>"
-    + "<linearGradient id='skmbShade' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.45'/></linearGradient></defs>"
-    + "<ellipse cx='50' cy='66' rx='20' ry='3.5' fill='#000' opacity='.35'/>"
-    + "<path d='M38 58h24l3 6H35z' fill='#4a2810'/>"
-    + "<path d='M6 24A44 12 0 0 0 94 24C94 46 76 60 50 60S6 46 6 24z' fill='url(#skmbWood)'/>"
-    + "<path d='M6 24A44 12 0 0 0 94 24C94 46 76 60 50 60S6 46 6 24z' fill='url(#skmbShade)'/>"
-    + "<g fill='none' stroke='#2a1406' stroke-opacity='.35' stroke-width='.7'><path d='M12 34C30 44 70 44 88 34'/><path d='M18 44C34 51 66 51 82 44'/><path d='M27 52C40 56 60 56 73 52'/></g>"
-    + "<path d='M6 24A44 12 0 0 0 94 24' fill='none' stroke='#c08850' stroke-width='2.2'/>"
-    + "<path d='M6 24A44 12 0 0 1 94 24' fill='none' stroke='#6b3c18' stroke-width='1.6'/></svg>";
+// Objets réalistes posés sur le bureau (dessins originaux) : un bol de bronze antique plein de gemmes à gauche,
+// un tas de tuiles à droite. Le bol est la réserve : y prendre des gemmes en ajoute au livre, y en reposer en retire.
+// Vu un peu d'en haut : l'intérieur doré et usé se voit, la paroi extérieure est sombre, patinée.
+var BOWL_BACK = "<svg class='sk-mbowl-back' viewBox='0 0 100 80' aria-hidden='true'><defs>"
+    + "<radialGradient id='skmbIn' cx='52%' cy='62%' r='62%'><stop offset='0' stop-color='#c9ab7c'/><stop offset='.45' stop-color='#a5845a'/>"
+    + "<stop offset='.8' stop-color='#6e5236'/><stop offset='1' stop-color='#3b2a1a'/></radialGradient>"
+    + "<linearGradient id='skmbInSh' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='#1e140b' stop-opacity='.75'/><stop offset='.45' stop-color='#1e140b' stop-opacity='0'/></linearGradient></defs>"
+    + "<ellipse cx='50' cy='24' rx='46' ry='17' fill='url(#skmbIn)'/><ellipse cx='50' cy='24' rx='46' ry='17' fill='url(#skmbInSh)'/>"
+    + "<g fill='#6f8a6a' opacity='.35'><ellipse cx='60' cy='33' rx='3' ry='1.2'/><ellipse cx='43' cy='36' rx='1.6' ry='.8'/></g></svg>";
+var BOWL_FRONT = "<svg class='sk-mbowl-front' viewBox='0 0 100 80' aria-hidden='true'><defs>"
+    + "<linearGradient id='skmbOut' x1='0' x2='1' y1='0' y2='0'><stop offset='0' stop-color='#1d150e'/><stop offset='.22' stop-color='#4a3a2b'/>"
+    + "<stop offset='.42' stop-color='#6a5642'/><stop offset='.6' stop-color='#55432f'/><stop offset='.85' stop-color='#30241a'/><stop offset='1' stop-color='#150f09'/></linearGradient>"
+    + "<linearGradient id='skmbOutSh' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.5'/></linearGradient></defs>"
+    + "<ellipse cx='50' cy='76.5' rx='30' ry='3' fill='#000' opacity='.3'/>"
+    + "<path d='M4 24A46 17 0 0 0 96 24C96 52 84 75 50 76C16 75 4 52 4 24z' fill='url(#skmbOut)'/>"
+    + "<path d='M4 24A46 17 0 0 0 96 24C96 52 84 75 50 76C16 75 4 52 4 24z' fill='url(#skmbOutSh)'/>"
+    + "<g fill='#7d6a52' opacity='.25'><ellipse cx='30' cy='55' rx='4' ry='1.5'/><ellipse cx='66' cy='60' rx='3' ry='1'/><ellipse cx='48' cy='66' rx='5' ry='1.3'/></g>"
+    + "<g fill='#5f7a62' opacity='.3'><ellipse cx='22' cy='46' rx='1.5' ry='1'/><ellipse cx='74' cy='50' rx='1.2' ry='.8'/></g>"
+    + "<path d='M4 24A46 17 0 0 0 96 24' fill='none' stroke='#b0926a' stroke-width='1.3'/>"
+    + "<path d='M4 24A46 17 0 0 1 96 24' fill='none' stroke='#3a2a1b' stroke-width='1.1'/></svg>";
 var reserveCode = function() {
     if (!S.studio || coop()) return "";
     return "<div class='sk-mside sk-mside-l'><div class='sk-mz sk-mz-reserve sk-mbowl' data-zone='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("man_reserve_hint")) + "'>"
-        + BOWL_BACK + "<div class='sk-mgems'>" + groupsCode(9, S.icon("gem"), "sk-mgem", "reserve") + "</div>" + BOWL_FRONT
+        + BOWL_BACK + "<div class='sk-mgems'>" + groupsCode(12, S.icon("gem"), "sk-mgem", "reserve") + "</div>" + BOWL_FRONT
         + "<span class='sk-mobjname'>" + e(t("man_reserve")) + "</span></div></div>";
 };
 // Tas de tuiles : quelques tuiles empilées (tranches de carton), celle du dessus montre une tuile du Compagnon.
