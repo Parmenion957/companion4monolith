@@ -93,15 +93,16 @@ var tokCode = function(s) {
 // nShown : nombre affiché à la place du vrai (pendant une animation, la zone d'arrivée attend les pièces).
 var zoneCode = function(z, inner, title, nShown) {
     var n, content;
-    if (coop() && z == "energy") { n = nShown != null ? nShown : poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
-    // Coop : les jetons posés, et les gemmes ajoutées en mode studio (petit tas à part, avec son nombre).
-    else if (coop()) {
-        var l = tokensIn(z), gn = z == "aside" ? 0 : count(z); n = l.length;
-        content = l.map(tokCode).join("") + (gn ? "<span class='sk-mcgems'>" + groupsCode(gn, S.icon("gem"), "sk-mgem", z) + "</span>" : "");
+    // Coop : les jetons (de dos dans la zone verte), et les gemmes en petit tas à part, avec leur nombre.
+    if (coop()) {
+        var gn = z == "aside" ? 0 : count(z);
+        if (z == "energy") { n = nShown != null ? nShown : poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
+        else { var l = tokensIn(z); n = l.length; content = l.map(tokCode).join(""); }
+        content += gn ? "<span class='sk-mcgems'>" + groupsCode(gn, S.icon("gem"), "sk-mgem", z) + "</span>" : "";
         if (gn) inner = (inner || "") + "<span class='sk-mgcount' aria-hidden='true'><img src='" + S.icon("gem") + "' alt=''>" + gn + "</span>";
     }
     else { n = nShown != null ? nShown : count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
-    var label = zoneLabel(z) + " · " + n + (coop() && z != "energy" && count(z) ? " · " + t("man_tile_gems", count(z), zoneLabel(z)) : "");
+    var label = zoneLabel(z) + " · " + n + (coop() && count(z) ? " · " + t("man_tile_gems", count(z), zoneLabel(z)) : "");
     // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
     var groups = Math.ceil((coop() ? count(z) : n) / 3), gs = BAND1.indexOf(z) >= 0 ? " style='--g:" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw'" : "";
     return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'" + gs + ">"
@@ -326,7 +327,6 @@ var commit = function(msg) { if (msg) S.log(msg); S.save(); S.renderGame(); };
 S.manualMoveGems = function(from, to, n) {
     n = Math.min(n, count(from));
     if (!to || to == from || n <= 0) return;
-    if (coop() && to == "energy") { S.toast(t("man_coop_no_energy")); return; }
     S.snapshot();
     setCount(from, count(from) - n); setCount(to, count(to) + n);
     commit(from == "reserve" ? t("man_log_gems_add", n, zoneLabel(to)) : to == "reserve" ? t("man_log_gems_rm", n, zoneLabel(from)) : t("man_log_gems", n, zoneLabel(from), zoneLabel(to)));
@@ -727,7 +727,8 @@ var bind = function(board) {
         }
 
         // Coop : un jeton posé se déplace ; un jeton pris dans la zone verte est tiré au hasard.
-        if (coop() && (tok || (zone && zone.dataset.zone == "energy" && poolCount()))) {
+        // (Dans la zone verte, un appui sur le tas de gemmes prend des gemmes, ailleurs il tire un jeton.)
+        if (coop() && (tok || (zone && zone.dataset.zone == "energy" && poolCount() && !ev.target.closest(".sk-mcgems")))) {
             ev.preventDefault();
             var src = tok || zone.querySelector(".sk-mback");
             if (!src) return;
@@ -749,7 +750,7 @@ var bind = function(board) {
         }
 
         // Gemmes : glisser en emmène une ; appui long, puis glisser ou lâcher, en emmène plusieurs.
-        if (zone && !(coop() && zone.dataset.zone == "energy") && count(zone.dataset.zone) > 0) {
+        if (zone && count(zone.dataset.zone) > 0) {
             ev.preventDefault();
             var from = zone.dataset.zone, max = count(from);
             var charge = function() {

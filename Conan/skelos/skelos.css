@@ -1880,3 +1880,5 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mgcount img { width: 2cqw; height: 2cqw; object-fit: contain; }
 .sk-mb1 .sk-mgcount { font-size: 1.4cqw; left: .4cqw; bottom: .3cqw; }
 .sk-manual.solo .sk-mb1 .sk-mtok { width: 3.6cqw; height: 3.6cqw; }
+/* Coop, zone verte : le tas de gemmes se prend d'un appui (le reste de la zone tire un jeton) */
+.sk-manual.solo .sk-mz-energy .sk-mcgems { pointer-events: auto; cursor: grab; }
