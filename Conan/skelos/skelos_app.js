@@ -89,6 +89,11 @@ S.heroNames = function() {
 // Carte originale dessinée par le Compagnon, quand son code est présent.
 S.realCardCode = function(kind, ref) {
     try {
+        // Tuile portée par une autre tuile : référence « id|image ».
+        if (kind == "ti") {
+            var tp = String(ref).split("|"), tl = S.tileOf({tileId: tp[0], img: tp.slice(1).join("|")});
+            if (tl) return "<div class='sk-tilebox sk-cardtile'>" + S.tileCode({tileId: tl.id, img: tl.image, color: tl.colors[0]}) + "</div>";
+        }
         if (kind == "eq" && typeof CardEquipment != "undefined" && typeof EncyclopediaEquipments != "undefined") {
             var q = (Encyclopedia.equipments.list || []).filter(function(x) { return x.id == ref; })[0];
             if (q) return CardEquipment._cardCode(EncyclopediaEquipments._convertEquipmentToStudio(q));
@@ -101,6 +106,7 @@ S.realCardCode = function(kind, ref) {
     return null;
 };
 S.itemName = function(kind, ref) {
+    if (kind == "ti") { var tl = S.tileOf({tileId: String(ref).split("|")[0], img: String(ref).split("|").slice(1).join("|")}); return tl ? (tl.id == "event" ? t("scenario_events") : tl.name) : ref; }
     var x = S.catalog(kind).filter(function(i) { return i.ref == ref; })[0];
     return x ? x.name : ref;
 };
@@ -623,7 +629,7 @@ S.openItemPicker = function(opts) {
     var pr = S.prefs(), kind = opts.kind || pr.itemKind || "eq", sel = (opts.initial || []).slice(), browse = !!opts.browse, editing = !!opts.initial;
     var ov = S.root.querySelector("#sk-overlay");
     var tabs = (opts.tiles ? [["tile", "tab_tiles"]] : []).concat([["eq", "tab_eq"], ["sp", "tab_sp"], ["up", "tab_up"]]);
-    if (opts.tiles && !pr.itemKind) kind = "tile";
+    if (opts.tiles && !opts.kind && !pr.itemKind) kind = "tile";
     // Choix limité à certains types (cartes d'une tuile en studio : sorts ou équipements).
     if (opts.kinds) { tabs = tabs.filter(function(x) { return opts.kinds.indexOf(x[0]) >= 0; }); if (opts.kinds.indexOf(kind) < 0) kind = opts.kinds[0]; }
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(opts.title) + "</h2><div class='sk-actions sk-pickactions'>"
@@ -657,6 +663,13 @@ S.openItemPicker = function(opts) {
             if (k.length) { if (!bd) { bd = document.createElement("span"); bd.className = "sk-pickbadge"; c.appendChild(bd); } bd.textContent = k.join(" · "); c.classList.add("picked"); }
             else { if (bd) bd.remove(); c.classList.remove("picked"); }
         });
+        // Tuiles choisies (cartes d'une tuile : une tuile peut en porter d'autres) : même repère numéroté.
+        ov.querySelectorAll("[data-tilepick]").forEach(function(c) {
+            var k = []; sel.forEach(function(x, i) { if (x.kind == "ti" && x.ref == c.dataset.tilepick) k.push(i + 1); });
+            var bd = c.querySelector(".sk-pickbadge");
+            if (k.length) { if (!bd) { bd = document.createElement("span"); bd.className = "sk-pickbadge"; c.appendChild(bd); } bd.textContent = k.join(" · "); c.classList.add("picked"); }
+            else { if (bd) bd.remove(); c.classList.remove("picked"); }
+        });
     };
     var draw = function() {
         ov.querySelectorAll("[data-tab]").forEach(function(b) { var on = b.dataset.tab == kind; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
@@ -669,7 +682,7 @@ S.openItemPicker = function(opts) {
                 var nm = x.id == "event" ? t("scenario_events") : x.name; if (nq && S.norm(nm).indexOf(nq) < 0) return;
                 if (!S.inScope(x.origins)) return;
                 var key = x.id + "|" + x.image; if (seen[key]) return; seen[key] = true;
-                out += "<div class='sk-pick sk-tilebox' role='img' aria-label='" + e(nm) + "'>" + S.tileCode({tileId: x.id, color: x.colors[0], img: x.image}) + "</div>";
+                out += "<div class='sk-pick sk-tilebox'" + (browse ? " role='img'" : " role='button' tabindex='0' data-tilepick='" + e(key) + "'") + " aria-label='" + e(nm) + "'>" + S.tileCode({tileId: x.id, color: x.colors[0], img: x.image}) + "</div>";
             });
         } else {
             if (kind == "up") out += "<button class='sk-icard sk-newup' data-newup>+<span>" + t("create_upgrade") + "</span></button>";
@@ -689,6 +702,13 @@ S.openItemPicker = function(opts) {
         var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
         if (ev.target.closest("[data-clear]")) { sel = sel.filter(function(x) { return x.start; }); status(); return; }
         if (ev.target.closest("[data-addsel]")) { var s2 = sel.slice(); close(); opts.onAdd(s2); return; }
+        var tp = !browse && ev.target.closest("[data-tilepick]");
+        if (tp) {
+            var tl = S.tileOf({tileId: tp.dataset.tilepick.split("|")[0], img: tp.dataset.tilepick.split("|").slice(1).join("|")});
+            sel.push({kind: "ti", ref: tp.dataset.tilepick, name: tl ? (tl.id == "event" ? t("scenario_events") : tl.name) : tp.dataset.tilepick});
+            tp.classList.remove("added"); void tp.offsetWidth; tp.classList.add("added");
+            status(); return;
+        }
         var c = ev.target.closest(".sk-icard[data-ref]"); if (!c) return;
         if (browse) { S.showCard(c.dataset.kind + ":" + c.dataset.ref); return; }
         var it = S.catalog(c.dataset.kind).filter(function(x) { return x.ref == c.dataset.ref; })[0]; if (!it) return;

@@ -1159,7 +1159,8 @@ S.zoomTile = function(uid, opts) {
     opts = opts || {};
     var s = S.slotByUid(uid); if (!s) return;
     var hand = !!opts.hand, studio = S.studio, game = !studio;
-    var sp = S.slotCards(s, "sp"), eq = S.slotCards(s, "eq");
+    // À droite : les équipements, puis les tuiles portées par la tuile.
+    var sp = S.slotCards(s, "sp"), eq = S.slotCards(s, "eq").concat(S.slotCards(s, "ti"));
     var minPos = -sp.length - (studio ? 1 : 0), maxPos = eq.length + (studio ? 1 : 0);
     var pos = Math.max(minPos, Math.min(maxPos, opts.pos == null ? (hand ? -1 : 0) : opts.pos));
     S._zoom = {uid: uid, pos: pos, hand: hand};
@@ -1175,11 +1176,12 @@ S.zoomTile = function(uid, opts) {
         body = "<div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "") + "</div>";
         after = hpCode ? "<div class='sk-zoomhp'>" + hpCode + "</div>" : "";
     } else if (pos == minPos && studio) {
-        body = "<button class='sk-zoomadd' data-zadd='sp'><span>+</span>" + e(t("add_spell")) + "</button>";
+        body = "<button class='sk-zoomadd' data-zadd='sp'><span>+</span>" + e(t("add_cards")) + "</button>";
     } else if (pos == maxPos && studio) {
-        body = "<button class='sk-zoomadd' data-zadd='eq'><span>+</span>" + e(t("add_eq")) + "</button>";
+        body = "<button class='sk-zoomadd' data-zadd='eq'><span>+</span>" + e(t("add_cards")) + "</button>";
     } else {
-        var kind = pos < 0 ? "sp" : "eq", list = kind == "sp" ? sp : eq, k = Math.abs(pos) - 1, c = list[k];
+        var list = pos < 0 ? sp : eq, k = Math.abs(pos) - 1, c = list[k], kind = c.kind;
+        k = S.slotCards(s, kind).indexOf(c);
         var real = S.realCardCode(kind, c.ref) || "<div class='sk-bigcard sk-k-" + kind + "'><span class='sk-icard-n'>" + e(S.itemName(kind, c.ref)) + "</span></div>";
         var foot = "", cast = 0, cls = "", pips = "";
         if (kind == "sp" && game) {
@@ -1302,29 +1304,33 @@ S.bindZoom = function(ov) {
         S.zoomShut();
     };
 };
-// Studio : cartes d'une tuile. Le côté décide du type : à gauche les sorts de l'Overlord, à droite les équipements.
-S.studioAddCards = function(uid, kind) {
+// Studio : cartes d'une tuile. Les deux « + » ouvrent le même choix : sorts de l'Overlord, équipements ou tuiles,
+// une ou plusieurs d'un coup. Les sorts se rangent à gauche, les équipements puis les tuiles à droite.
+S.studioAddCards = function(uid, side) {
     var back = function(pos) { S.zoomTile(uid, {pos: pos}); };
+    var right = function(s) { return S.slotCards(s, "eq").length + S.slotCards(s, "ti").length; };
     S.zoomShut();
-    S.openItemPicker({title: t(kind == "sp" ? "add_spell" : "add_eq"), kind: kind, kinds: [kind],
-        filter: kind == "sp" ? function(it) { return it.data && it.data.forOverlord; } : null,
-        onClose: function() { back(kind == "sp" ? -1 : 1); },
+    S.openItemPicker({title: t("add_cards"), kind: side == "sp" ? "sp" : "eq", kinds: ["sp", "eq", "tile"], tiles: true,
+        filter: function(it) { return it.kind != "sp" || (it.data && it.data.forOverlord); },
+        onClose: function() { back(side == "sp" ? -1 : 1); },
         onAdd: function(sel) {
             var s = S.slotByUid(uid); if (!s || !sel.length) { back(0); return; }
             S.snapshot();
             s.cards = (s.cards || []).concat(sel.map(function(x) { return {kind: x.kind, ref: x.ref}; }));
             commit();
-            back(kind == "sp" ? -S.slotCards(s, "sp").length : S.slotCards(s, "eq").length);
+            var onlySp = sel.every(function(x) { return x.kind == "sp"; });
+            back(onlySp || (side == "sp" && sel.some(function(x) { return x.kind == "sp"; })) ? -S.slotCards(s, "sp").length : right(s));
         }});
 };
 S.studioRemoveCard = function(uid, kind, k) {
     var s = S.slotByUid(uid); if (!s) return;
     var c = S.slotCards(s, kind)[k]; if (!c) return;
+    var side = kind == "sp" ? S.slotCards(s, "sp") : S.slotCards(s, "eq").concat(S.slotCards(s, "ti")), at = side.indexOf(c);
     S.snapshot();
     s.cards.splice(s.cards.indexOf(c), 1);
     commit();
-    var n = S.slotCards(s, kind).length;
-    S.zoomTile(uid, {pos: n ? (kind == "sp" ? -Math.min(k + 1, n) : Math.min(k + 1, n)) : 0});
+    var n = side.length - 1;
+    S.zoomTile(uid, {pos: n ? (kind == "sp" ? -Math.min(at + 1, n) : Math.min(at + 1, n)) : 0});
 };
 // Double appui sur une tuile de la Rivière : le premier appui l'a sélectionnée, le second la désélectionne, puis le zoom s'ouvre.
 S.bindTileZoom = function(root) {
@@ -2217,15 +2223,19 @@ S.bindSpellPress = function(root) {
 };
 var baseInit = S.init;
 S.init = function(root) { var r = baseInit.apply(S, arguments); S.bindSpellPress(root); return r; };
-// Pastille au coin des tuiles qui portent des cartes : nombre de sorts et d'équipements.
+// Pastille au coin des tuiles qui portent des cartes : nombre de sorts, d'équipements et de tuiles portées.
+S.cardsBadgeCode = function(s) {
+    var sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length, ti = S.slotCards(s, "ti").length;
+    if (!sp && !eq && !ti) return "";
+    var lbl = t("cards_badge3", sp, eq, ti);
+    return "<span class='sk-cardsbadge' role='img' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'>"
+        + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + (ti ? "<i class='sk-cb-ti'>&#xf24d;</i>" + ti : "") + "</span>";
+};
 S.decorateCards = function() {
     if (!S.root || !S.state) return;
     S.root.querySelectorAll(".sk-river .sk-tilebox[data-uid]").forEach(function(box) {
-        var s = S.slotByUid(box.dataset.uid), sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length;
         var old = box.querySelector(".sk-cardsbadge"); if (old) old.remove();
-        if (!sp && !eq) return;
-        box.insertAdjacentHTML("beforeend", "<span class='sk-cardsbadge' role='img' aria-label='" + e(t("cards_badge", sp, eq)) + "' title='" + e(t("cards_badge", sp, eq)) + "'>"
-            + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>");
+        var h = S.cardsBadgeCode(S.slotByUid(box.dataset.uid)); if (h) box.insertAdjacentHTML("beforeend", h);
     });
 };
 var cardsRender = S.renderGame;

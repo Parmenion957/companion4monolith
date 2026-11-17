@@ -1712,9 +1712,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mtok { width: 5cqw; height: 5cqw; object-fit: contain; pointer-events: auto; cursor: grab; touch-action: none; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); }
 .sk-mb1 .sk-mtok { width: 4.4cqw; height: 4.4cqw; }
 .sk-mtok.sk-mdragging, .sk-mpiece.sk-mdragging { opacity: .3; }
-.sk-desk > .sk-mz-aside { min-height: 7.5cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); }
-.sk-desk > .sk-mz-aside .sk-mtitle { text-shadow: none; }
-.sk-desk > .sk-mz-aside .sk-mcount { color: var(--body-color); text-shadow: none; }
 
 /* Gemmes en main et pièce glissée */
 .sk-mhand { position: fixed; z-index: 100002; pointer-events: none; transform: translate(-50%, -130%); display: flex; align-items: center; gap: 4px; padding: 5px 12px 5px 6px;
@@ -1734,3 +1731,24 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mhpm.sk-mdragging { opacity: .3; }
 .sk-mghost .sk-mhpm { width: 100% !important; height: 100% !important; }
 .sk-mtrack { padding-bottom: 3cqw; }
+
+/* Livre manuel, mode studio : réserve de gemmes et tas de tuiles posés sur le bureau, sous le livre */
+.sk-mdeskrow { display: flex; gap: 1.4cqw; align-items: stretch; }
+.sk-mdeskrow > * { flex: 1 1 0; }
+.sk-desk .sk-mz-aside { min-height: 7.5cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); }
+.sk-desk .sk-mz-aside .sk-mtitle { text-shadow: none; }
+.sk-desk .sk-mz-aside .sk-mcount { color: var(--body-color); text-shadow: none; }
+.sk-mz-reserve { flex: 0 0 22cqw; min-height: 9cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); --g: 2.6cqw; }
+.sk-mz-reserve .sk-mtitle { text-shadow: none; }
+.sk-mpile { flex: 0 0 13cqw; position: relative; min-height: 9cqw; padding: 0; border: 0; border-radius: .9cqw; cursor: pointer; color: var(--body-color);
+    background: color-mix(in srgb, var(--body-color) 10%, transparent); box-shadow: inset 0 .35cqw .7cqw rgba(0,0,0,.35); }
+.sk-mpile .sk-mtitle { text-shadow: none; }
+.sk-mpcard { position: absolute; left: 50%; top: 58%; width: 4.6cqw; aspect-ratio: .656; border-radius: .4cqw; box-sizing: border-box;
+    background: linear-gradient(170deg, #e3d3ad, #b99b68); border: .2cqw solid #6b5434; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.45); transform: translate(-50%, -50%) rotate(-8deg); }
+.sk-mpcard:nth-child(2) { transform: translate(-46%, -52%) rotate(5deg); }
+.sk-mpcard:nth-child(3) { transform: translate(-50%, -54%) rotate(-1deg); display: grid; place-items: center; }
+.sk-mpcard b { font-size: 3cqw; line-height: 1; color: #6b5434; }
+.sk-mpile.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
+/* Tuile portée par une tuile, dans le zoom et la pastille des cartes */
+.sk-cardtile { width: 100%; }
+.sk-cardsbadge .sk-cb-ti { color: #9fd3a0; }

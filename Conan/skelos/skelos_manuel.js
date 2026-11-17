@@ -14,7 +14,7 @@
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 
 var BAND1 = ["move", "defense", "reroll"];
-var LONG = 380, STEP = 260, MOVE = 9;
+var LONG = 380, STEP = 260, MOVE = 9, RESERVE = 20;
 
 S.manualOn = function() { return S.prefs().board == "manual" && !!S.state && !S.editing; };
 var coop = function() { return S.state.mode == "solo"; };
@@ -24,16 +24,19 @@ var count = function(z) {
     var st = S.state;
     if (z == "energy") return st.energy;
     if (z == "fatigue") return st.fatigue;
+    if (z == "reserve") return RESERVE;   // réserve du mode studio : inépuisable
     return (st.boosts && st.boosts[z]) || 0;
 };
 var setCount = function(z, v) {
     var st = S.state;
+    if (z == "reserve") return;
     if (z == "energy") st.energy = v; else if (z == "fatigue") st.fatigue = v; else st.boosts[z] = v;
 };
 var zoneLabel = function(z) {
     if (z == "energy") return t(S.state && coop() ? "tokens_pool" : "energy");
     if (z == "fatigue") return t("fatigue");
     if (z == "aside") return t("man_aside");
+    if (z == "reserve") return t("man_reserve");
     return t("boost_" + z);
 };
 
@@ -136,12 +139,22 @@ var holesCode = function() {
     return h;
 };
 
-// Pastille des cartes portées par une tuile (sorts, équipements), comme sur le plateau automatique.
-var cardsBadge = function(s) {
-    var sp = S.slotCards(s, "sp").length, eq = S.slotCards(s, "eq").length;
-    if (!sp && !eq) return "";
-    return "<span class='sk-cardsbadge' role='img' aria-label='" + e(t("cards_badge", sp, eq)) + "' title='" + e(t("cards_badge", sp, eq)) + "'>"
-        + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>";
+// Pastille des cartes portées par une tuile (sorts, équipements, tuiles), comme sur le plateau automatique.
+var cardsBadge = function(s) { return S.cardsBadgeCode(s); };
+
+// ---------- Mode studio : réserve de gemmes et tas de tuiles sur le bureau ----------
+// Réserve : y prendre des gemmes en ajoute au livre, y en reposer en retire. Tas de tuiles : un appui ouvre le choix
+// des tuiles (ajoutées au bout), une tuile glissée dessus quitte le livre.
+var deskRowCode = function() {
+    var h = "";
+    if (coop()) h += zoneCode("aside", "", t("man_aside"));
+    if (S.studio) {
+        if (!coop()) h += "<div class='sk-mz sk-mz-reserve' data-zone='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("man_reserve_hint")) + "'>"
+            + "<span class='sk-mtitle'>" + e(t("man_reserve")) + "</span><div class='sk-mgems'>" + groupsCode(9, S.icon("gem"), "sk-mgem", "reserve") + "</div></div>";
+        h += "<button class='sk-mpile' data-tilepile title='" + e(t("man_pile_hint")) + "' aria-label='" + e(t("man_pile_hint")) + "'>"
+            + "<span class='sk-mpcard'></span><span class='sk-mpcard'></span><span class='sk-mpcard'><b>+</b></span><span class='sk-mtitle'>" + e(t("tab_tiles")) + "</span></button>";
+    }
+    return h ? "<div class='sk-mdeskrow'>" + h + "</div>" : "";
 };
 
 var tilesCode = function() {
@@ -157,25 +170,26 @@ var tilesCode = function() {
 S.renderManual = function() {
     var st = S.state, root = S.root;
     var keep = S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
-    S.screen = "game"; S.studio = false; S.selected = null;
+    S.screen = "game"; S.selected = null;
     var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + "'><div class='sk-desk'>" + trackCode()
         + "<div class='sk-book'>"
         + "<div class='sk-mb1'>" + BAND1.map(function(z) { return zoneCode(z, "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
         + "<div class='sk-mb2'>" + zoneCode("energy", "", coop() ? t("tokens_pool") : t("energy")) + restCode() + zoneCode("fatigue", "", t("fatigue")) + "</div>"
         + "<div class='sk-mb3'>" + holesCode() + "</div>"
         + tilesCode() + "</div>"
-        + (coop() ? zoneCode("aside", "", t("man_aside")) : "")
+        + deskRowCode()
         + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
     root.innerHTML = h;
     S._lastScreen = "game";
     S.placeTabs();
-    // Pas de mode studio sur le livre manuel (il se règle à la main) : seul l'interrupteur Aventure / Coop reste
-    // dans la barre des onglets (le clic est pris en charge par S.placeTabs → S.switchMode).
+    // Barre des onglets : bouton Studio et disquette comme sur le plateau automatique (S.placeTabs) ; l'interrupteur
+    // Aventure / Coop reste visible hors du mode studio (le clic est pris en charge par S.placeTabs → S.switchMode).
     var tools = root.querySelector(":scope > .sk-tabs .sk-tabtools");
-    if (tools) tools.innerHTML = "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
+    if (tools && !tools.querySelector(".sk-modesw")) tools.insertAdjacentHTML("afterbegin", "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
         var on = st.mode == m[0];
         return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
-    }).join("") + "</div>";
+    }).join("") + "</div>");
+    root.querySelector(".sk-manual").classList.toggle("sk-mstudio", !!S.studio);
     S.syncFullscreenButton();
     S.fitDesk();
     if (keep != null) root.scrollTop = keep;
@@ -210,7 +224,7 @@ S.manualMoveGems = function(from, to, n) {
     if (!to || to == from || n <= 0) return;
     S.snapshot();
     setCount(from, count(from) - n); setCount(to, count(to) + n);
-    commit(t("man_log_gems", n, zoneLabel(from), zoneLabel(to)));
+    commit(from == "reserve" ? t("man_log_gems_add", n, zoneLabel(to)) : to == "reserve" ? t("man_log_gems_rm", n, zoneLabel(from)) : t("man_log_gems", n, zoneLabel(from), zoneLabel(to)));
 };
 
 S.manualMoveToken = function(uid, to) {
@@ -344,6 +358,7 @@ var hinted = false;
 var bind = function(board) {
     if (!board) return;
     board.addEventListener("click", function(ev) {
+        if (ev.target.closest("[data-tilepile]")) { S.studioPick(); return; }
         var b = ev.target.closest("[data-mact]"); if (!b) return;
         var f = b.dataset.mact, v = Math.max(f == "heroes" ? 1 : 0, (S.state[f] || 0) + +b.dataset.n);
         if (f == "heroes") v = Math.min(4, v);
@@ -473,13 +488,14 @@ var bind = function(board) {
                 if (!g.moved && !long && far(e2)) { g.moved = true; clearTimeout(g.timer); tile.classList.add("sk-dragging"); ghostStart(tile, e2.clientX, e2.clientY); }
                 if (g.moved) {
                     e2.preventDefault(); ghostMove(e2.clientX, e2.clientY);
-                    markTarget(S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null);
+                    markTarget(under(e2.clientX, e2.clientY, "[data-tilepile]") || (S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null));
                 }
             }, function(e2, cancel) {
                 ghostEnd(); tile.classList.remove("sk-dragging");
                 if (cancel || long) return;
                 if (g.moved) {
                     if (under(e2.clientX, e2.clientY, ".sk-mb4")) S.manualMoveTile(uid, tileIndexAt(e2.clientX));
+                    else if (under(e2.clientX, e2.clientY, "[data-tilepile]")) S.studioRemove(uid);
                     else if (S.hpOnTrack() && under(e2.clientX, e2.clientY, ".sk-mtrack")) {
                         var c = under(e2.clientX, e2.clientY, "[data-cell]");
                         S.manualTrackTile(uid, c ? c.dataset.cell : null);
@@ -509,8 +525,8 @@ var bind = function(board) {
 var baseZoom = S.zoomTile;
 S.zoomTile = function(uid, opts) {
     if (!S.manualOn()) return baseZoom.apply(S, arguments);
-    S.studio = true;
-    try { baseZoom.apply(S, arguments); } finally { S.studio = false; }
+    var was = S.studio; S.studio = true;
+    try { baseZoom.apply(S, arguments); } finally { S.studio = was; }
     var ov = S.root.querySelector("#sk-overlay");
     if (ov) ov.querySelectorAll("[data-zlp]").forEach(function(b) { b.removeAttribute("data-zlp"); b.setAttribute("data-zmhp", b.dataset.n); });
 };

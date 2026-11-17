@@ -559,5 +559,12 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_hpm': "{0}: {1} LP",
     'man_hp_already': "{0} already has its marker on the track.",
     'man_log_hp_on': "{0}: life point marker put on the track ({1})",
-    'man_log_hp_off': "{0}: life point marker removed from the track"
+    'man_log_hp_off': "{0}: life point marker removed from the track",
+    'add_cards': "Add cards or tiles",
+    'cards_badge3': "{0} spell(s), {1} equipment(s), {2} tile(s)",
+    'man_reserve': "Supply",
+    'man_reserve_hint': "Take gems from the supply to add them to the book; put gems back in the supply to remove them.",
+    'man_pile_hint': "Tap the pile to add a tile; drag a tile onto the pile to remove it.",
+    'man_log_gems_add': "{0} gem(s) added: {1}",
+    'man_log_gems_rm': "{0} gem(s) removed: {1}"
 });

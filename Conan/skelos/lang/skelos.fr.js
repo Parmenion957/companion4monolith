@@ -572,5 +572,12 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_hpm': "{0} : {1} PV",
     'man_hp_already': "{0} a déjà sa pastille sur la piste.",
     'man_log_hp_on': "{0} : pastille des PV posée sur la piste ({1})",
-    'man_log_hp_off': "{0} : pastille des PV retirée de la piste"
+    'man_log_hp_off': "{0} : pastille des PV retirée de la piste",
+    'add_cards': "Ajouter des cartes ou des tuiles",
+    'cards_badge3': "{0} sort(s), {1} équipement(s), {2} tuile(s)",
+    'man_reserve': "Réserve",
+    'man_reserve_hint': "Prenez des gemmes dans la réserve pour en ajouter au livre ; reposez-en dans la réserve pour en retirer.",
+    'man_pile_hint': "Touchez le tas pour ajouter une tuile ; glissez une tuile sur le tas pour l’enlever.",
+    'man_log_gems_add': "{0} gemme(s) ajoutée(s) : {1}",
+    'man_log_gems_rm': "{0} gemme(s) retirée(s) : {1}"
 });
