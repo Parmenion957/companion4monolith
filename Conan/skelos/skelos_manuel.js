@@ -80,7 +80,9 @@ var live = function(uid) { return S.state.removed.indexOf(uid) < 0; };
 var tokLoc = function(uid) {
     var st = S.state;
     if (st.pool.indexOf(uid) >= 0) return "energy";
-    return (st.tokLoc && st.tokLoc[uid]) || "aside";
+    // Plus de zone « Mis de côté » : un jeton tiré sans place (ou mis de côté dans une ancienne partie) est en Fatigue.
+    var l = st.tokLoc && st.tokLoc[uid];
+    return l && l != "aside" ? l : "fatigue";
 };
 var tokensIn = function(z) {
     return S.state.river.filter(function(s) { return live(s.uid) && tokLoc(s.uid) == z; });
@@ -91,11 +93,12 @@ var tokCode = function(s) {
 };
 
 // ---------- Rendu ----------
-var zoneCode = function(z, inner, title) {
+// nShown : nombre affiché à la place du vrai (pendant une animation, la zone d'arrivée attend les pièces).
+var zoneCode = function(z, inner, title, nShown) {
     var n, content;
-    if (coop() && z == "energy") { n = poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
+    if (coop() && z == "energy") { n = nShown != null ? nShown : poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
     else if (coop()) { var l = tokensIn(z); n = l.length; content = l.map(tokCode).join(""); }
-    else { n = count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
+    else { n = nShown != null ? nShown : count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
     var label = zoneLabel(z) + " · " + n;
     // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
     var groups = Math.ceil(n / 3), gs = BAND1.indexOf(z) >= 0 && !coop() ? " style='--g:" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw'" : "";
@@ -207,9 +210,6 @@ var pileCode = function() {
         + "<span class='sk-mslab sk-mtop'>" + img + "</span><b class='sk-mplus'>+</b></span>"
         + "<span class='sk-mobjname'>" + e(t("tab_tiles")) + "</span></button></div>";
 };
-var deskRowCode = function() {
-    return coop() ? "<div class='sk-mdeskrow'>" + zoneCode("aside", "", t("man_aside")) + "</div>" : "";
-};
 
 // Gemmes posées sur une tuile ou ses cartes : un petit tas sur la tuile. Sans carte, le tas est lui-même une zone
 // de gemmes ; avec des cartes, un appui ouvre la liste « tuile + cartes », chaque ligne étant une zone.
@@ -277,7 +277,6 @@ S.renderManual = function() {
         + "<div class='sk-mb2'>" + zoneCode("energy", "", coop() ? t("tokens_pool") : t("energy")) + restCode() + zoneCode("fatigue", "", t("fatigue")) + "</div>"
         + "<div class='sk-mb3'>" + holesCode() + "</div>"
         + tilesCode() + "</div>" + pileCode() + "</div>"
-        + deskRowCode()
         + "</div>" + gemPopCode() + "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
     root.innerHTML = h;
     S._lastScreen = "game";
@@ -330,14 +329,12 @@ S.manualMoveGems = function(from, to, n) {
     commit(from == "reserve" ? t("man_log_gems_add", n, zoneLabel(to)) : to == "reserve" ? t("man_log_gems_rm", n, zoneLabel(from)) : t("man_log_gems", n, zoneLabel(from), zoneLabel(to)));
 };
 
-// Double appui sur la tuile de repos : les gemmes dépensées (Mouvement, Défense, Relance) passent en Fatigue,
-// puis autant de gemmes que la Récupération reviennent de la Fatigue vers l'Énergie disponible.
-// Les gemmes posées sur les tuiles et leurs cartes ne bougent pas.
-// Tout ce qui est dépensé revient : Mouvement, Défense, Relance, et les gemmes posées sur les tuiles et leurs cartes.
+// Double appui sur la tuile de repos : tout ce qui est dépensé passe en Fatigue, puis autant de gemmes que la
+// Récupération reviennent de la Fatigue vers l'Énergie disponible. Tout ce qui est dépensé revient : Mouvement, Défense, Relance, et les gemmes posées sur les tuiles et leurs cartes.
 S.manualRecover = function() {
     var st = S.state; if (coop()) return;
     var onTiles = st.river.reduce(function(a, s) { return a + tileGems(s); }, 0);
-    var spent = S.boostSum() + onTiles, back = Math.min(st.recovery || 0, st.fatigue + spent);
+    var spent = S.boostSum() + onTiles, back = Math.min(st.recovery || 0, st.fatigue + spent), fat0 = st.fatigue, en0 = st.energy;
     if (!spent && !back) { S.toast(t("man_recover_none")); return; }
     // Avant de changer l'état : d'où partent les gemmes (zones, tas posés sur les tuiles).
     var paths = BAND1.filter(function(z) { return count(z) > 0; }).map(function(z) { return {from: rectOf("[data-zone='" + z + "']"), n: count(z)}; });
@@ -348,10 +345,15 @@ S.manualRecover = function() {
     st.fatigue -= back; st.energy += back;
     commit(t("man_log_recover", spent, back));
     // Animation : les gemmes dépensées volent vers la Fatigue, puis la Récupération repart vers l'Énergie disponible.
-    var fat = rectOf("[data-zone='fatigue']"), en = rectOf("[data-zone='energy']"), gem = S.icon("gem"), d = 0;
+    // La Fatigue et l'Énergie gardent leur ancien nombre jusqu'à l'arrivée des gemmes.
+    var fat = rectOf("[data-zone='fatigue']"), en = rectOf("[data-zone='energy']"), gem = S.icon("gem"), d = 0, t1 = 0, g = ++animGen;
     pulse("[data-mrest]");
-    paths.forEach(function(p) { fly(gem, p.from, fat, p.n, d); d += 90; });
-    if (back) fly(gem, fat, en, back, spent ? d + 520 : 0);
+    paths.forEach(function(p) { t1 = Math.max(t1, fly(gem, p.from, fat, p.n, d)); d += 90; });
+    var t2 = back ? fly(gem, fat, en, back, spent ? d + 520 : 0) : 0;
+    if (!t1 && !t2) return;
+    hold("fatigue", zoneCode("fatigue", "", t("fatigue"), fat0)); hold("energy", zoneCode("energy", "", t("energy"), en0));
+    later(g, t1, function() { hold("fatigue", zoneCode("fatigue", "", t("fatigue"), fat0 + spent)); });
+    later(g, Math.max(t1, t2), S.renderGame);
 };
 
 // ---------- Animations ----------
@@ -359,8 +361,9 @@ S.manualRecover = function() {
 // Au plus 12 par trajet pour rester lisible. Rien si l'appareil demande moins d'animations.
 var rectOf = function(sel) { var el = S.root && S.root.querySelector(sel); return el ? el.getBoundingClientRect() : null; };
 var calm = function() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; };
+// Rend l'instant (ms) où la dernière pièce arrive, 0 s'il n'y a pas d'animation.
 var fly = function(src, from, to, n, delay, endSrc) {
-    if (!from || !to || calm() || !document.body.animate) return;
+    if (!from || !to || calm() || !document.body.animate || !n) return 0;
     var k = Math.min(n, 12), size = Math.max(20, Math.min(34, to.width / 8));
     var j = function(r, f) { return (Math.random() - .5) * r.width * f; };
     for (var i = 0; i < k; i++) (function(i) {
@@ -382,7 +385,13 @@ var fly = function(src, from, to, n, delay, endSrc) {
         if (endSrc) setTimeout(function() { img.src = endSrc; }, delay + i * 45 + 330);
         anim.onfinish = anim.oncancel = function() { img.remove(); };
     })(i);
+    return delay + (k - 1) * 45 + 620;
 };
+// Zone d'arrivée gelée pendant le vol des pièces, puis l'affichage réel quand elles arrivent.
+var animGen = 0;
+var outerOf = function(z) { var el = S.root && S.root.querySelector(".sk-manual [data-zone='" + z + "']"); return el ? el.outerHTML : null; };
+var hold = function(z, html) { var el = S.root && S.root.querySelector(".sk-manual [data-zone='" + z + "']"); if (el && html) el.outerHTML = html; };
+var later = function(g, ms, fn) { setTimeout(function() { if (g == animGen && S.state && S.screen == "game" && S.manualOn()) fn(); }, ms); };
 var pulse = function(sel) {
     var el = S.root && S.root.querySelector(sel); if (!el || calm() || !el.animate) return;
     el.animate([{transform: "scale(1)"}, {transform: "scale(1.06)", filter: "brightness(1.15)"}, {transform: "scale(1)"}], {duration: 380, easing: "ease-out"});
@@ -396,28 +405,30 @@ S.manualCoopClear = function() {
     if (!poolCount()) {
         var back = st.river.filter(function(s) { return live(s.uid) && s.token && st.pool.indexOf(s.uid) < 0 && st.used.indexOf(s.uid) >= 0; });
         if (!back.length) { S.toast(t("man_coop_none")); return; }
-        var fromR = back.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); });
+        var fromR = back.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); }), pool0 = poolCount();
         S.snapshot();
         back.forEach(function(s) { st.pool.push(s.uid); });
         st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
         st.tokLoc = {};
         commit(t("man_log_coop_reset", back.length));
-        // Les jetons regagnent la zone verte et s'y retournent.
+        // Les jetons regagnent la zone verte et s'y retournent ; la zone verte attend leur arrivée.
         pulse("[data-mrest]");
-        var en = rectOf("[data-zone='energy']");
-        back.forEach(function(s, i) { fly(S.marker(s.token), fromR[i], en, 1, i * 70, S.icon("tokenback")); });
+        var en = rectOf("[data-zone='energy']"), g = ++animGen, end = 0;
+        back.forEach(function(s, i) { end = Math.max(end, fly(S.marker(s.token), fromR[i], en, 1, i * 70, S.icon("tokenback"))); });
+        if (end) { hold("energy", zoneCode("energy", "", t("tokens_pool"), pool0)); later(g, end, S.renderGame); }
         return;
     }
     var drawn = st.river.filter(function(s) { return live(s.uid) && DRAWN.indexOf(tokLoc(s.uid)) >= 0; });
     if (!drawn.length) { S.toast(t("man_coop_none")); return; }
-    var fromD = drawn.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); });
+    var fromD = drawn.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); }), oldFat = outerOf("fatigue");
     S.snapshot();
     st.tokLoc = st.tokLoc || {};
     drawn.forEach(function(s) { st.tokLoc[s.uid] = "fatigue"; });
     commit(t("man_log_coop_clear", drawn.length));
     pulse("[data-mrest]");
-    var fat = rectOf("[data-zone='fatigue']");
-    drawn.forEach(function(s, i) { fly(S.marker(s.token), fromD[i], fat, 1, i * 90); });
+    var fat = rectOf("[data-zone='fatigue']"), g = ++animGen, end = 0;
+    drawn.forEach(function(s, i) { end = Math.max(end, fly(S.marker(s.token), fromD[i], fat, 1, i * 90)); });
+    if (end) { hold("fatigue", oldFat); later(g, end, S.renderGame); }
 };
 
 // Gemmes des tuiles et de leurs cartes : comptées dans le total ; une tuile ou une carte retirée rend les siennes à la Fatigue.
@@ -471,8 +482,9 @@ S.manualMoveToken = function(uid, to) {
         S.log(msg);
         commit(t("man_log_coop_reset", all.length));
         S.toast(t("man_coop_reset_toast", s.token, S.tileName(s)));
-        var en = rectOf("[data-zone='energy']");
-        all.forEach(function(x, i) { fly(S.marker(x.token), fromR[i], en, 1, 150 + i * 70, S.icon("tokenback")); });
+        var en = rectOf("[data-zone='energy']"), g = ++animGen, end = 0;
+        all.forEach(function(x, i) { end = Math.max(end, fly(S.marker(x.token), fromR[i], en, 1, 150 + i * 70, S.icon("tokenback"))); });
+        if (end) { hold("energy", zoneCode("energy", "", t("tokens_pool"), 0)); later(g, end, S.renderGame); }
         return;
     }
     commit(msg);
