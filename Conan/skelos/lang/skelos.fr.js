@@ -566,6 +566,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_tile': "{0} déplacée en case {1}",
     'man_log_turn': "Sablier sur le tour {0}",
     'man_log_limit': "Fin de partie au tour {0}",
+    'tools_bar': "Outils de la partie",
     'man_hp_place': "Points de vie des tuiles (livre manuel)",
     'man_hp_track': "Sur la piste des tours",
     'man_hp_tile': "Sur la tuile",

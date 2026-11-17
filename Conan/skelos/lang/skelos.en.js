@@ -553,6 +553,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_tile': "{0} moved to space {1}",
     'man_log_turn': "Hourglass on turn {0}",
     'man_log_limit': "End of game on turn {0}",
+    'tools_bar': "Game tools",
     'man_hp_place': "Tile life points (manual book)",
     'man_hp_track': "On the turn track",
     'man_hp_tile': "On the tile",

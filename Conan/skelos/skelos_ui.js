@@ -114,6 +114,31 @@ S.toolsBlockCode = function() {
         + b("journal", "&#xf02d;", "log", "log") + b("help", "&#xf128;", "help", "help") + "</div>";
 };
 
+// Bande d'outils sous la barre des onglets (icônes seules, nom au survol).
+S.toolbarCode = function() {
+    var b = function(act, icon, aria, off) {
+        return "<button class='sk-tbtn' data-studio='tool' data-tool='" + act + "'" + (off ? " disabled" : "") + " title='" + e(t(aria)) + "' aria-label='" + e(t(aria)) + "'>" + icon + "</button>";
+    };
+    return "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
+        + b("undo", "&#xf0e2;", "undo", !S.undoStack.length) + b("restart", "&#xf2f9;", "restart_game") + b("end", "&#xf11e;", "menu_end", !!S.editing)
+        + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>";
+};
+S.syncToolbar = function() {
+    var r = S.root; if (!r) return;
+    var bar = r.querySelector("#sk-toolbar"), ico = r.querySelector(".sk-toolsico");
+    if (bar) bar.classList.toggle("on", !!S._toolsOpen);
+    if (ico) { ico.classList.toggle("on", !!S._toolsOpen); ico.setAttribute("aria-expanded", !!S._toolsOpen); }
+};
+S.runTool = function(act) {
+    switch (act) {
+        case "undo": S.undo(); break;
+        case "restart": S.restartGame(); break;
+        case "end": S.renderEnd(); break;
+        case "journal": S.openJournal(); break;
+        case "help": S.openGameHelp(); break;
+    }
+};
+
 // Phase en cours : quatre étapes en grille 2×2 ; seule l'étape en cours est en gras.
 S.phaseBlockCode = function() {
     var st = S.state, solo = st.mode == "solo", ov = st.phase != "heroes", pre = ov ? (solo ? "solo_short_" : "ov_short_") : "he_short_", cur = -1;
@@ -140,7 +165,6 @@ S.panelCode = function() {
     h += S.turnBlockCode();
     if (!solo) {
         h += S.BOOSTS.map(function(k, i) { return S.boostBlockCode(k, i + 1); }).join("");
-        h += S.toolsBlockCode();
         h += "<div class='sk-p sk-a-en'>" + title("energy") + "<div class='sk-pmain'>" + S.token("gem", st.energy) + "</div><div class='sk-gems'>" + S.gems(st.energy, "on") + "</div>"
             + "<button class='sk-pbtn' data-act='xfer' data-dir='tofatigue'" + (st.energy ? "" : " disabled") + ">" + e(t("to_fatigue")) + "</button></div>";
         // Mode studio : − / + de la récupération, puis − / + du total de gemmes en dessous.
@@ -159,7 +183,6 @@ S.panelCode = function() {
         h += "<div class='sk-p sk-a-played'>" + title("tokens_used") + "<div class='sk-pmarkers'>"
             + st.used.map(function(u) { var s = S.slotByUid(u); return "<img class='sk-pmarker' src='" + S.marker(s.token) + "' alt='" + s.token + "'>"; }).join("")
             + new Array(Math.max(0, slots - st.used.length) + 1).join("<span class='sk-pmarker empty'></span>") + "</div></div>";
-        h += S.toolsBlockCode();
         h += "<div class='sk-p sk-a-pool'>" + title("tokens_pool") + "<div class='sk-prow'>" + S.token("bag", st.pool.length)
             + (st.phase == "overlord" ? "<button class='sk-btn sk-primary sk-pdraw' data-act='draw'>" + e(t("draw_token")) + "</button>" : "<span class='sk-phint'>" + e(t("draw_only_overlord")) + "</span>") + "</div></div>";
         h += "<div class='sk-p sk-a-heroes'>" + title("heroes") + "<div class='sk-prow'>"
@@ -692,15 +715,21 @@ S.placeTabs = function() {
             + "<button class='sk-tabico' data-studio='save' title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>"
             + (S.editing && S.editing.sid && !S.editing.cid ? "<button class='sk-tabico sk-danger' data-studio='del' title='" + e(t("delete_scenario")) + "' aria-label='" + e(t("delete_scenario")) + "'>&#xf2ed;</button>" : "");
     }
+    // Outils de la partie (Annuler, Recommencer, Terminer, Journal, Aide) : hors du plateau, dans une bande qu'une icône
+    // discrète fait apparaître ; un nouvel appui sur l'icône la referme. Les deux plateaux (automatique et manuel) la partagent.
+    g += "<button class='sk-tabico sk-toolsico" + (S._toolsOpen ? " on" : "") + "' data-studio='tools' aria-expanded='" + !!S._toolsOpen + "' aria-controls='sk-toolbar'"
+        + " title='" + e(t("tools_bar")) + "' aria-label='" + e(t("tools_bar")) + "'>&#xf142;</button>";
     g += "<button class='sk-tabico" + (S.studio ? " on" : "") + "' data-studio='toggle' aria-pressed='" + S.studio + "'" + (S.editing ? " disabled" : "")
         + " title='" + e(t(S.editing ? "studio_locked" : "studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>";
     nav.classList.add("withtools");
     nav.classList.toggle("studio", S.studio);
-    nav.insertAdjacentHTML("beforeend", g);
+    nav.insertAdjacentHTML("beforeend", g + S.toolbarCode());
     nav.addEventListener("click", function(ev) {
         var b = ev.target.closest("[data-studio]"); if (!b) return;
         ev.stopPropagation();
-        if (b.dataset.studio == "toggle") S.toggleStudio();
+        if (b.dataset.studio == "tools") { S._toolsOpen = !S._toolsOpen; S.syncToolbar(); }
+        else if (b.dataset.studio == "tool") S.runTool(b.dataset.tool);
+        else if (b.dataset.studio == "toggle") S.toggleStudio();
         else if (b.dataset.studio == "save") S.openSaveScenario();
         else if (b.dataset.studio == "mode") S.switchMode(b.dataset.mode);
         else if (b.dataset.studio == "del") S.deleteEditedScenario();
