@@ -1062,9 +1062,10 @@ S.zoomTile = function(uid, opts) {
         + "<button class='sk-mzclose' data-mzclose aria-label='" + e(t("close")) + "' title='" + e(t("close")) + "'>×</button>"
         + "<div class='sk-mzrow" + (opts.dir ? " sk-zin-" + opts.dir : "") + "'>" + trackSide(s, left, "l")
         + "<div class='sk-mzcenter'><div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-        + pipsCode(s.gems, "sk-gpips-tile") + "</div>"
-        + "<div class='sk-mzfoot'>" + (hp ? "<div class='sk-zoomhp'>" + hp + "</div>" : "")
-        + (canEdit() ? "<button class='sk-mzadd' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button>" : "") + "</div></div>"
+        // PV posés sur la tuile, au même endroit que sur le livre (au-dessus des dés).
+        // Le + d'ajout de cartes est une pastille au coin bas-droit de la tuile : il ne décale pas les cartes.
+        + pipsCode(s.gems, "sk-gpips-tile") + (hp ? "<div class='sk-zoomhp sk-zoomhp-on'>" + hp + "</div>" : "")
+        + (canEdit() ? "<button class='sk-mzadd sk-mzadd-on' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button>" : "") + "</div></div>"
         + trackSide(s, right, "r") + "</div></div>";
     ov.classList.add("on", "sk-zoomon", "sk-mzon");
     ov.querySelectorAll(".sk-mzlist").forEach(function(l, i) { if (keep[i]) l.scrollTop = keep[i]; });

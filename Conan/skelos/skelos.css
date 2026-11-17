@@ -2093,7 +2093,7 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 
 /* Zoom : tuile plus grosse. Sur tablette et en paysage, les PV et le + passent à droite de la tuile pour lui laisser
    toute la hauteur ; sur téléphone en portrait, la tuile prend presque toute la largeur (les cartes défilent dessous). */
-.sk-mzoom { --mzw: min(42vw, calc((100dvh - var(--sk-bottom, 0px) - 70px) * 0.656), 600px); gap: 4px; }
+.sk-mzoom { --mzw: min(42vw, calc((100dvh - var(--sk-bottom, 0px) - 150px) * 0.656), 600px); gap: 4px; }
 .sk-mzcenter { flex-direction: row; gap: 10px; }
 .sk-mzfoot { flex-direction: column; transform: none; gap: 10px; }
 .sk-mzfoot .sk-zoomhp { width: 170px; max-width: none; }
@@ -2104,3 +2104,20 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     .sk-mzfoot .sk-zoomhp { width: 220px; }
 }
 @media (min-width: 601px) and (min-height: 501px) { .sk-mzfoot .sk-zoomhp { width: 220px; } }
+
+/* PV du livre manuel : au-dessus des dés, comme sur le plateau automatique ; dans le zoom, au même endroit sur la tuile. */
+.sk-mtile .sk-hpwrap, .sk-mtile .sk-hpwrap.withreinf, .sk-mtile .sk-hpwrap.open, .sk-mtile .sk-hpwrap.withreinf.open { bottom: 16.8%; }
+/* Zoom : le calque des PV couvre la tuile (unités en % de sa largeur) ; le cœur a la taille et la place de celui
+   de la tuile du livre, à hauteur de la flamme ; le + et le − s'empilent à sa gauche. */
+.sk-zoombox .sk-zoomhp.sk-zoomhp-on { position: absolute; inset: 0; width: auto; max-width: none; z-index: 3; pointer-events: none; display: block; }
+.sk-zoomhp-on .sk-hpwrap, .sk-zoomhp-on .sk-hpwrap.withreinf { position: absolute !important; right: 1.2cqw; bottom: 22.4cqw; pointer-events: auto; touch-action: manipulation;
+    display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 1.2cqw; row-gap: 1.2cqw; padding: 1.4cqw; border-radius: 7cqw; }
+.sk-zoomhp-on .sk-hpbtn { width: 11cqw; height: 11cqw; }
+.sk-zoomhp-on .sk-hpwrap > .sk-hpbtn:last-child { grid-column: 1; grid-row: 1; }
+.sk-zoomhp-on .sk-hpwrap > .sk-hpbtn:first-child { grid-column: 1; grid-row: 2; }
+.sk-zoomhp-on .sk-hp { grid-column: 2; grid-row: 1 / span 2; width: 22cqw; height: 20cqw; }
+.sk-zoomhp-on .sk-hp b { font-size: 11cqw; }
+
+/* + d'ajout de cartes : pastille au coin bas-droit de la tuile zoomée, comme la corbeille des cartes. */
+.sk-zoombox .sk-mzadd.sk-mzadd-on { position: absolute; right: -8px; bottom: -8px; z-index: 4; width: 36px; height: 36px; font-size: 24px; touch-action: manipulation; }
+@media (max-width: 600px) { .sk-zoombox .sk-mzadd.sk-mzadd-on { right: -4px; bottom: -4px; width: 30px; height: 30px; font-size: 20px; } }
