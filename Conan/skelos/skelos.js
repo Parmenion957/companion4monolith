@@ -481,7 +481,8 @@ var Skelos = {
         Skelos.state = {
             scenario: JSON.parse(JSON.stringify(d)),
             mode: d.mode, turn: 0, turns: d.turns,
-            energy: d.energy, fatigue: d.fatigue, recovery: d.recovery,
+            // En Coop, pas de gemmes au départ (rares dans ce mode, ajoutées à la main si besoin).
+            energy: d.mode == "solo" ? 0 : d.energy, fatigue: d.mode == "solo" ? 0 : d.fatigue, recovery: d.recovery,
             maxActivations: d.maxActivations, activations: 0,
             heroes: d.heroes,
             pool: river.map(function(s) { return s.uid; }), used: [], removed: [],

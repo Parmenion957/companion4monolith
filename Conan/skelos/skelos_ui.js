@@ -867,6 +867,8 @@ S.switchMode = function(mode) {
         } else {
             st.pool = st.river.map(function(s) { return s.uid; }); st.used = []; st.removed = [];
             st.heroes = st.heroes || 4;
+            // En Coop, les gemmes sont rares : on part de zéro (le mode studio du livre manuel en ajoute au besoin).
+            st.energy = 0; st.fatigue = 0; st.boosts = {move: 0, reroll: 0, defense: 0, spell: 0};
         }
         if (st.phase == "overlord") st.phase = "start";
         S.log(t("log_mode", t(mode == "classic" ? "mode_adventure" : "mode_coop")));
