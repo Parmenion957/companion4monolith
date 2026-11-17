@@ -1942,3 +1942,50 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-zoombox > .sk-mzgems { top: 13%; right: 4%; }
 .sk-mzc > .sk-mzgems { top: 0; right: 10%; transform: translateY(-55%); box-shadow: 0 2px 6px rgba(0,0,0,.5); }
 .sk-mzlist { padding-top: 22px; scroll-padding-top: 22px; gap: 24px; }
+
+/* Gemmes d'une tuile sur le plateau : toutes (tuile et cartes) posées sur le corps de la tuile, en tas de trois */
+.sk-mtile .sk-mtg, .sk-mtile .sk-mtg.sk-mz { right: auto; top: auto; inset: 30% 8% 26% 8%; padding: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible;
+    display: block; font-size: 0; }
+.sk-mtile .sk-mtg .sk-mgems { inset: 0; gap: 0; }
+.sk-mtile .sk-mtg .sk-mg3 img { width: var(--g); height: var(--g); filter: drop-shadow(0 .5cqw .7cqw rgba(0,0,0,.75)); }
+
+/* Vue éclatée (zoom, dépose sur une tuile à cartes) : languette de gemmes rouges, comme les sorts du plateau automatique.
+   Sur une carte, à cheval sur sa tranche haute ; sur la tuile, à droite sous le nom. */
+.sk-gpips { position: absolute; right: 10%; top: 0; transform: translateY(-55%); z-index: 3; display: flex; align-items: center; gap: 5px; padding: 5px 11px;
+    border-radius: 16px; background: rgba(15,8,20,.92); border: 1px solid rgba(255,255,255,.35); pointer-events: none; color: #fff; font: bold 17px/1 system-ui, sans-serif;
+    white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.sk-gpips i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; font-size: 18px; color: #e3242b; filter: drop-shadow(0 0 3px rgba(0,0,0,.9)); }
+.sk-gpips.sk-gpips-tile { top: 13%; right: 4%; transform: none; }
+.sk-mgcard .sk-gpips { padding: 3px 8px; gap: 3px; font-size: 14px; right: 6%; }
+.sk-mgcard .sk-gpips i { font-size: 14px; }
+.sk-mgcard .sk-gpips.sk-gpips-tile { top: 12%; }
+.sk-mgcards { padding-top: 16px; }
+
+/* Fonds choisis dans les réglages (fond vert, fond rouge, tuile de récupération, pions gemmes) */
+.sk-manual.sk-has-green .sk-mz-energy { background: #1d5a2b var(--sk-green) 50% 50% / cover no-repeat; }
+.sk-manual.sk-has-red .sk-mz-fatigue { background: #8a1f17 var(--sk-red) 50% 50% / cover no-repeat; }
+.sk-manual.sk-has-rest .sk-mrest { background: #6b5a3a var(--sk-rest) 50% 50% / cover no-repeat; position: relative; }
+.sk-mrest .sk-mrestn { position: absolute; right: .8cqw; bottom: .6cqw; }
+.sk-mrankimg { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); }
+
+/* Réglages : vignettes des fonds */
+.sk-skins h4 { margin: 12px 0 6px; font-family: 'Primary', serif; color: var(--main-color); }
+.sk-skinrow, .sk-skingems { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.sk-skinitem { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 104px; font-size: .85rem; text-align: center; color: var(--body-color); }
+.sk-skingems .sk-skinitem { width: 72px; }
+.sk-skinprev { width: 104px; height: 70px; border-radius: 8px; border: 1px dashed var(--main-color); display: grid; place-items: center; overflow: hidden; cursor: pointer;
+    background: color-mix(in srgb, var(--body-color) 8%, transparent); color: var(--main-color); }
+.sk-skin-rest .sk-skinprev { width: 80px; height: 80px; }
+.sk-skingems .sk-skinprev { width: 60px; height: 60px; border-radius: 50%; }
+.sk-skinprev img { width: 100%; height: 100%; object-fit: cover; }
+.sk-skinprev:focus-within { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+.sk-skinrm { position: absolute; top: -6px; right: -6px; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 50%; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 12px; }
+.sk-mhole .sk-mrankimg { width: 5.8cqw; height: 5.8cqw; }
+.sk-manual.sk-has-rest .sk-mrest { background: #2b2620 var(--sk-rest) 50% 50% / contain no-repeat; }
+.sk-manual.sk-has-rest .sk-mrest .sk-mstep { position: absolute; left: .6cqw; bottom: .6cqw; gap: .4cqw; }
+.sk-manual.sk-has-rest .sk-mrest .sk-pstep { width: 2.8cqw; height: 2.8cqw; min-width: 24px; min-height: 24px; font-size: 1.6cqw; }
+.sk-skins .sk-skinrm { font-family: "Font Awesome 5 Free" !important; font-weight: 900 !important; font-size: 12px !important; line-height: 1; background: var(--body-bg-color); }
+.sk-manual.sk-has-rest .sk-mrest .sk-pstep { background: rgba(255,255,255,.88); color: #3a2a18; }
+/* Seules les gemmes elles-mêmes se prennent : à côté, l'appui reste pour la tuile (double appui = zoom, glisser = déplacer) */
+.sk-mtile .sk-mtg, .sk-mtile .sk-mtg .sk-mgems, .sk-mtile .sk-mtg .sk-mg3 { pointer-events: none; }
+.sk-mtile .sk-mtg .sk-mg3 img { pointer-events: auto; cursor: grab; }

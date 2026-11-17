@@ -61,6 +61,16 @@ var jitter = function(seed) {
     var x = 0; for (var i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) | 0;
     return function() { x = (x * 1103515245 + 12345) | 0; return ((x >>> 8) & 0xffff) / 0xffff - .5; };
 };
+// Vue éclatée (zoom, dépose sur une tuile à cartes) : les gemmes en languette, comme les sorts du plateau automatique
+// (une gemme rouge par gemme posée ; au-delà de 6, une gemme et le nombre).
+var pipsCode = function(n, cls) {
+    if (!n) return "";
+    var h = "";
+    if (n <= 6) for (var i = 0; i < n; i++) h += "<i class='on'>&#xf3a5;</i>";
+    else h = "<i class='on'>&#xf3a5;</i><b>" + n + "</b>";
+    return "<span class='sk-gpips" + (cls ? " " + cls : "") + "' role='img' aria-label='" + e(t("gems_word") + " " + n) + "'>" + h + "</span>";
+};
+S.gemPipsCode = pipsCode;
 var groupsCode = function(n, src, cls, seed) {
     var h = "", r = function(v) { return Math.round(v * 100) / 100; };
     for (var i = 0; i < n; i += 3) {
@@ -93,6 +103,8 @@ var tokCode = function(s) {
 // nShown : nombre affiché à la place du vrai (pendant une animation, la zone d'arrivée attend les pièces).
 var zoneCode = function(z, inner, title, nShown) {
     var n, content;
+    // Les fonds vert (Énergie / jetons disponibles) et rouge (Fatigue) ne portent plus de texte : leur nom reste en info-bulle.
+    if (z == "energy" || z == "fatigue") title = "";
     // Coop : les jetons (de dos dans la zone verte), et les gemmes en petit tas à part, avec leur nombre.
     if (coop()) {
         var gn = z == "aside" ? 0 : count(z);
@@ -208,9 +220,12 @@ var syncTurnMini = function() {
 var restCode = function() {
     var st = S.state;
     // Coop : pas de nombre au centre, seulement la tuile de repos (double appui : ranger les jetons tirés).
-    if (coop()) return "<div class='sk-mrest' data-mrest title='" + e(t("man_coop_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("recovery")) + "</span>"
-        + S.token("recover", "") + "<span class='sk-mtotal'>" + e(t("man_dbl_tap")) + "</span></div>";
-    return "<div class='sk-mrest' data-mrest title='" + e(t("man_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("recovery")) + "</span>" + S.token("recover", st.recovery)
+    // Sans texte écrit : le nom et l'aide restent en info-bulle. Avec une image de tuile de récupération (réglages),
+    // la flèche dessinée laisse place à l'image et la valeur passe en chiffre dans le coin.
+    var img = S.skin().rest, aria = " role='group' aria-label='" + e(t("recovery") + (coop() ? "" : " · " + st.recovery)) + "'";
+    if (coop()) return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_coop_rest_hint")) + "'>" + (img ? "" : S.token("recover", "")) + "</div>";
+    return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'>"
+        + (img ? "<span class='sk-mcount sk-mrestn'>" + st.recovery + "</span>" : S.token("recover", st.recovery))
         + "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
         + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
 };
@@ -218,7 +233,9 @@ var restCode = function() {
 // Bande 3 : un pion gemme rouge numéroté au-dessus de chaque case de tuile.
 var holesCode = function() {
     var h = "";
-    for (var i = 0; i < S.RIVER_SIZE; i++) h += "<span class='sk-mhole'>" + S.rankToken(i + 1, "sk-mrank") + "</span>";
+    var sk = S.skin();
+    for (var i = 0; i < S.RIVER_SIZE; i++) h += "<span class='sk-mhole'>" + (sk["gem" + (i + 1)]
+        ? "<img class='sk-mrankimg' src='" + sk["gem" + (i + 1)] + "' alt='" + (i + 1) + "' draggable='false'>" : S.rankToken(i + 1, "sk-mrank")) + "</span>";
     return h;
 };
 
@@ -271,9 +288,11 @@ var pileCode = function() {
 var tileGemsCode = function(s) {
     var n = tileGems(s), lbl = t("man_tile_gems", n, S.tileName(s));
     if (!n) return "";
-    var direct = !(s.cards || []).length;
+    var direct = !(s.cards || []).length, groups = Math.ceil(n / 3);
+    // Sur le plateau, toutes les gemmes de la tuile et de ses cartes sont posées sur le corps de la tuile, en tas de trois.
     return "<span class='sk-mtg" + (direct ? " sk-mz" : "") + "'" + (direct ? " data-zone='g:" + s.uid + ":-1'" : " data-tgems='" + s.uid + "'")
-        + " role='button' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'><img src='" + S.icon("gem") + "' alt='' draggable='false'><b>" + n + "</b></span>";
+        + " style='--g:" + (groups <= 2 ? 22 : groups <= 4 ? 17 : groups <= 6 ? 13 : 10) + "cqw' role='button' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'>"
+        + "<span class='sk-mgems'>" + groupsCode(n, S.icon("gem"), "sk-mgem", "t" + s.uid) + "</span></span>";
 };
 var cardOrder = {ti: 0, eq: 1, sp: 2};
 var gemPopCode = function() {
@@ -289,8 +308,7 @@ var gemPopCode = function() {
                 : c.kind == "ti" ? (S.realCardCode(c.kind, c.ref) || "")
                 : "<span class='sk-cardscale'>" + (S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>") + "</span>";
             return "<div class='sk-mz sk-mgcard" + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(name + " · " + n) + "' title='" + e(name) + "'>"
-                + "<div class='sk-mgface'>" + face + "</div><div class='sk-mgems'>" + groupsCode(n, S.icon("gem"), "sk-mgem", z) + "</div>"
-                + (n ? "<span class='sk-mcount'>" + n + "</span>" : "") + "</div>";
+                + "<div class='sk-mgface'>" + face + "</div>" + pipsCode(n, k < 0 ? "sk-gpips-tile" : "") + "</div>";
         }).join("") + "</div></div>";
 };
 var placeGemPop = function() {
@@ -327,7 +345,9 @@ S.renderManual = function() {
     var keep = S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
     S.screen = "game"; S.selected = null;
     var mini = S.turnMini();
-    var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + (mini ? " sk-mmini" : "") + "'><div class='sk-desk'>" + (mini ? "" : trackCode())
+    var sk = S.skin(), skv = ["green", "red", "rest"].filter(function(k) { return sk[k]; });
+    var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + (mini ? " sk-mmini" : "") + skv.map(function(k) { return " sk-has-" + k; }).join("") + "'"
+        + (skv.length ? " style=\"" + skv.map(function(k) { return "--sk-" + k + ":url('" + sk[k] + "')"; }).join(";") + "\"" : "") + "><div class='sk-desk'>" + (mini ? "" : trackCode())
         + "<div class='sk-mmid'>" + reserveCode() + "<div class='sk-book'>"
         + "<div class='sk-mb1'>" + (mini ? turnMiniCode() : "") + BAND1.map(function(z) { return zoneCode(z, "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
         + "<div class='sk-mb2'>" + zoneCode("energy", "", coop() ? t("tokens_pool") : t("energy")) + restCode() + zoneCode("fatigue", "", t("fatigue")) + "</div>"
@@ -615,6 +635,12 @@ S.manualSetHp = function(uid, v) {
     if (v == 0) group.forEach(function(g) { if (!g.dead) S.killSlot(g); });
     else if (group.some(function(g) { return g.dead; })) { group.forEach(function(g) { g.dead = false; }); S.log(t("log_reinforce", name)); }
     commit();
+};
+// Livre manuel : le − / + du cœur de la tuile n'a plus de plafond (l'utilisateur est maître des règles) ; tout le groupe suit.
+var baseLife = S.life;
+S.life = function(uid, d) {
+    if (!S.manualOn()) return baseLife.apply(S, arguments);
+    var s = S.slotByUid(uid); if (s) S.manualSetHp(uid, (s.lp || 0) + d);
 };
 // Une tuile posée sur la piste : sa pastille va sur la case de ses PV ; une tuile sans PV prend la case où on l'a lâchée.
 S.manualTrackTile = function(uid, cell) {
@@ -920,7 +946,7 @@ var smallCard = function(s, c) {
     var kind = c.kind, k = S.slotCards(s, kind).indexOf(c), name = S.itemName(kind, c.ref);
     var real = S.realCardCode(kind, c.ref), face = kind == "ti" ? (real || "") : "<span class='sk-cardscale'>" + (real || "<span class='sk-upcard sk-k-" + kind + "'><b>" + e(name) + "</b></span>") + "</span>";
     return "<div class='sk-mzc sk-mzc-" + kind + "' data-mzc='" + kind + ":" + k + "' role='button' tabindex='0' aria-label='" + e(name) + "' title='" + e(name) + "'>" + face
-        + (gemsOn(s, c) ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + gemsOn(s, c) + "</b></span>" : "")
+        + pipsCode(gemsOn(s, c))
         + (canEdit() ? "<button class='sk-zoomrm sk-mzrm' data-zrm='" + kind + ":" + k + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button>" : "") + "</div>";
 };
 var trackSide = function(s, list, side) {
@@ -958,7 +984,7 @@ S.zoomTile = function(uid, opts) {
         + "<div class='sk-zoomhead'>" + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
         + "<div class='sk-mzrow" + (opts.dir ? " sk-zin-" + opts.dir : "") + "'>" + trackSide(s, left, "l")
         + "<div class='sk-mzcenter'><div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-        + (s.gems ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + s.gems + "</b></span>" : "") + "</div>"
+        + pipsCode(s.gems, "sk-gpips-tile") + "</div>"
         + "<div class='sk-mzfoot'>" + (hp ? "<div class='sk-zoomhp'>" + hp + "</div>" : "")
         + (canEdit() ? "<button class='sk-mzadd' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button>" : "") + "</div></div>"
         + trackSide(s, right, "r") + "</div></div>";
@@ -1028,7 +1054,7 @@ var bindManualZoom = function(ov) {
 // Petite carte agrandie au-dessus du zoom ; un appui n'importe où la repose.
 // Sur le plateau automatique, en partie, un sort agrandi porte de quoi le lancer, comme l'ancien zoom.
 var openBig = function(ov, sc, uid) {
-    var face = sc.cloneNode(true); face.querySelectorAll("button, .sk-mzgems").forEach(function(b) { b.remove(); });
+    var face = sc.cloneNode(true); face.querySelectorAll("button, .sk-gpips").forEach(function(b) { b.remove(); });
     var p = sc.dataset.mzc.split(":"), s = S.slotByUid(uid), c = s && S.slotCards(s, p[0])[+p[1]];
     var foot = c && p[0] == "sp" && autoGame() ? castFoot(s, c.ref) : "";
     ov.querySelector(".sk-mzoom").insertAdjacentHTML("beforeend", "<div class='sk-mzbig" + (foot ? " sk-mzbigcast" : "") + "' role='dialog' aria-label='" + e(sc.getAttribute("aria-label")) + "'><div class='sk-mzbigcard'>" + face.innerHTML + "</div>" + foot + "</div>");

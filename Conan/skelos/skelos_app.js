@@ -16,6 +16,8 @@ document.addEventListener("focusout", function() {
     setTimeout(function() { if (!document.activeElement || !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); } }, 120);
 });
 var KEY_CAMP = Application + "_SkelosCampaigns", KEY_UP = Application + "_SkelosUpgrades", KEY_BG = Application + "_SkelosBackground";
+// Fonds du livre manuel choisis par l'utilisateur (gardés seulement sur cet appareil) : green, red, rest, gem1 … gem8.
+var KEY_SKIN = Application + "_SkelosSkin";
 var HERO_COLORS = ["#e0a43a", "#3fb6a8", "#a58be0", "#e06a5a", "#7fbf6a", "#d98bd0", "#6aa8e0"];
 S.HERO_COLORS = HERO_COLORS;
 var ARCHETYPES = ["guerrier", "voleur", "sorcier", "mercenaire"];
@@ -798,6 +800,44 @@ S.renderEncyclopedia = function() {
 
 // ---------- Réglages ----------
 S.bg = function() { return load(KEY_BG, null); };
+S.skin = function() { if (S._skin === undefined) S._skin = load(KEY_SKIN, null); return S._skin || {}; };
+S.SKIN_KEYS = ["green", "red", "rest", "gem1", "gem2", "gem3", "gem4", "gem5", "gem6", "gem7", "gem8"];
+// Image chargée pour un fond : réduite et compressée (fonds vert et rouge tournés en paysage s'ils sont en portrait),
+// pions gemmes détourés en rond.
+S.loadSkin = function(key, file) {
+    var r = new FileReader();
+    r.onload = function() {
+        var img = new Image();
+        img.onload = function() {
+            var gem = key.indexOf("gem") == 0, turn = (key == "green" || key == "red") && img.height > img.width;
+            var max = gem ? 200 : key == "rest" ? 700 : 1100, w = img.width, hgt = img.height, cv = document.createElement("canvas"), cx = cv.getContext("2d"), url;
+            if (gem) {
+                var side = Math.min(w, hgt), k0 = Math.min(1, max / side);
+                cv.width = cv.height = Math.round(side * k0);
+                cx.beginPath(); cx.arc(cv.width / 2, cv.height / 2, cv.width / 2, 0, Math.PI * 2); cx.clip();
+                cx.drawImage(img, (w - side) / 2, (hgt - side) / 2, side, side, 0, 0, cv.width, cv.height);
+                url = cv.toDataURL("image/png");
+            } else {
+                var k = Math.min(1, max / Math.max(w, hgt)), dw = Math.round(w * k), dh = Math.round(hgt * k);
+                cv.width = turn ? dh : dw; cv.height = turn ? dw : dh;
+                if (turn) { cx.translate(cv.width, 0); cx.rotate(Math.PI / 2); }
+                cx.drawImage(img, 0, 0, dw, dh);
+                url = cv.toDataURL("image/jpeg", 0.82);
+            }
+            var sk = S.skin(); sk[key] = url;
+            if (store(KEY_SKIN, sk)) { S._skin = sk; S.renderSettings(); } else { S._skin = undefined; S.toast(t("image_error")); }
+        };
+        img.onerror = function() { S.toast(t("image_error")); };
+        img.src = r.result;
+    };
+    r.readAsDataURL(file);
+};
+S.removeSkin = function(key) {
+    var sk = S.skin();
+    if (key) delete sk[key]; else sk = {};
+    try { if (Object.keys(sk).length) store(KEY_SKIN, sk); else localStorage.removeItem(KEY_SKIN); } catch (x) {}
+    S._skin = sk; S.renderSettings();
+};
 S.boardBgStyle = function() {
     var b = S.bg(); if (!b || !b.img) return "";
     return " data-bg style=\"--sk-bgimg:url('" + b.img + "');" + S.bgVars(b) + "\"";
@@ -820,6 +860,18 @@ S.renderSettings = function() {
             + "<label class='sk-fl'>" + t("offset_x") + "<input type='range' min='0' max='100' value='" + (b.x == null ? 50 : b.x) + "' data-bg='x'></label>"
             + "<label class='sk-fl'>" + t("offset_y") + "<input type='range' min='0' max='100' value='" + (b.y == null ? 50 : b.y) + "' data-bg='y'></label>"
             + "<button class='sk-btn' data-bgrm>" + t("remove_background") + "</button>" : "") + "</div>";
+    // Fonds du livre manuel : une image par élément, à charger depuis l'appareil ; sans image, le dessin du module.
+    var sk = S.skin(), skinItem = function(k) {
+        return "<div class='sk-skinitem sk-skin-" + (k.indexOf("gem") == 0 ? "gem" : k) + "'><label class='sk-skinprev' title='" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "'>"
+            + (sk[k] ? "<img src='" + sk[k] + "' alt=''>" : "<span>" + e(k.indexOf("gem") == 0 ? k.slice(3) : t("skin_default")) + "</span>")
+            + "<input type='file' accept='image/*' data-skin='" + k + "' hidden></label>"
+            + "<span class='sk-skinname'>" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "</span>"
+            + (sk[k] ? "<button class='sk-btn sk-skinrm' data-skinrm='" + k + "' aria-label='" + e(t("skin_remove")) + "' title='" + e(t("skin_remove")) + "'>&#xf2ed;</button>" : "") + "</div>";
+    };
+    h += "<div class='sk-blk sk-c3 sk-skins'><h3>" + t("skin_title") + "</h3><p>" + t("skin_help") + "</p>"
+        + "<div class='sk-skinrow'>" + ["green", "red", "rest"].map(skinItem).join("") + "</div>"
+        + "<h4>" + t("skin_gems") + "</h4><div class='sk-skingems'>" + [1, 2, 3, 4, 5, 6, 7, 8].map(function(i) { return skinItem("gem" + i); }).join("") + "</div>"
+        + (Object.keys(sk).length ? "<button class='sk-btn' data-skinrm=''>" + t("skin_remove_all") + "</button>" : "") + "</div>";
     h += "<div class='sk-blk sk-c2'><h3>" + t("data") + "</h3><p>" + t("data_help") + "</p><button class='sk-btn' data-exp>" + t("export_all") + "</button><button class='sk-btn' data-imp>" + t("import") + "</button>"
         + "<h3 class='sk-mt'>" + t("display") + "</h3>"
         + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label>"
@@ -844,6 +896,7 @@ S.renderSettings = function() {
             pr.hpPlace = tr && ti ? "both" : tr ? "track" : "tile"; S.savePrefs();
         }
         else if (x.id == "sk-bgfile" && x.files && x.files[0]) S.loadBackground(x.files[0]);
+        else if (x.dataset.skin && x.files && x.files[0]) S.loadSkin(x.dataset.skin, x.files[0]);
         else if (x.dataset.bg) { var bb = S.bg() || {}; bb[x.dataset.bg] = +x.value; store(KEY_BG, bb); S.renderSettings(); }
     });
     scr.addEventListener("input", function(ev) {
@@ -853,6 +906,8 @@ S.renderSettings = function() {
         if (x.dataset.bg == "zoom") scr.querySelector("#sk-zo").textContent = x.value + " %";
     });
     S.screenClick = function(ev) {
+        var srm = ev.target.closest("[data-skinrm]");
+        if (srm) { S.removeSkin(srm.dataset.skinrm); return; }
         if (ev.target.closest("[data-bgrm]")) { try { localStorage.removeItem(KEY_BG); } catch (x) {} S.renderSettings(); }
         else if (ev.target.closest("[data-exp]")) S.exportData(S.allData(), "skelos_sauvegarde.json");
         else if (ev.target.closest("[data-imp]")) S.importData(function(o) {
