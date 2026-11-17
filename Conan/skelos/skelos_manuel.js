@@ -226,6 +226,14 @@ var syncTurnMini = function() {
 
 // Récupération : un nombre, ou X (valeur −1) que le joueur règle lui-même.
 var recLabel = function() { return S.state.recovery < 0 ? "X" : S.state.recovery; };
+// Valeurs possibles, dans l'ordre des − et + : 1 à 8, puis X (−1). Une ancienne valeur hors de la suite (0, 9…)
+// reprend à la valeur la plus proche.
+var RECOVERY = [1, 2, 3, 4, 5, 6, 7, 8, -1];
+var nextRecovery = function(cur, d) {
+    var i = RECOVERY.indexOf(cur);
+    if (i < 0) i = cur > 8 ? (d > 0 ? 7 : 8) : (d < 0 ? 1 : -1);
+    return RECOVERY[Math.max(0, Math.min(RECOVERY.length - 1, i + d))];
+};
 var restCode = function() {
     var st = S.state;
     // Coop : pas de nombre au centre, seulement la tuile de repos (double appui : ranger les jetons tirés).
@@ -768,13 +776,16 @@ var ghostStart = function(src, x, y, html) {
 };
 var ghostMove = function(x, y) { if (ghost) { ghost.style.left = x + "px"; ghost.style.top = y + "px"; } };
 var ghostEnd = function() { if (ghost) ghost.remove(); ghost = null; };
-// Pion de vie pris en main : agrandi (avec une petite animation) pour bien le reconnaître sous le doigt.
-var HPG = 84;
+// Pion de vie pris en main : à la taille du sablier de la piste, pas plus (petite animation pour le reconnaître).
+var hpGhostSize = function() {
+    var ref = S.root && (S.root.querySelector(".sk-mhour") || S.root.querySelector("[data-cell]"));
+    return ref ? Math.round(ref.getBoundingClientRect().width) : 52;
+};
 var ghostHp = function(on, html, src) {
     if (!ghost) return;
-    var r = src.getBoundingClientRect();
+    var r = src.getBoundingClientRect(), hpg = on ? hpGhostSize() : 0;
     ghost.classList.toggle("sk-mghost-hp", !!on);
-    ghost.style.width = (on ? HPG : r.width) + "px"; ghost.style.height = (on ? HPG : r.height) + "px";
+    ghost.style.width = (on ? hpg : r.width) + "px"; ghost.style.height = (on ? hpg : r.height) + "px";
     ghost.innerHTML = html;
 };
 
@@ -851,8 +862,9 @@ var bind = function(board) {
             return;
         }
         var b = ev.target.closest("[data-mact]"); if (!b) return;
-        var f = b.dataset.mact, v = Math.max(f == "heroes" ? 1 : f == "recovery" ? -1 : 0, (S.state[f] || 0) + +b.dataset.n);
+        var f = b.dataset.mact, v = Math.max(f == "heroes" ? 1 : 0, (S.state[f] || 0) + +b.dataset.n);
         if (f == "heroes") v = Math.min(4, v);
+        if (f == "recovery") v = nextRecovery(S.state.recovery, +b.dataset.n);
         if (v == S.state[f]) return;
         S.snapshot(); S.state[f] = v; commit();
     });
