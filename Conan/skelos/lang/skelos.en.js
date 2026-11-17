@@ -536,5 +536,21 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_tools': "Tools",
     'ghelp_tools_items': "Undo reverts the last action, as many times as needed.|Restart puts the game back to turn 0 with the starting tiles and counters.|End opens the end of the scenario: result, victory points and notes, saved in the campaign if there is one.|The Log shows the special rules, the Event texts and every action of the game.|A tap anywhere finishes the running animations; the Animations setting turns them off completely.",
     'ghelp_studio': "Studio mode",
-    'ghelp_studio_items': "The pencil at the top right opens studio mode: you set up the game on the board instead of playing it.|Drag tiles to reorder them, add one in an empty slot, drop one in the bin; change a tile’s base and life points.|Double-tap a tile, or tap its heart: the zoom sets its life points. At the left end, a + adds Overlord spells; at the right end, a + adds equipment. The bin badge in a card’s corner removes it from the tile. The cards are saved with the scenario.|The − and + buttons set the turn, the turn limit, Recovery, the gem total, activations per turn (or Heroes in play in Coop) and who goes first.|Every change is recorded in the Log. Leave studio mode to play the turn."
+    'ghelp_studio_items': "The pencil at the top right opens studio mode: you set up the game on the board instead of playing it.|Drag tiles to reorder them, add one in an empty slot, drop one in the bin; change a tile’s base and life points.|Double-tap a tile, or tap its heart: the zoom sets its life points. At the left end, a + adds Overlord spells; at the right end, a + adds equipment. The bin badge in a card’s corner removes it from the tile. The cards are saved with the scenario.|The − and + buttons set the turn, the turn limit, Recovery, the gem total, activations per turn (or Heroes in play in Coop) and who goes first.|Every change is recorded in the Log. Leave studio mode to play the turn.",
+    // Livre de Skelos manuel
+    'man_setting': "Manual Book of Skelos (like the game)",
+    'man_setting_help': "Checked: the board reproduces the book and everything is moved by hand (gems, tokens, tiles, hourglass). Unchecked: the automatic board.",
+    'man_aside': "Set aside",
+    'man_track': "Turn track",
+    'man_hourglass': "Hourglass",
+    'man_end': "End of game",
+    'man_hand': "In hand: {0} gem(s)",
+    'man_hand_hint': "Gems in hand: tap the area where to put them.",
+    'man_gem_hint': "Drag a gem to another area, or keep your finger pressed to take several.",
+    'man_log_gems': "{0} gem(s): {1} → {2}",
+    'man_log_draw': "Token {0} drawn ({1}) → {2}",
+    'man_log_token': "Token {0} ({1}) → {2}",
+    'man_log_tile': "{0} moved to space {1}",
+    'man_log_turn': "Hourglass on turn {0}",
+    'man_log_limit': "End of game on turn {0}"
 });

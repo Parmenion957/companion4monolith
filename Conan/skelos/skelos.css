@@ -1632,3 +1632,94 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Page d'une campagne : fiche de héros visée pendant le glisser d'une carte, corbeille au-dessus de tout */
 .sk-hcard.sk-dover .sk-hcard-f { outline: 4px solid var(--highlight-color); outline-offset: 3px; border-radius: 8px; }
 .sk-trash.sk-pgtrash { z-index: 100001; }
+
+/* ---------- Livre de Skelos manuel : bureau (piste des tours) et livre en quatre bandes ---------- */
+/* Les tailles suivent la largeur du bureau (unités cqw) : le livre garde ses proportions de l'iPad au téléphone. */
+.skelos-game.sk-manual { padding: 8px 12px 24px; }
+.sk-desk { container-type: inline-size; max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.6cqw; }
+.sk-manual, .sk-manual * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* Piste des tours, posée sur le bureau */
+.sk-mtrack { display: flex; align-items: center; gap: .5cqw; padding: .8cqw 1cqw; border-radius: 1cqw;
+    background: linear-gradient(180deg, #e3d3ad, #c2a878); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 .3cqw .8cqw rgba(0,0,0,.35); }
+.sk-mcell { position: relative; flex: 1 1 0; min-width: 0; aspect-ratio: 1; border-radius: 50%; box-sizing: border-box; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 42%, #fff8e6, #e6d6b4 70%); border: .32cqw solid #9b1c14; }
+.sk-mcell b { font-family: 'Motrg', 'Primary', serif; font-weight: normal; font-size: 2.4cqw; line-height: 1; color: #3a2a18; }
+.sk-mpark { position: relative; flex: 0 0 auto; width: 5.4cqw; aspect-ratio: 1; margin-left: 1cqw; border-radius: .8cqw; box-sizing: border-box; border: .25cqw dashed rgba(58,42,24,.45); }
+.sk-mpiece { position: absolute; left: -10%; top: -10%; width: 120%; height: 120%; object-fit: contain; z-index: 2; cursor: grab; touch-action: none;
+    filter: drop-shadow(0 .25cqw .35cqw rgba(0,0,0,.6)); }
+.sk-mpiece.both { transform: translate(38%, -38%) scale(.72); z-index: 3; }
+.sk-mcell.sk-mtarget, .sk-mpark.sk-mtarget { box-shadow: 0 0 0 .35cqw #ff7900; }
+
+/* Le livre : plaque de pierre sombre, chaque zone est un creux */
+.sk-book { position: relative; display: flex; flex-direction: column; gap: 1.2cqw; padding: 1.6cqw; border-radius: 1.4cqw; color: #fff;
+    background: linear-gradient(160deg, #4b4e52, #36393c 45%, #2a2c2f); box-shadow: 0 .6cqw 1.6cqw rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12); }
+.sk-mz, .sk-mrest, .sk-mhole, .sk-mb4 { box-shadow: inset 0 .35cqw .7cqw rgba(0,0,0,.7), inset 0 -1px 0 rgba(255,255,255,.08); }
+.sk-mz { position: relative; overflow: hidden; border-radius: .9cqw; background: rgba(0,0,0,.2); cursor: pointer; touch-action: none; --g: 3cqw; }
+.sk-mz.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
+.sk-mtitle { position: absolute; top: .6cqw; left: 1cqw; font-family: 'Primary', serif; font-size: 1.6cqw; letter-spacing: .05em; text-transform: uppercase; opacity: .85; pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.sk-mgems { position: absolute; inset: 2.8cqw 1.2cqw 1cqw; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: .6cqw 1cqw; pointer-events: none; }
+.sk-mcount { position: absolute; right: .8cqw; bottom: .5cqw; font-family: 'Motrg', 'Primary', serif; font-size: 2.2cqw; line-height: 1; color: #fff; pointer-events: none;
+    text-shadow: 0 0 .3cqw #000, 0 0 .3cqw #000; }
+/* Gemmes par groupes de 3 : deux en bas, une au-dessus */
+.sk-mg3 { position: relative; width: calc(var(--g) * 1.9); height: calc(var(--g) * 1.75); }
+.sk-mg3 img { position: absolute; width: var(--g); height: var(--g); object-fit: contain; filter: drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.65)); }
+.sk-mg3 img:nth-child(1) { left: 0; bottom: 0; }
+.sk-mg3 img:nth-child(2) { right: 0; bottom: 0; }
+.sk-mg3 img:nth-child(3) { left: calc(50% - var(--g) / 2); top: 0; }
+.sk-mg3.n1 img { left: calc(50% - var(--g) / 2); }
+.sk-mg3 img.sk-mback { border-radius: 50%; }
+
+/* Bande 1 : Mouvement, Défense active, Relance */
+.sk-mb1 { display: flex; justify-content: center; gap: 1.4cqw; }
+.sk-mb1 .sk-mz { width: 11cqw; aspect-ratio: 1.35; --g: 2.2cqw; }
+.sk-mb1 .sk-mgems { inset: 1cqw; }
+.sk-mico { position: absolute; inset: 14%; width: 72%; height: 72%; object-fit: contain; opacity: .9; pointer-events: none; }
+.sk-mb1 .sk-mz:not(.empty) .sk-mico { opacity: .45; }
+
+/* Bande 2 : Énergie disponible, tuile de repos, Fatigue */
+.sk-mb2 { display: grid; grid-template-columns: 3fr 1.45fr 3fr; gap: 1.4cqw; height: 16.5cqw; }
+.sk-mz-energy { background: linear-gradient(160deg, #3f9a52, #1d5a2b 55%, #123b1c); }
+.sk-mz-fatigue { background: linear-gradient(160deg, #c94a3c, #8a1f17 55%, #5a120d); }
+.sk-mz-fatigue .sk-mgem { filter: saturate(.75) brightness(.9) drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.65)); }
+.sk-mrest { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6cqw; border-radius: .9cqw; padding: 1cqw;
+    background: linear-gradient(170deg, #e3d3ad, #b99b68); color: #3a2a18; }
+.sk-mresttitle { font-family: 'Primary', serif; font-size: 1.6cqw; text-transform: uppercase; letter-spacing: .05em; }
+.sk-mrest .sk-recovarrow { width: 9cqw; color: #9b1c14; }
+.sk-mrest .sk-recovarrow b { font-size: 3.4cqw; color: #fff; }
+.sk-mrest .sk-mtotal { font-size: 1.3cqw; text-align: center; }
+.sk-mstep { display: flex; align-items: center; gap: .8cqw; }
+.sk-mrest .sk-pstep { width: 3.4cqw; height: 3.4cqw; min-width: 28px; min-height: 28px; font-size: 2cqw; }
+.sk-mrest .sk-recovtok { width: 7cqw; height: 7cqw; border-color: #9b1c14; background: rgba(255,255,255,.35); color: #9b1c14; }
+.sk-mrest .sk-recovtok svg { color: #9b1c14; }
+.sk-mrest .sk-recovtok b { font-size: 3.2cqw; color: #9b1c14 !important; }
+
+/* Bande 3 : pions gemmes rouges numérotés, un par case */
+.sk-mb3 { display: grid; grid-template-columns: repeat(8, 1fr); padding: 0 .5cqw; }
+.sk-mhole { justify-self: center; width: 6.2cqw; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.25); }
+.sk-mhole .sk-rankgem { width: 5.2cqw; height: 5.2cqw; }
+
+/* Bande 4 : espace des tuiles, sans séparation */
+.sk-mb4 { display: flex; align-items: flex-start; min-height: calc((100cqw - 4.2cqw) / 8 / .656); padding: .5cqw; border-radius: .9cqw; background: rgba(0,0,0,.2); }
+.sk-mb4 .sk-mtile { flex: 0 0 12.5%; width: 12.5%; touch-action: none; cursor: grab; }
+.sk-mb4 .sk-mtile .tile.tiletile { border-radius: 0; }
+.sk-mtile.sk-dragging { opacity: .3; }
+
+/* Coop : jetons posés, jetons mis de côté sur le bureau */
+.sk-mtok { width: 5cqw; height: 5cqw; object-fit: contain; pointer-events: auto; cursor: grab; touch-action: none; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); }
+.sk-mb1 .sk-mtok { width: 4.4cqw; height: 4.4cqw; }
+.sk-mtok.sk-mdragging, .sk-mpiece.sk-mdragging { opacity: .3; }
+.sk-desk > .sk-mz-aside { min-height: 7.5cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); }
+.sk-desk > .sk-mz-aside .sk-mtitle { text-shadow: none; }
+.sk-desk > .sk-mz-aside .sk-mcount { color: var(--body-color); text-shadow: none; }
+
+/* Gemmes en main et pièce glissée */
+.sk-mhand { position: fixed; z-index: 100002; pointer-events: none; transform: translate(-50%, -130%); display: flex; align-items: center; gap: 4px; padding: 5px 12px 5px 6px;
+    border-radius: 999px; background: rgba(18,18,18,.88); color: #fff; font-family: 'Motrg', 'Primary', serif; font-size: 24px; line-height: 1; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+.sk-mhand img { width: 34px; height: 34px; object-fit: contain; }
+.sk-mhand.pinned { animation: skmPulse 1.1s ease-in-out infinite; }
+@keyframes skmPulse { 50% { box-shadow: 0 0 0 6px rgba(255,121,0,.55), 0 4px 14px rgba(0,0,0,.5); } }
+.sk-mghost { position: fixed; z-index: 100001; pointer-events: none; transform: translate(-50%, -50%) scale(1.06); opacity: .9; container-type: inline-size; }
+.sk-mghost > * { position: static !important; width: 100% !important; height: 100% !important; transform: none !important; opacity: 1 !important; }
+.sk-mghost img { width: 100%; height: 100%; object-fit: contain; }

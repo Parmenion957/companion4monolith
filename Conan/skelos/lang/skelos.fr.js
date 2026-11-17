@@ -549,5 +549,21 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_tools': "Les outils",
     'ghelp_tools_items': "Annuler revient sur la dernière action, autant de fois que nécessaire.|Recommencer remet la partie au tour 0 avec les tuiles et les compteurs du départ.|Terminer ouvre la fin du scénario : résultat, points de victoire et notes, enregistrés dans la campagne s’il y en a une.|Le Journal rappelle les règles spéciales, les textes des Événements et toutes les actions de la partie.|Un appui n’importe où termine les animations en cours ; le réglage Animations les coupe tout à fait.",
     'ghelp_studio': "Le mode studio",
-    'ghelp_studio_items': "Le crayon en haut à droite ouvre le mode studio : on règle la partie sur le plateau au lieu de la jouer.|Faites glisser les tuiles pour changer leur ordre, ajoutez-en dans une case vide, jetez-en une dans la corbeille ; changez le socle et les points de vie d’une tuile.|Double appui sur une tuile, ou appui sur son cœur : le zoom règle ses points de vie. Au bout à gauche, un + ajoute des sorts de l’Overlord ; au bout à droite, un + ajoute des équipements. La pastille corbeille au coin d’une carte la retire de la tuile. Les cartes sont gardées avec le scénario.|Les − et + règlent le tour, la limite de tours, la Récupération, le total de gemmes, les activations par tour (ou les Héros en jeu en Coop) et qui commence.|Chaque changement est noté au Journal. Quittez le mode studio pour jouer le tour."
+    'ghelp_studio_items': "Le crayon en haut à droite ouvre le mode studio : on règle la partie sur le plateau au lieu de la jouer.|Faites glisser les tuiles pour changer leur ordre, ajoutez-en dans une case vide, jetez-en une dans la corbeille ; changez le socle et les points de vie d’une tuile.|Double appui sur une tuile, ou appui sur son cœur : le zoom règle ses points de vie. Au bout à gauche, un + ajoute des sorts de l’Overlord ; au bout à droite, un + ajoute des équipements. La pastille corbeille au coin d’une carte la retire de la tuile. Les cartes sont gardées avec le scénario.|Les − et + règlent le tour, la limite de tours, la Récupération, le total de gemmes, les activations par tour (ou les Héros en jeu en Coop) et qui commence.|Chaque changement est noté au Journal. Quittez le mode studio pour jouer le tour.",
+    // Livre de Skelos manuel
+    'man_setting': "Livre de Skelos manuel (comme le jeu)",
+    'man_setting_help': "Coché : le plateau reproduit le livre et tout se déplace à la main (gemmes, jetons, tuiles, sablier). Décoché : le plateau automatique.",
+    'man_aside': "Mis de côté",
+    'man_track': "Piste des tours",
+    'man_hourglass': "Sablier",
+    'man_end': "Fin de partie",
+    'man_hand': "En main : {0} gemme(s)",
+    'man_hand_hint': "Gemmes en main : touchez la zone où les poser.",
+    'man_gem_hint': "Glissez une gemme vers une autre zone, ou gardez le doigt appuyé pour en prendre plusieurs.",
+    'man_log_gems': "{0} gemme(s) : {1} → {2}",
+    'man_log_draw': "Jeton {0} tiré ({1}) → {2}",
+    'man_log_token': "Jeton {0} ({1}) → {2}",
+    'man_log_tile': "{0} déplacée en case {1}",
+    'man_log_turn': "Sablier sur le tour {0}",
+    'man_log_limit': "Fin de partie au tour {0}"
 });

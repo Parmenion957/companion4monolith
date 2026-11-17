@@ -802,12 +802,15 @@ S.renderSettings = function() {
             + "<button class='sk-btn' data-bgrm>" + t("remove_background") + "</button>" : "") + "</div>";
     h += "<div class='sk-blk sk-c2'><h3>" + t("data") + "</h3><p>" + t("data_help") + "</p><button class='sk-btn' data-exp>" + t("export_all") + "</button><button class='sk-btn' data-imp>" + t("import") + "</button>"
         + "<h3 class='sk-mt'>" + t("display") + "</h3>"
-        + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label></div>";
+        + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label>"
+        + "<label class='sk-sw'><span>" + t("man_setting") + "</span><input type='checkbox' data-pref='manual'" + (pr.board == "manual" ? " checked" : "") + "></label>"
+        + "<p>" + t("man_setting_help") + "</p></div>";
     S.mount(shell("sk-settings", h));
     var scr = S.root.querySelector(".sk-screen");
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
         if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
+        else if (x.dataset.pref == "manual") { pr.board = x.checked ? "manual" : "auto"; S.savePrefs(); }
         else if (x.id == "sk-bgfile" && x.files && x.files[0]) S.loadBackground(x.files[0]);
         else if (x.dataset.bg) { var bb = S.bg() || {}; bb[x.dataset.bg] = +x.value; store(KEY_BG, bb); S.renderSettings(); }
     });
