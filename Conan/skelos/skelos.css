@@ -1651,9 +1651,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mpiece.both { transform: translate(38%, -38%) scale(.72); z-index: 3; }
 .sk-mcell.sk-mtarget, .sk-mpark.sk-mtarget { box-shadow: 0 0 0 .35cqw #ff7900; }
 
-/* Le livre : plaque de pierre sombre, chaque zone est un creux */
+/* Le livre : la tablette de pierre du module (fond par défaut), chaque zone est un creux */
 .sk-book { position: relative; display: flex; flex-direction: column; gap: 1.2cqw; padding: 1.6cqw; border-radius: 1.4cqw; color: #fff;
-    background: linear-gradient(160deg, #4b4e52, #36393c 45%, #2a2c2f); box-shadow: 0 .6cqw 1.6cqw rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12); }
+    background: #3a3d3a url(img/tablette.webp) 50% 50% / cover no-repeat; box-shadow: 0 .6cqw 1.6cqw rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 4px rgba(0,0,0,.25); }
 .sk-mz, .sk-mrest, .sk-mhole, .sk-mb4 { box-shadow: inset 0 .35cqw .7cqw rgba(0,0,0,.7), inset 0 -1px 0 rgba(255,255,255,.08); }
 .sk-mz { position: relative; overflow: hidden; border-radius: .9cqw; background: rgba(0,0,0,.2); cursor: pointer; touch-action: none; --g: 3cqw; }
 .sk-mz.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
