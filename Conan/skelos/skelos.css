@@ -2121,3 +2121,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* + d'ajout de cartes : pastille au coin bas-droit de la tuile zoomée, comme la corbeille des cartes. */
 .sk-zoombox .sk-mzadd.sk-mzadd-on { position: absolute; right: -8px; bottom: -8px; z-index: 4; width: 36px; height: 36px; font-size: 24px; touch-action: manipulation; }
 @media (max-width: 600px) { .sk-zoombox .sk-mzadd.sk-mzadd-on { right: -4px; bottom: -4px; width: 30px; height: 30px; font-size: 20px; } }
+
+/* Main de gemmes : à chaque gemme prise en plus, la pastille rebondit et lance une onde. */
+.sk-mhand.bump img, .sk-mhand.bump b { animation: skmBump .26s ease-out; }
+.sk-mhand.bump::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 3px solid rgba(255,121,0,.9); animation: skmRing .45s ease-out forwards; pointer-events: none; }
+@keyframes skmBump { 40% { transform: scale(1.35); } }
+@keyframes skmRing { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.7); } }

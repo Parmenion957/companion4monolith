@@ -600,6 +600,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_gems_pick': "Touchez la tuile ou la carte qui reçoit les gemmes.",
     'man_rest_hint': "Double appui : tout ce qui est dépensé (Mouvement, Défense, Relance, gemmes posées sur les tuiles et leurs cartes) passe en Fatigue, puis la Récupération revient vers l’Énergie disponible.",
     'man_recover_none': "Aucune gemme dépensée ni en Fatigue.",
+    'man_collect_none': "Aucune gemme dépensée à ramener.",
+    'man_log_collect': "Fatigue : {0} gemme(s) dépensée(s) ramenée(s)",
     'man_log_recover': "Récupération : {0} gemme(s) dépensée(s) en Fatigue, {1} vers l’Énergie disponible",
     'man_log_gems_back': "{0} gemme(s) rendue(s) à la Fatigue",
     'man_slot4': "4e jeton",

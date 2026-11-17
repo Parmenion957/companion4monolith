@@ -471,6 +471,23 @@ S.manualRecover = function() {
     later(g, Math.max(t1, t2), S.renderGame);
 };
 
+// Double appui sur la Fatigue : les gemmes dépensées (Mouvement, Défense, Relance, tuiles et cartes) y reviennent toutes,
+// sans Récupération vers l'Énergie.
+S.manualCollect = function() {
+    var st = S.state, onTiles = st.river.reduce(function(a, s) { return a + tileGems(s); }, 0), spent = S.boostSum() + onTiles, fat0 = st.fatigue;
+    if (!spent) { S.toast(t("man_collect_none")); return; }
+    var paths = spentPaths();
+    S.snapshot();
+    spentToFatigue();
+    commit(t("man_log_collect", spent));
+    var fat = rectOf("[data-zone='fatigue']"), gem = S.icon("gem"), d = 0, t1 = 0, g = ++animGen;
+    pulse("[data-zone='fatigue']");
+    paths.forEach(function(p) { t1 = Math.max(t1, fly(gem, p.from, fat, p.n, d)); d += 90; });
+    if (!t1) return;
+    hold("fatigue", zoneCode("fatigue", "", t("fatigue"), fat0));
+    later(g, t1, S.renderGame);
+};
+
 // ---------- Animations ----------
 // Pièces qui volent d'une zone à l'autre (en arc), au-dessus de tout ; elles disparaissent à l'arrivée.
 // Au plus 12 par trajet pour rester lisible. Rien si l'appareil demande moins d'animations.
@@ -706,6 +723,11 @@ var showHand = function() {
     el.style.left = hand.x + "px"; el.style.top = hand.y + "px";
 };
 var dropHand = function() { hand = null; showHand(); };
+// Une gemme de plus dans la main : la pastille rebondit et lance une onde (retour visible, l'iPad ne vibre pas).
+var bumpHand = function() {
+    var el = document.getElementById("sk-mhand"); if (!el || calm()) return;
+    el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+};
 // Fenêtre « tuile + cartes » : pendant qu'on y glisse des gemmes, la rangée défile seule quand le doigt
 // s'approche de son bord gauche ou droit.
 var edge = {t: null, x: 0, y: 0};
@@ -813,6 +835,13 @@ var bind = function(board) {
             var now = Date.now();
             if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; if (coop()) S.manualCoopClear(); else S.manualRecover(); }
             else { lastTap.uid = "rest"; lastTap.at = now; }
+            return;
+        }
+        // Double appui sur la Fatigue : toutes les gemmes dépensées y reviennent.
+        if (ev.target.closest(".sk-manual [data-zone='fatigue']") && !ev.target.closest("button")) {
+            var now2 = Date.now();
+            if (lastTap.uid == "fatigue" && now2 - lastTap.at < 400) { lastTap.uid = null; S.manualCollect(); }
+            else { lastTap.uid = "fatigue"; lastTap.at = now2; }
             return;
         }
         var b = ev.target.closest("[data-mact]"); if (!b) return;
@@ -932,11 +961,11 @@ var bind = function(board) {
             ev.preventDefault();
             var from = zone.dataset.zone, max = count(from), inPop = !!gcards;
             var charge = function() {
-                hand = {from: from, n: 1, x: x0, y: y0, pinned: false}; showHand();
+                hand = {from: from, n: 1, x: x0, y: y0, pinned: false}; showHand(); bumpHand();
                 if (navigator.vibrate) navigator.vibrate(15);
                 g.tick = setInterval(function() {
                     if (g.moved || !hand || hand.n >= max) { clearInterval(g.tick); return; }
-                    hand.n++; showHand();
+                    hand.n++; showHand(); bumpHand();
                     if (navigator.vibrate) navigator.vibrate(8);
                 }, STEP);
             };
