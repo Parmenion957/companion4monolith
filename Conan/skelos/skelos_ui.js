@@ -1339,6 +1339,9 @@ S.bindTileZoom = function(root) {
     var last = {uid: null, at: 0};
     root.addEventListener("click", function(ev) {
         if (S.screen != "game") return;
+        // La pastille des cartes sous une tuile ouvre la tuile en grand, avec ses cartes de part et d'autre.
+        var cb = ev.target.closest(".sk-river .sk-cardsbadge");
+        if (cb) { var cbx = cb.closest(".sk-tilebox[data-uid]"); if (cbx) { S.zoomTile(cbx.dataset.uid); return; } }
         // Studio : un appui sur le cœur ouvre la tuile en grand, pour régler les points de vie.
         var heart = S.studio && ev.target.closest(".sk-river .sk-studiohp .sk-hp");
         if (heart) { var hb = heart.closest(".sk-tilebox[data-uid]"); if (hb) { S.zoomTile(hb.dataset.uid); return; } }

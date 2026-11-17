@@ -114,7 +114,9 @@ var zoneCode = function(z, inner, title, nShown) {
 // ---------- Points de vie des tuiles sur la piste des tours (réglage, par défaut) ----------
 // Une tuile glissée sur la piste y pose sa pastille, sur la case de ses points de vie ; la pastille se déplace
 // ensuite sur la piste pour changer les PV. Le cœur disparaît alors de la tuile. Une pastille par groupe de PV partagés.
+// Réglage hpPlace : "track" (par défaut), "tile" ou "both" (pastille sur la piste et cœur sur la tuile).
 S.hpOnTrack = function() { return S.prefs().hpPlace != "tile"; };
+S.hpOnTile = function() { var v = S.prefs().hpPlace; return v == "tile" || v == "both"; };
 var SOCLE = {gray: "#8a8a8a", red: "#b3161b", green: "#2e8b3e", blue: "#2a63ad", purple: "#7a3d9a", orange: "#e07a1f", black: "#222"};
 var trackHp = function() {
     var st = S.state, seen = {};
@@ -266,7 +268,7 @@ var tilesCode = function() {
         return "<div class='sk-mtile sk-tilebox" + (s.dead ? " dead" : "") + "' data-mtile='" + s.uid + "'" + (S.isEvent(s) ? " data-eventuid='" + s.uid + "'" : "")
             + " role='img' aria-label='" + e(S.tileName(s)) + "'>" + S.tileCode(s)
             + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-            + (s.lpMax && !S.hpOnTrack() ? S.hpBadge(s) : "") + cardsBadge(s) + tileGemsCode(s) + socleCode(s) + "</div>";
+            + (s.lpMax && S.hpOnTile() ? S.hpBadge(s) : "") + cardsBadge(s) + tileGemsCode(s) + socleCode(s) + "</div>";
     }).join("") + "</div>";
 };
 
@@ -833,12 +835,16 @@ var bind = function(board) {
 // l'agrandit ; la pastille corbeille la retire ; le + à droite des PV en ajoute. Glisser vers le haut ou le bas sur
 // la tuile passe à la tuile voisine.
 var baseZoom = S.zoomTile;
+// Gemmes visibles sur une petite carte : posées à la main (livre manuel) ou, sur le plateau automatique, celles des sorts lancés ce tour.
+var gemsOn = function(s, c) { return c.gems || (c.kind == "sp" && !S.manualOn() ? S.castCount(s.uid, c.ref) : 0); };
+// Sur le plateau automatique, on ne retire ni n'ajoute de carte qu'en studio (comme l'ancien zoom).
+var canEdit = function() { return S.manualOn() || S.studio; };
 var smallCard = function(s, c) {
     var kind = c.kind, k = S.slotCards(s, kind).indexOf(c), name = S.itemName(kind, c.ref);
     var real = S.realCardCode(kind, c.ref), face = kind == "ti" ? (real || "") : "<span class='sk-cardscale'>" + (real || "<span class='sk-upcard sk-k-" + kind + "'><b>" + e(name) + "</b></span>") + "</span>";
     return "<div class='sk-mzc sk-mzc-" + kind + "' data-mzc='" + kind + ":" + k + "' role='button' tabindex='0' aria-label='" + e(name) + "' title='" + e(name) + "'>" + face
-        + (c.gems ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + c.gems + "</b></span>" : "")
-        + "<button class='sk-zoomrm sk-mzrm' data-zrm='" + kind + ":" + k + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button></div>";
+        + (gemsOn(s, c) ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + gemsOn(s, c) + "</b></span>" : "")
+        + (canEdit() ? "<button class='sk-zoomrm sk-mzrm' data-zrm='" + kind + ":" + k + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button>" : "") + "</div>";
 };
 var trackSide = function(s, list, side) {
     if (!list.length) return "<div class='sk-mztrack sk-mztrack-" + side + " empty'></div>";
@@ -848,14 +854,23 @@ var trackSide = function(s, list, side) {
         + "<div class='sk-mzlist'>" + list.map(function(c) { return smallCard(s, c); }).join("") + "</div>"
         + (more ? "<button class='sk-mzrot' data-mzrot='1' aria-label='" + e(t("man_track_next")) + "'>&#xf078;</button>" : "") + "</div>";
 };
+// Les deux plateaux utilisent ce zoom ; seule la « main des sorts » (bouton Sort du plateau automatique) garde l'ancien.
 S.zoomTile = function(uid, opts) {
-    if (!S.manualOn()) return baseZoom.apply(S, arguments);
-    var s = S.slotByUid(uid); if (!s) return;
     opts = opts || {};
+    if (!S.state || opts.hand) return baseZoom.apply(S, arguments);
+    var s = S.slotByUid(uid); if (!s) return;
+    var manual = S.manualOn();
     S._zoom = {uid: uid, pos: 0, hand: false, manual: true};
     S.hideTip(); S.closeHp && S.closeHp();
     var left = S.slotCards(s, "sp"), right = S.slotCards(s, "ti").concat(S.slotCards(s, "eq"));
-    var hp = S.isEvent(s) ? "" : S.studioHpCode(s).replace(/data-act='studiolp' data-uid='[^']*' data-n='(-?\d+)'/g, "data-zmhp='$1'");
+    // Points de vie : livre manuel → réglés à la main (data-zmhp) ; plateau automatique → comme avant
+    // (studio : PV de départ, data-zlp ; partie : PV restants, data-zhp, seulement si la tuile en a).
+    var hp = "";
+    if (!S.isEvent(s)) {
+        if (manual) hp = S.studioHpCode(s).replace(/data-act='studiolp' data-uid='[^']*' data-n='(-?\d+)'/g, "data-zmhp='$1'");
+        else if (S.studio) { if (!s.dead) hp = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zlp"); }
+        else if (s.lpMax) hp = S.studioHpCode(s).replace(/data-act='studiolp'/g, "data-zhp");
+    }
     var ring = S.zoomRing(false), idx = ring.indexOf(uid);
     var ov = S.root.querySelector("#sk-overlay");
     // On garde la position des pistes d'un affichage à l'autre (ajout, retrait, PV) pour la même tuile.
@@ -868,7 +883,7 @@ S.zoomTile = function(uid, opts) {
         + "<div class='sk-mzcenter'><div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
         + (s.gems ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + s.gems + "</b></span>" : "") + "</div>"
         + "<div class='sk-mzfoot'>" + (hp ? "<div class='sk-zoomhp'>" + hp + "</div>" : "")
-        + "<button class='sk-mzadd' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button></div></div>"
+        + (canEdit() ? "<button class='sk-mzadd' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button>" : "") + "</div></div>"
         + trackSide(s, right, "r") + "</div></div>";
     ov.classList.add("on", "sk-zoomon");
     ov.querySelectorAll(".sk-mzlist").forEach(function(l, i) { if (keep[i]) l.scrollTop = keep[i]; });
@@ -895,7 +910,25 @@ var bindManualZoom = function(ov) {
         if (S._zswipeAt && Date.now() - S._zswipeAt < 450) { S._zswipeAt = 0; ev.stopPropagation(); return; }
         var z = S._zoom; if (!z) return;
         var uid = z.uid;
+        // Plateau automatique : lancer un sort depuis la carte agrandie (coût fixe, ou coût X choisi avec − / +).
+        var xs = ev.target.closest(".sk-mzbig [data-zx]");
+        if (xs) { ev.stopPropagation(); var v = ov.querySelector("[data-zxv]"); v.textContent = Math.max(1, Math.min(9, (+v.textContent || 1) + +xs.dataset.zx)); return; }
+        var cs = ev.target.closest(".sk-mzbig [data-zcast]");
+        if (cs) {
+            ev.stopPropagation();
+            var n = cs.hasAttribute("data-x") ? (+ov.querySelector("[data-zxv]").textContent || 1) : +cs.dataset.n;
+            if (S.castSpell(uid, cs.dataset.zcast, n)) S.zoomTile(uid);
+            return;
+        }
+        if (ev.target.closest(".sk-mzcast")) { ev.stopPropagation(); return; }
         if (closeBig(ov)) { ev.stopPropagation(); return; }
+        var lp = ev.target.closest("[data-zlp], [data-zhp]");
+        if (lp) {
+            ev.stopPropagation();
+            if (lp.hasAttribute("data-zlp")) S.studioLife(uid, +lp.dataset.n); else S.life(uid, +lp.dataset.n);
+            if (S.slotByUid(uid)) S.zoomTile(uid); else S.zoomShut();
+            return;
+        }
         var rm = ev.target.closest("[data-zrm]");
         if (rm) { ev.stopPropagation(); var p = rm.dataset.zrm.split(":"); S.studioRemoveCard(uid, p[0], +p[1]); return; }
         var add = ev.target.closest("[data-zadd]");
@@ -908,7 +941,7 @@ var bindManualZoom = function(ov) {
             return;
         }
         var sc = ev.target.closest("[data-mzc]");
-        if (sc) { ev.stopPropagation(); openBig(ov, sc); return; }
+        if (sc) { ev.stopPropagation(); openBig(ov, sc, uid); return; }
         var sk = ev.target.closest("[data-skill]");
         if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
         if (ev.target.closest(".sk-tip, .sk-zoomhead, .sk-mzcenter, .sk-mztrack")) return;
@@ -916,9 +949,24 @@ var bindManualZoom = function(ov) {
     };
 };
 // Petite carte agrandie au-dessus du zoom ; un appui n'importe où la repose.
-var openBig = function(ov, sc) {
+// Sur le plateau automatique, en partie, un sort agrandi porte de quoi le lancer, comme l'ancien zoom.
+var openBig = function(ov, sc, uid) {
     var face = sc.cloneNode(true); face.querySelectorAll("button, .sk-mzgems").forEach(function(b) { b.remove(); });
-    ov.querySelector(".sk-mzoom").insertAdjacentHTML("beforeend", "<div class='sk-mzbig' role='dialog' aria-label='" + e(sc.getAttribute("aria-label")) + "'><div class='sk-mzbigcard'>" + face.innerHTML + "</div></div>");
+    var p = sc.dataset.mzc.split(":"), s = S.slotByUid(uid), c = s && S.slotCards(s, p[0])[+p[1]];
+    var foot = c && p[0] == "sp" && autoGame() ? castFoot(s, c.ref) : "";
+    ov.querySelector(".sk-mzoom").insertAdjacentHTML("beforeend", "<div class='sk-mzbig" + (foot ? " sk-mzbigcast" : "") + "' role='dialog' aria-label='" + e(sc.getAttribute("aria-label")) + "'><div class='sk-mzbigcard'>" + face.innerHTML + "</div>" + foot + "</div>");
+    S.markSteppers && S.markSteppers(ov);
+};
+var autoGame = function() { return !S.manualOn() && !S.studio; };
+// Lancement d'un sort : gemmes déjà posées (et saturation), puis un bouton au coût fixe, ou − / + et le bouton pour un coût X.
+var castFoot = function(s, ref) {
+    if (s.dead) return "<div class='sk-mzcast'><p class='sk-zoomnote'>" + e(t("spell_tile_dead")) + "</p></div>";
+    var d = S.spellData(ref), cost = d ? parseInt(d.cost, 10) : NaN, sat = d ? parseInt(d.saturation, 10) || 0 : 0, cast = S.castCount(s.uid, ref);
+    var note = sat > 0 || cast ? "<p class='sk-zoomnote'>" + e(sat > 0 ? t("spell_gems", cast, sat) : t("spell_gems_nosat", cast)) + "</p>" : "";
+    if (cost > 0) return "<div class='sk-mzcast'>" + note
+        + "<button class='sk-btn sk-primary' data-zcast='" + e(ref) + "' data-n='" + cost + "'>" + e(t("cast_spell")) + " · " + cost + "</button></div>";
+    return "<div class='sk-mzcast'>" + note + "<div class='sk-zoomcast'><button class='sk-hpbtn' data-zx='-1' aria-label='−'>−</button><b data-zxv>1</b><button class='sk-hpbtn' data-zx='1' aria-label='+'>+</button>"
+        + "<button class='sk-btn sk-primary' data-zcast='" + e(ref) + "' data-x>" + e(t("cast_spell")) + "</button></div></div>";
 };
 var closeBig = function(ov) { var b = ov.querySelector(".sk-mzbig"); if (b) { b.remove(); return true; } return false; };
 var zoomBound = false;

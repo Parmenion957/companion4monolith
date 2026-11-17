@@ -825,16 +825,21 @@ S.renderSettings = function() {
         + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label>"
         + "<label class='sk-sw'><span>" + t("man_setting") + "</span><input type='checkbox' data-pref='manual'" + (pr.board == "manual" ? " checked" : "") + "></label>"
         + "<p>" + t("man_setting_help") + "</p>"
-        + "<label class='sk-fl'>" + t("man_hp_place") + "<select data-pref='hpplace'>"
-        + "<option value='track'" + (pr.hpPlace != "tile" ? " selected" : "") + ">" + t("man_hp_track") + "</option>"
-        + "<option value='tile'" + (pr.hpPlace == "tile" ? " selected" : "") + ">" + t("man_hp_tile") + "</option></select></label></div>";
+        // Points de vie : sur la piste, sur la tuile, ou les deux ; au moins une case reste cochée.
+        + "<fieldset class='sk-hpplace'><legend>" + t("man_hp_place") + "</legend>"
+        + "<label class='sk-sw'><span>" + t("man_hp_track") + "</span><input type='checkbox' data-pref='hpplace' value='track'" + (pr.hpPlace != "tile" ? " checked" : "") + "></label>"
+        + "<label class='sk-sw'><span>" + t("man_hp_tile") + "</span><input type='checkbox' data-pref='hpplace' value='tile'" + (pr.hpPlace == "tile" || pr.hpPlace == "both" ? " checked" : "") + "></label></fieldset></div>";
     S.mount(shell("sk-settings", h));
     var scr = S.root.querySelector(".sk-screen");
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
         if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
         else if (x.dataset.pref == "manual") { pr.board = x.checked ? "manual" : "auto"; S.savePrefs(); }
-        else if (x.dataset.pref == "hpplace") { pr.hpPlace = x.value; S.savePrefs(); }
+        else if (x.dataset.pref == "hpplace") {
+            var tr = scr.querySelector("[data-pref='hpplace'][value='track']").checked, ti = scr.querySelector("[data-pref='hpplace'][value='tile']").checked;
+            if (!tr && !ti) { x.checked = true; return; }
+            pr.hpPlace = tr && ti ? "both" : tr ? "track" : "tile"; S.savePrefs();
+        }
         else if (x.id == "sk-bgfile" && x.files && x.files[0]) S.loadBackground(x.files[0]);
         else if (x.dataset.bg) { var bb = S.bg() || {}; bb[x.dataset.bg] = +x.value; store(KEY_BG, bb); S.renderSettings(); }
     });
