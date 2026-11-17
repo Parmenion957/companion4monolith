@@ -223,16 +223,20 @@ var tileGemsCode = function(s) {
 var cardOrder = {ti: 0, eq: 1, sp: 2};
 var gemPopCode = function() {
     var s = S._mgpop && S.slotByUid(S._mgpop); if (!s) { S._mgpop = null; return ""; }
-    var rows = [-1].concat((s.cards || []).map(function(c, k) { return k; }).sort(function(a, b) { return cardOrder[s.cards[a].kind] - cardOrder[s.cards[b].kind] || a - b; }));
+    // La tuile et ses cartes, montrées comme sur la table : chacune reçoit ses gemmes, posées dessus.
+    var order = [-1].concat((s.cards || []).map(function(c, k) { return k; }).sort(function(a, b) { return cardOrder[s.cards[a].kind] - cardOrder[s.cards[b].kind] || a - b; }));
     return "<div class='sk-mgpop' role='dialog' aria-label='" + e(t("man_gems_on", S.tileName(s))) + "'><div class='sk-mgphead'><b>" + e(t("man_gems_on", S.tileName(s))) + "</b>"
-        + "<button class='sk-mgpclose' data-mgpclose aria-label='" + e(t("close")) + "'>×</button></div>"
-        + rows.map(function(k) {
+        + "<button class='sk-mgpclose' data-mgpclose aria-label='" + e(t("close")) + "'>×</button></div><div class='sk-mgcards'>"
+        + order.map(function(k) {
             var z = "g:" + s.uid + ":" + k, n = count(z), c = k < 0 ? null : s.cards[k];
-            var name = k < 0 ? S.tileName(s) : S.itemName(c.kind, c.ref), ico = k < 0 ? "" : "<i class='sk-cb-" + c.kind + "'>" + {sp: "&#xf0d0;", eq: "&#xf3ed;", ti: "&#xf24d;"}[c.kind] + "</i>";
-            return "<div class='sk-mz sk-mgrow" + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(name + " · " + n) + "'>"
-                + "<span class='sk-mgname'>" + ico + e(name) + "</span><div class='sk-mgems'>" + groupsCode(n, S.icon("gem"), "sk-mgem", z) + "</div>"
-                + "<span class='sk-mcount'>" + n + "</span></div>";
-        }).join("") + "</div>";
+            var name = k < 0 ? S.tileName(s) : S.itemName(c.kind, c.ref);
+            var face = k < 0 ? "<div class='sk-tilebox'>" + S.tileCode(s) + "</div>"
+                : c.kind == "ti" ? (S.realCardCode(c.kind, c.ref) || "")
+                : "<span class='sk-cardscale'>" + (S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>") + "</span>";
+            return "<div class='sk-mz sk-mgcard" + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(name + " · " + n) + "' title='" + e(name) + "'>"
+                + "<div class='sk-mgface'>" + face + "</div><div class='sk-mgems'>" + groupsCode(n, S.icon("gem"), "sk-mgem", z) + "</div>"
+                + (n ? "<span class='sk-mcount'>" + n + "</span>" : "") + "</div>";
+        }).join("") + "</div></div>";
 };
 var placeGemPop = function() {
     var pop = S.root.querySelector(".sk-mgpop"), tile = S._mgpop && S.root.querySelector("[data-mtile='" + S._mgpop + "']");
@@ -329,14 +333,59 @@ S.manualMoveGems = function(from, to, n) {
 // Double appui sur la tuile de repos : les gemmes dépensées (Mouvement, Défense, Relance) passent en Fatigue,
 // puis autant de gemmes que la Récupération reviennent de la Fatigue vers l'Énergie disponible.
 // Les gemmes posées sur les tuiles et leurs cartes ne bougent pas.
+// Tout ce qui est dépensé revient : Mouvement, Défense, Relance, et les gemmes posées sur les tuiles et leurs cartes.
 S.manualRecover = function() {
     var st = S.state; if (coop()) return;
-    var spent = S.boostSum(), back = Math.min(st.recovery || 0, st.fatigue + spent);
+    var onTiles = st.river.reduce(function(a, s) { return a + tileGems(s); }, 0);
+    var spent = S.boostSum() + onTiles, back = Math.min(st.recovery || 0, st.fatigue + spent);
     if (!spent && !back) { S.toast(t("man_recover_none")); return; }
+    // Avant de changer l'état : d'où partent les gemmes (zones, tas posés sur les tuiles).
+    var paths = BAND1.filter(function(z) { return count(z) > 0; }).map(function(z) { return {from: rectOf("[data-zone='" + z + "']"), n: count(z)}; });
+    st.river.forEach(function(s) { var n = tileGems(s); if (n) paths.push({from: rectOf("[data-mtile='" + s.uid + "'] .sk-mtg") || rectOf("[data-mtile='" + s.uid + "']"), n: n}); });
     S.snapshot();
     S.clearBoosts();
+    st.river.forEach(function(s) { var n = tileGems(s); if (n) { st.fatigue += n; delete s.gems; (s.cards || []).forEach(function(c) { delete c.gems; }); } });
     st.fatigue -= back; st.energy += back;
     commit(t("man_log_recover", spent, back));
+    // Animation : les gemmes dépensées volent vers la Fatigue, puis la Récupération repart vers l'Énergie disponible.
+    var fat = rectOf("[data-zone='fatigue']"), en = rectOf("[data-zone='energy']"), gem = S.icon("gem"), d = 0;
+    pulse("[data-mrest]");
+    paths.forEach(function(p) { fly(gem, p.from, fat, p.n, d); d += 90; });
+    if (back) fly(gem, fat, en, back, spent ? d + 520 : 0);
+};
+
+// ---------- Animations ----------
+// Pièces qui volent d'une zone à l'autre (en arc), au-dessus de tout ; elles disparaissent à l'arrivée.
+// Au plus 12 par trajet pour rester lisible. Rien si l'appareil demande moins d'animations.
+var rectOf = function(sel) { var el = S.root && S.root.querySelector(sel); return el ? el.getBoundingClientRect() : null; };
+var calm = function() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; };
+var fly = function(src, from, to, n, delay, endSrc) {
+    if (!from || !to || calm() || !document.body.animate) return;
+    var k = Math.min(n, 12), size = Math.max(20, Math.min(34, to.width / 8));
+    var j = function(r, f) { return (Math.random() - .5) * r.width * f; };
+    for (var i = 0; i < k; i++) (function(i) {
+        var img = document.createElement("img");
+        img.className = "sk-mfly"; img.src = src; img.alt = "";
+        img.style.width = img.style.height = size + "px";
+        document.body.appendChild(img);
+        var x0 = from.left + from.width / 2 + j(from, .4) - size / 2, y0 = from.top + from.height / 2 + j(from, .2) - size / 2;
+        var x1 = to.left + to.width / 2 + j(to, .5) - size / 2, y1 = to.top + to.height / 2 + j(to, .25) - size / 2;
+        var mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 60 - Math.random() * 40;
+        var at = function(x, y, sc, r) { return "translate(" + x + "px," + y + "px) scale(" + sc + ") rotate(" + r + "deg)"; };
+        var anim = img.animate([
+            {transform: at(x0, y0, 1, 0), opacity: 0},
+            {transform: at(x0, y0, 1.15, 0), opacity: 1, offset: .08},
+            {transform: at(mx, my, 1.3, Math.random() * 180 - 90), opacity: 1, offset: .5},
+            {transform: at(x1, y1, 1, Math.random() * 60 - 30), opacity: 1, offset: .92},
+            {transform: at(x1, y1, .9, 0), opacity: 0}
+        ], {duration: 620, delay: delay + i * 45, easing: "ease-in-out", fill: "both"});
+        if (endSrc) setTimeout(function() { img.src = endSrc; }, delay + i * 45 + 330);
+        anim.onfinish = anim.oncancel = function() { img.remove(); };
+    })(i);
+};
+var pulse = function(sel) {
+    var el = S.root && S.root.querySelector(sel); if (!el || calm() || !el.animate) return;
+    el.animate([{transform: "scale(1)"}, {transform: "scale(1.06)", filter: "brightness(1.15)"}, {transform: "scale(1)"}], {duration: 380, easing: "ease-out"});
 };
 
 // Coop, double appui sur la tuile Héros en jeu : les jetons tirés (Mouvement, Défense, Relance, 4e) passent en Fatigue.
@@ -347,19 +396,28 @@ S.manualCoopClear = function() {
     if (!poolCount()) {
         var back = st.river.filter(function(s) { return live(s.uid) && s.token && st.pool.indexOf(s.uid) < 0 && st.used.indexOf(s.uid) >= 0; });
         if (!back.length) { S.toast(t("man_coop_none")); return; }
+        var fromR = back.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); });
         S.snapshot();
         back.forEach(function(s) { st.pool.push(s.uid); });
         st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
         st.tokLoc = {};
         commit(t("man_log_coop_reset", back.length));
+        // Les jetons regagnent la zone verte et s'y retournent.
+        pulse("[data-mrest]");
+        var en = rectOf("[data-zone='energy']");
+        back.forEach(function(s, i) { fly(S.marker(s.token), fromR[i], en, 1, i * 70, S.icon("tokenback")); });
         return;
     }
     var drawn = st.river.filter(function(s) { return live(s.uid) && DRAWN.indexOf(tokLoc(s.uid)) >= 0; });
     if (!drawn.length) { S.toast(t("man_coop_none")); return; }
+    var fromD = drawn.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); });
     S.snapshot();
     st.tokLoc = st.tokLoc || {};
     drawn.forEach(function(s) { st.tokLoc[s.uid] = "fatigue"; });
     commit(t("man_log_coop_clear", drawn.length));
+    pulse("[data-mrest]");
+    var fat = rectOf("[data-zone='fatigue']");
+    drawn.forEach(function(s, i) { fly(S.marker(s.token), fromD[i], fat, 1, i * 90); });
 };
 
 // Gemmes des tuiles et de leurs cartes : comptées dans le total ; une tuile ou une carte retirée rend les siennes à la Fatigue.

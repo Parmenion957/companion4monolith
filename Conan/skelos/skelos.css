@@ -1827,3 +1827,15 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mbowl-front { filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.35)); }
 .sk-mz.sk-mz-reserve.sk-mbowl { --g: 1.45cqw; }
 .sk-mbowl .sk-mgems { inset: 21% 13% 53% 13%; align-content: center; }
+
+/* Gemmes d'une tuile et de ses cartes : la tuile et les cartes montrées comme sur la table */
+.sk-mgpop { width: auto; max-width: calc(100vw - 32px); }
+.sk-mgcards { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; }
+.sk-mgpop .sk-mz.sk-mgcard { flex: 0 0 120px; width: 120px; overflow: visible; background: none; box-shadow: none; border-radius: 8px; --g: 22px; }
+.sk-mgcard .sk-mgface { pointer-events: none; }
+.sk-mgcard .sk-mgface .sk-tilebox, .sk-mgcard .sk-mgface .sk-cardscale { width: 100%; }
+.sk-mgcard .sk-mgems { inset: 30% 6% 22% 6%; z-index: 2; }
+.sk-mgcard .sk-mcount { z-index: 3; right: 6px; bottom: 6px; font-size: 18px; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+.sk-mgcard.sk-mtarget { outline: 3px solid #ff7900; outline-offset: 2px; }
+/* Pièces qui volent (double appui sur la tuile de repos) */
+.sk-mfly { position: fixed; left: 0; top: 0; z-index: 100003; pointer-events: none; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.55)); }
