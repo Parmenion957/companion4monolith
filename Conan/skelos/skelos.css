@@ -2090,3 +2090,17 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 @media (max-width: 600px) {
     .sk-mzoom .sk-mzlist { touch-action: pan-x; scroll-snap-type: x proximity; }
 }
+
+/* Zoom : tuile plus grosse. Sur tablette et en paysage, les PV et le + passent à droite de la tuile pour lui laisser
+   toute la hauteur ; sur téléphone en portrait, la tuile prend presque toute la largeur (les cartes défilent dessous). */
+.sk-mzoom { --mzw: min(42vw, calc((100dvh - var(--sk-bottom, 0px) - 70px) * 0.656), 600px); gap: 4px; }
+.sk-mzcenter { flex-direction: row; gap: 10px; }
+.sk-mzfoot { flex-direction: column; transform: none; gap: 10px; }
+.sk-mzfoot .sk-zoomhp { width: 170px; max-width: none; }
+@media (max-width: 600px) {
+    .sk-mzoom { --mzw: min(84vw, calc((100dvh - var(--sk-bottom, 0px) - 150px) * 0.656)); }
+    .sk-mzcenter { flex-direction: column; gap: 8px; }
+    .sk-mzfoot { flex-direction: row; gap: 14px; }
+    .sk-mzfoot .sk-zoomhp { width: 220px; }
+}
+@media (min-width: 601px) and (min-height: 501px) { .sk-mzfoot .sk-zoomhp { width: 220px; } }
