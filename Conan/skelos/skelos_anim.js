@@ -1,6 +1,6 @@
 // Livre de Skelos : module de suivi du plateau de l'Overlord pour le Compagnon de Conan.
-// Code sous licence LGPL-3.0, comme le Compagnon. Ce module n'ajoute aucune image ni donnée de Monolith :
-// il utilise celles déjà chargées par le Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell).
+// Code sous licence LGPL-3.0, comme le Compagnon. Images et données du jeu : Monolith, avec l'autorisation accordée au Compagnon ;
+// le module reprend celles du Compagnon (Encyclopedia, Tile, CardEquipment, CardSpell) et ajoute les fonds du livre (img/fond/).
 //
 // Animations de la partie jouée (jamais en studio), liées au réglage « Animations », coché par défaut.
 // Principe : juste avant de redessiner le plateau, on note la place de chaque tuile, pion et zone de gemmes
