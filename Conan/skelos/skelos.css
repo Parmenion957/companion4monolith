@@ -1732,23 +1732,91 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mghost .sk-mhpm { width: 100% !important; height: 100% !important; }
 .sk-mtrack { padding-bottom: 3cqw; }
 
-/* Livre manuel, mode studio : réserve de gemmes et tas de tuiles posés sur le bureau, sous le livre */
+/* Livre manuel, mode studio : le livre rétrécit, la réserve de gemmes se pose à sa gauche et le tas de tuiles à sa droite.
+   Le livre mesure ses tailles sur sa propre largeur (cqw) : rétréci, il garde ses proportions. */
+.sk-mmid { display: flex; gap: 1.4cqw; align-items: center; }
+.sk-mmid > .sk-book { flex: 1 1 0; min-width: 0; container-type: inline-size; }
+.sk-mside { flex: 0 0 12cqw; display: flex; flex-direction: column; justify-content: center; align-self: stretch; }
 .sk-mdeskrow { display: flex; gap: 1.4cqw; align-items: stretch; }
 .sk-mdeskrow > * { flex: 1 1 0; }
 .sk-desk .sk-mz-aside { min-height: 7.5cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); }
 .sk-desk .sk-mz-aside .sk-mtitle { text-shadow: none; }
 .sk-desk .sk-mz-aside .sk-mcount { color: var(--body-color); text-shadow: none; }
-.sk-mz-reserve { flex: 0 0 22cqw; min-height: 9cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); --g: 2.6cqw; }
-.sk-mz-reserve .sk-mtitle { text-shadow: none; }
-.sk-mpile { flex: 0 0 13cqw; position: relative; min-height: 9cqw; padding: 0; border: 0; border-radius: .9cqw; cursor: pointer; color: var(--body-color);
+.sk-mz-reserve { height: 30cqw; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); --g: 2.6cqw; }
+.sk-mz-reserve .sk-mtitle { text-shadow: none; font-size: 1.4cqw; }
+.sk-mz-reserve .sk-mgems { inset: 3cqw .6cqw .6cqw; }
+.sk-mpile { position: relative; height: 18cqw; padding: 0; border: 0; border-radius: .9cqw; cursor: pointer; color: var(--body-color);
     background: color-mix(in srgb, var(--body-color) 10%, transparent); box-shadow: inset 0 .35cqw .7cqw rgba(0,0,0,.35); }
-.sk-mpile .sk-mtitle { text-shadow: none; }
-.sk-mpcard { position: absolute; left: 50%; top: 58%; width: 4.6cqw; aspect-ratio: .656; border-radius: .4cqw; box-sizing: border-box;
+.sk-mpile .sk-mtitle { text-shadow: none; font-size: 1.4cqw; }
+.sk-mpcard { position: absolute; left: 50%; top: 58%; width: 6cqw; aspect-ratio: .656; border-radius: .4cqw; box-sizing: border-box;
     background: linear-gradient(170deg, #e3d3ad, #b99b68); border: .2cqw solid #6b5434; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.45); transform: translate(-50%, -50%) rotate(-8deg); }
 .sk-mpcard:nth-child(2) { transform: translate(-46%, -52%) rotate(5deg); }
 .sk-mpcard:nth-child(3) { transform: translate(-50%, -54%) rotate(-1deg); display: grid; place-items: center; }
-.sk-mpcard b { font-size: 3cqw; line-height: 1; color: #6b5434; }
+.sk-mpcard b { font-size: 3.4cqw; line-height: 1; color: #6b5434; }
 .sk-mpile.sk-mtarget { outline: .35cqw solid #ff7900; outline-offset: -.35cqw; }
+
+/* Bande 1 : tas resserrés, sans désordre qui les ferait sortir du cadre de l'icône */
+.sk-mb1 .sk-mgems { inset: .5cqw; gap: .1cqw .2cqw; }
+.sk-mb1 .sk-mg3 { margin: calc(var(--g) * .06); transform: rotate(calc(var(--gr, 0deg) * .3)); }
+.sk-mb1 .sk-mg3 img { transform: translate(calc(var(--g) * var(--x, 0) * .4), calc(var(--g) * var(--y, 0) * .4)) rotate(var(--r, 0deg)); }
+
+/* Tuile de repos : double appui = récupération */
+.sk-mrest { touch-action: manipulation; cursor: pointer; }
+
+/* Gemmes posées sur une tuile ou ses cartes : petit tas sur la tuile, et liste « tuile + cartes » */
+.sk-mtg { position: absolute; right: 3%; top: 3%; z-index: 4; display: flex; align-items: center; gap: 2cqw; padding: 2cqw 5cqw 2cqw 3cqw; border-radius: 10cqw;
+    background: rgba(18,18,18,.85); color: #fff; font-family: 'Motrg', 'Primary', serif; font-size: 11cqw; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,.6); cursor: pointer; touch-action: none; overflow: visible; }
+.sk-mtg img { width: 16cqw; height: 16cqw; object-fit: contain; }
+.sk-mtg b { font-weight: normal; }
+.sk-mtile.sk-mtarget { outline: 3px solid #ff7900; outline-offset: -3px; z-index: 2; }
+.sk-mgpop { position: fixed; z-index: 1000; width: min(340px, calc(100vw - 32px)); padding: 10px; border-radius: 12px; box-sizing: border-box;
+    background: var(--body-bg-color); color: var(--body-color); box-shadow: 0 8px 28px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 8px; }
+.sk-mgphead { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: 'Primary', serif; }
+.sk-mgpclose { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--body-color); font-size: 22px; cursor: pointer; }
+.sk-mgpop .sk-mz.sk-mgrow { height: 64px; --g: 18px; background: color-mix(in srgb, var(--body-color) 10%, transparent); color: var(--body-color); box-shadow: inset 0 2px 5px rgba(0,0,0,.3); }
+.sk-mgrow .sk-mgname { position: absolute; left: 10px; top: 6px; right: 40px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.sk-mgrow .sk-mgname i { font-family: "Font Awesome 5 Free"; font-weight: 900; font-style: normal; margin-right: 6px; }
+.sk-mgrow .sk-cb-sp { color: #a070d0; } .sk-mgrow .sk-cb-eq { color: #b8893a; } .sk-mgrow .sk-cb-ti { color: #3f9a52; }
+.sk-mgrow .sk-mgems { inset: 22px 40px 4px 10px; justify-content: flex-start; }
+.sk-mgrow .sk-mcount { font-size: 20px; color: var(--body-color); text-shadow: none; right: 10px; bottom: 8px; }
 /* Tuile portée par une tuile, dans le zoom et la pastille des cartes */
 .sk-cardtile { width: 100%; }
 .sk-cardsbadge .sk-cb-ti { color: #9fd3a0; }
+/* Coop : 4e jeton tiré à droite de Relance */
+.sk-mico4 { display: grid; place-items: center; font-family: 'Motrg', 'Primary', serif; font-size: 4.4cqw; line-height: 1; color: rgba(255,255,255,.35); }
+/* Mode studio : pastille de couleur du socle, en haut à gauche de la tuile (le tas de gemmes est en haut à droite) */
+.sk-mtile .sk-socle { left: 4%; right: auto; top: 4%; width: 20cqw; height: 20cqw; min-width: 18px; min-height: 18px; }
+/* Pastille de PV : pion de vie de l'encyclopédie (image de la tuile recadrée) sur fond blanc */
+.sk-mhpm.tok { overflow: hidden; background: #fff; }
+.sk-mhpm.tok img, .sk-mghost .sk-mhpm.tok img { position: absolute; max-width: none; object-fit: fill; pointer-events: none; }
+.sk-mghost .sk-mhpm { display: block; position: relative !important; left: 0; top: 0; }
+
+/* Objets réalistes du bureau (mode studio) : coupe en bois ancienne pleine de gemmes, tas de tuiles */
+.sk-mobjname { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-family: 'Primary', serif; font-size: 1.3cqw; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--body-color); pointer-events: none; }
+.sk-mz.sk-mz-reserve.sk-mbowl { height: auto; width: 100%; aspect-ratio: 1 / .9; overflow: visible; background: none; box-shadow: none; border-radius: 0; --g: 1.9cqw; }
+.sk-mbowl svg { position: absolute; left: 0; bottom: 16%; width: 100%; height: auto; pointer-events: none; }
+.sk-mbowl-back { z-index: 1; }
+.sk-mbowl .sk-mgems { z-index: 2; inset: 8% 13% 51% 13%; flex-wrap: wrap-reverse; align-content: flex-start; gap: 0; }
+.sk-mbowl-front { z-index: 3; filter: drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.4)); }
+.sk-mbowl.sk-mtarget { outline: none; }
+.sk-mbowl.sk-mtarget .sk-mbowl-front { filter: drop-shadow(0 0 .5cqw #ff7900) drop-shadow(0 0 .2cqw #ff7900); }
+.sk-mpile { height: auto; width: 100%; aspect-ratio: 1 / 1.35; background: none; box-shadow: none; }
+.sk-mstack { position: absolute; left: 18%; top: 6%; width: 64%; aspect-ratio: .656; }
+.sk-mslab { position: absolute; inset: 0; border-radius: .5cqw; box-sizing: border-box; overflow: hidden;
+    background: linear-gradient(160deg, #d9c39a, #a88b5c); border: 1px solid #6e5634; box-shadow: 0 .15cqw .25cqw rgba(0,0,0,.35); }
+.sk-mslab:nth-child(1) { transform: translate(5%, 7%) rotate(4deg); background: #8f7550; }
+.sk-mslab:nth-child(2) { transform: translate(-3%, 5%) rotate(-3deg); background: #9c8058; }
+.sk-mslab:nth-child(3) { transform: translate(3%, 3.4%) rotate(2deg); }
+.sk-mslab:nth-child(4) { transform: translate(-1%, 1.8%) rotate(-1deg); }
+.sk-mslab.sk-mtop { transform: rotate(-2deg); background: #fff; box-shadow: 0 .3cqw .6cqw rgba(0,0,0,.45); }
+.sk-mslab.sk-mtop img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sk-mplus { position: absolute; right: -14%; top: -8%; z-index: 2; width: 3.2cqw; height: 3.2cqw; border-radius: 50%; display: grid; place-items: center;
+    background: var(--highlight-color); color: #fff; font-size: 2.4cqw; line-height: 1; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.45); }
+.sk-mpile.sk-mtarget { outline: none; }
+.sk-mpile.sk-mtarget .sk-mtop { box-shadow: 0 0 0 .3cqw #ff7900, 0 .3cqw .6cqw rgba(0,0,0,.45); }
+.sk-mgphead b { font-size: 15px; line-height: 1.2; font-weight: normal; }
+/* Pion de vie en main (tuile sortie de sa bande, ou pastille prise sur la piste) : agrandi pour être reconnu */
+.sk-mghost.sk-mghost-hp { opacity: 1; transform: translate(-50%, -65%); animation: skmGrow .18s ease-out; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); }
+.sk-mghost.sk-mghost-hp .sk-mhpm { border-width: 4px; }
+@keyframes skmGrow { from { transform: translate(-50%, -65%) scale(.45); } }

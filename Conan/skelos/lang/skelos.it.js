@@ -566,5 +566,18 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_reserve_hint': "Take gems from the supply to add them to the book; put gems back in the supply to remove them.",
     'man_pile_hint': "Tap the pile to add a tile; drag a tile onto the pile to remove it.",
     'man_log_gems_add': "{0} gem(s) added: {1}",
-    'man_log_gems_rm': "{0} gem(s) removed: {1}"
+    'man_log_gems_rm': "{0} gem(s) removed: {1}",
+    'man_on_card': "{0} (on {1})",
+    'man_tile_gems': "{0} gem(s) on {1}",
+    'man_gems_on': "Gems on {0}",
+    'man_gems_pick': "Tap the tile or card that receives the gems.",
+    'man_rest_hint': "Double tap: spent gems go to Fatigue, then Recovery moves gems back to Available energy.",
+    'man_recover_none': "No spent gems and no Fatigue.",
+    'man_log_recover': "Recovery: {0} spent gem(s) to Fatigue, {1} to Available energy",
+    'man_log_gems_back': "{0} gem(s) returned to Fatigue",
+    'man_slot4': "4th token",
+    'man_coop_rest_hint': "Double tap: drawn tokens go to Fatigue; once the last token is drawn, all become available again.",
+    'man_coop_none': "No drawn token to put away.",
+    'man_log_coop_clear': "{0} drawn token(s) moved to Fatigue",
+    'man_log_coop_reset': "Last token drawn: {0} token(s) available again"
 });

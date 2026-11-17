@@ -14,28 +14,46 @@
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 
 var BAND1 = ["move", "defense", "reroll"];
+// Coop : le 4e jeton tiré se pose à droite de Relance.
+var band1 = function() { return coop() ? BAND1.concat(["slot4"]) : BAND1; };
 var LONG = 380, STEP = 260, MOVE = 9, RESERVE = 20;
 
 S.manualOn = function() { return S.prefs().board == "manual" && !!S.state && !S.editing; };
 var coop = function() { return S.state.mode == "solo"; };
 
 // ---------- Gemmes : nombre par zone ----------
+// Gemmes posées sur une tuile ou sur une carte qu'elle porte : zone « g:<uid>:<k> », k = -1 pour la tuile elle-même,
+// sinon le rang de la carte dans s.cards. Le nombre est gardé sur la tuile (s.gems) ou sur la carte (c.gems).
+var carrier = function(z) {
+    var p = String(z).split(":"); if (p[0] != "g") return null;
+    var s = S.slotByUid(p[1]), k = +p[2]; if (!s) return null;
+    return k < 0 ? s : ((s.cards || [])[k] || null);
+};
 var count = function(z) {
     var st = S.state;
     if (z == "energy") return st.energy;
     if (z == "fatigue") return st.fatigue;
     if (z == "reserve") return RESERVE;   // réserve du mode studio : inépuisable
+    if (String(z).indexOf("g:") == 0) { var c = carrier(z); return (c && c.gems) || 0; }
     return (st.boosts && st.boosts[z]) || 0;
 };
 var setCount = function(z, v) {
     var st = S.state;
     if (z == "reserve") return;
+    if (String(z).indexOf("g:") == 0) { var c = carrier(z); if (c) { if (v > 0) c.gems = v; else delete c.gems; } return; }
     if (z == "energy") st.energy = v; else if (z == "fatigue") st.fatigue = v; else st.boosts[z] = v;
 };
+var tileGems = function(s) { return (s.gems || 0) + (s.cards || []).reduce(function(n, c) { return n + (c.gems || 0); }, 0); };
 var zoneLabel = function(z) {
+    if (String(z).indexOf("g:") == 0) {
+        var p = z.split(":"), s = S.slotByUid(p[1]), c = carrier(z);
+        if (!s || !c) return "";
+        return +p[2] < 0 ? S.tileName(s) : t("man_on_card", S.itemName(c.kind, c.ref), S.tileName(s));
+    }
     if (z == "energy") return t(S.state && coop() ? "tokens_pool" : "energy");
     if (z == "fatigue") return t("fatigue");
     if (z == "aside") return t("man_aside");
+    if (z == "slot4") return t("man_slot4");
     if (z == "reserve") return t("man_reserve");
     return t("boost_" + z);
 };
@@ -79,7 +97,9 @@ var zoneCode = function(z, inner, title) {
     else if (coop()) { var l = tokensIn(z); n = l.length; content = l.map(tokCode).join(""); }
     else { n = count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
     var label = zoneLabel(z) + " · " + n;
-    return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'>"
+    // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
+    var groups = Math.ceil(n / 3), gs = BAND1.indexOf(z) >= 0 && !coop() ? " style='--g:" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw'" : "";
+    return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'" + gs + ">"
         + (inner || "") + (title ? "<span class='sk-mtitle'>" + e(title) + "</span>" : "")
         + "<div class='sk-mgems'>" + content + "</div>"
         + (n ? "<span class='sk-mcount' aria-hidden='true'>" + n + "</span>" : "") + "</div>";
@@ -99,10 +119,16 @@ var trackHp = function() {
     });
 };
 var onTrack = function(s) { return S.hpOnTrack() && trackHp().some(function(x) { return S.hpGroup(x).indexOf(s) >= 0; }); };
+// Le pion de vie de l'unité, tel que l'encyclopédie le définit (tile.tokens : recadrage de l'image de la tuile, comme
+// le Studio du Compagnon le dessine) ; à défaut, le portrait de la tuile.
 var hpMarkerCode = function(s, k) {
-    var tile = S.tileOf(s), label = t("man_hpm", S.tileName(s), s.lp || 0);
-    return "<span class='sk-mhpm" + (s.dead ? " dead" : "") + "' data-hpm='" + s.uid + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "' style='--k:" + k
-        + ";--c:" + (SOCLE[s.color] || "#8a8a8a") + ";background-image:url(\"" + S.asset(tile ? tile.image : "") + "\")'></span>";
+    var tile = S.tileOf(s), label = t("man_hpm", S.tileName(s), s.lp || 0), tk = tile && tile.tokens && tile.tokens[0], inner = "", bg = "";
+    if (tk && tk.image_location) {
+        inner = "<img src='" + S.asset(tk.image || tile.image) + "' alt='' draggable='false' style='left:" + tk.image_location.x + "%;top:" + tk.image_location.y + "%;width:" + (tk.image_zoom || 100)
+            + "%;height:auto;transform:translate(-50%,-50%)" + (tk.image_flip ? " scaleX(-1)" : "") + "'>";
+    } else bg = ";background-image:url(\"" + S.asset(tile ? tile.image : "") + "\")";
+    return "<span class='sk-mhpm" + (inner ? " tok" : "") + (s.dead ? " dead" : "") + "' data-hpm='" + s.uid + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "' style='--k:" + k
+        + ";--c:" + (SOCLE[s.color] || "#8a8a8a") + bg + "'>" + inner + "</span>";
 };
 
 var trackCode = function() {
@@ -123,13 +149,12 @@ var trackCode = function() {
 
 var restCode = function() {
     var st = S.state;
-    if (coop()) return "<div class='sk-mrest'><span class='sk-mresttitle'>" + e(t("heroes")) + "</span>"
+    if (coop()) return "<div class='sk-mrest' data-mrest title='" + e(t("man_coop_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("heroes")) + "</span>"
         + "<div class='sk-mstep'><button class='sk-pstep' data-mact='heroes' data-n='-1' aria-label='" + e(t("aria_heroes_minus")) + "'>−</button>"
         + S.token("heroes", st.heroes) + "<button class='sk-pstep' data-mact='heroes' data-n='1' aria-label='" + e(t("aria_heroes_plus")) + "'>+</button></div></div>";
-    return "<div class='sk-mrest'><span class='sk-mresttitle'>" + e(t("recovery")) + "</span>" + S.token("recover", st.recovery)
+    return "<div class='sk-mrest' data-mrest title='" + e(t("man_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("recovery")) + "</span>" + S.token("recover", st.recovery)
         + "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
-        + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div>"
-        + "<span class='sk-mtotal'>" + e(t("gem_total", S.gemTotal())) + "</span></div>";
+        + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
 };
 
 // Bande 3 : un pion gemme rouge numéroté au-dessus de chaque case de tuile.
@@ -145,16 +170,83 @@ var cardsBadge = function(s) { return S.cardsBadgeCode(s); };
 // ---------- Mode studio : réserve de gemmes et tas de tuiles sur le bureau ----------
 // Réserve : y prendre des gemmes en ajoute au livre, y en reposer en retire. Tas de tuiles : un appui ouvre le choix
 // des tuiles (ajoutées au bout), une tuile glissée dessus quitte le livre.
+// Le livre rétrécit en mode studio : la réserve se pose à sa gauche, le tas de tuiles à sa droite.
+// Objets réalistes posés sur le bureau (dessins originaux) : une coupe en bois ancienne pleine de gemmes à gauche,
+// un tas de tuiles à droite. La coupe est la réserve : y prendre des gemmes en ajoute au livre, y en reposer en retire.
+var BOWL_BACK = "<svg class='sk-mbowl-back' viewBox='0 0 100 70' aria-hidden='true'><defs><radialGradient id='skmbIn' cx='50%' cy='40%' r='60%'>"
+    + "<stop offset='0' stop-color='#2a160a'/><stop offset='1' stop-color='#5a341a'/></radialGradient></defs>"
+    + "<ellipse cx='50' cy='24' rx='44' ry='12' fill='url(#skmbIn)'/></svg>";
+var BOWL_FRONT = "<svg class='sk-mbowl-front' viewBox='0 0 100 70' aria-hidden='true'><defs>"
+    + "<linearGradient id='skmbWood' x1='0' x2='1' y1='0' y2='0'><stop offset='0' stop-color='#3b200d'/><stop offset='.28' stop-color='#8a5426'/>"
+    + "<stop offset='.5' stop-color='#a76a33'/><stop offset='.75' stop-color='#7a4520'/><stop offset='1' stop-color='#341b0a'/></linearGradient>"
+    + "<linearGradient id='skmbShade' x1='0' x2='0' y1='0' y2='1'><stop offset='0' stop-color='#000' stop-opacity='0'/><stop offset='1' stop-color='#000' stop-opacity='.45'/></linearGradient></defs>"
+    + "<ellipse cx='50' cy='66' rx='20' ry='3.5' fill='#000' opacity='.35'/>"
+    + "<path d='M38 58h24l3 6H35z' fill='#4a2810'/>"
+    + "<path d='M6 24A44 12 0 0 0 94 24C94 46 76 60 50 60S6 46 6 24z' fill='url(#skmbWood)'/>"
+    + "<path d='M6 24A44 12 0 0 0 94 24C94 46 76 60 50 60S6 46 6 24z' fill='url(#skmbShade)'/>"
+    + "<g fill='none' stroke='#2a1406' stroke-opacity='.35' stroke-width='.7'><path d='M12 34C30 44 70 44 88 34'/><path d='M18 44C34 51 66 51 82 44'/><path d='M27 52C40 56 60 56 73 52'/></g>"
+    + "<path d='M6 24A44 12 0 0 0 94 24' fill='none' stroke='#c08850' stroke-width='2.2'/>"
+    + "<path d='M6 24A44 12 0 0 1 94 24' fill='none' stroke='#6b3c18' stroke-width='1.6'/></svg>";
+var reserveCode = function() {
+    if (!S.studio || coop()) return "";
+    return "<div class='sk-mside sk-mside-l'><div class='sk-mz sk-mz-reserve sk-mbowl' data-zone='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("man_reserve_hint")) + "'>"
+        + BOWL_BACK + "<div class='sk-mgems'>" + groupsCode(9, S.icon("gem"), "sk-mgem", "reserve") + "</div>" + BOWL_FRONT
+        + "<span class='sk-mobjname'>" + e(t("man_reserve")) + "</span></div></div>";
+};
+// Tas de tuiles : quelques tuiles empilées (tranches de carton), celle du dessus montre une tuile du Compagnon.
+var pileCode = function() {
+    if (!S.studio) return "";
+    var top = S.state.river.filter(function(x) { return !S.isEvent(x); })[0] || S.state.river[0], tl = top && S.tileOf(top);
+    var img = tl && tl.image ? "<img src='" + S.asset(tl.image) + "' alt='' draggable='false'>" : "";
+    return "<div class='sk-mside sk-mside-r'><button class='sk-mpile' data-tilepile title='" + e(t("man_pile_hint")) + "' aria-label='" + e(t("man_pile_hint")) + "'>"
+        + "<span class='sk-mstack'><span class='sk-mslab'></span><span class='sk-mslab'></span><span class='sk-mslab'></span><span class='sk-mslab'></span>"
+        + "<span class='sk-mslab sk-mtop'>" + img + "</span><b class='sk-mplus'>+</b></span>"
+        + "<span class='sk-mobjname'>" + e(t("tab_tiles")) + "</span></button></div>";
+};
 var deskRowCode = function() {
-    var h = "";
-    if (coop()) h += zoneCode("aside", "", t("man_aside"));
-    if (S.studio) {
-        if (!coop()) h += "<div class='sk-mz sk-mz-reserve' data-zone='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("man_reserve_hint")) + "'>"
-            + "<span class='sk-mtitle'>" + e(t("man_reserve")) + "</span><div class='sk-mgems'>" + groupsCode(9, S.icon("gem"), "sk-mgem", "reserve") + "</div></div>";
-        h += "<button class='sk-mpile' data-tilepile title='" + e(t("man_pile_hint")) + "' aria-label='" + e(t("man_pile_hint")) + "'>"
-            + "<span class='sk-mpcard'></span><span class='sk-mpcard'></span><span class='sk-mpcard'><b>+</b></span><span class='sk-mtitle'>" + e(t("tab_tiles")) + "</span></button>";
-    }
-    return h ? "<div class='sk-mdeskrow'>" + h + "</div>" : "";
+    return coop() ? "<div class='sk-mdeskrow'>" + zoneCode("aside", "", t("man_aside")) + "</div>" : "";
+};
+
+// Gemmes posées sur une tuile ou ses cartes : un petit tas sur la tuile. Sans carte, le tas est lui-même une zone
+// de gemmes ; avec des cartes, un appui ouvre la liste « tuile + cartes », chaque ligne étant une zone.
+var tileGemsCode = function(s) {
+    var n = tileGems(s), lbl = t("man_tile_gems", n, S.tileName(s));
+    if (!n) return "";
+    var direct = !(s.cards || []).length;
+    return "<span class='sk-mtg" + (direct ? " sk-mz" : "") + "'" + (direct ? " data-zone='g:" + s.uid + ":-1'" : " data-tgems='" + s.uid + "'")
+        + " role='button' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'><img src='" + S.icon("gem") + "' alt='' draggable='false'><b>" + n + "</b></span>";
+};
+var cardOrder = {ti: 0, eq: 1, sp: 2};
+var gemPopCode = function() {
+    var s = S._mgpop && S.slotByUid(S._mgpop); if (!s) { S._mgpop = null; return ""; }
+    var rows = [-1].concat((s.cards || []).map(function(c, k) { return k; }).sort(function(a, b) { return cardOrder[s.cards[a].kind] - cardOrder[s.cards[b].kind] || a - b; }));
+    return "<div class='sk-mgpop' role='dialog' aria-label='" + e(t("man_gems_on", S.tileName(s))) + "'><div class='sk-mgphead'><b>" + e(t("man_gems_on", S.tileName(s))) + "</b>"
+        + "<button class='sk-mgpclose' data-mgpclose aria-label='" + e(t("close")) + "'>×</button></div>"
+        + rows.map(function(k) {
+            var z = "g:" + s.uid + ":" + k, n = count(z), c = k < 0 ? null : s.cards[k];
+            var name = k < 0 ? S.tileName(s) : S.itemName(c.kind, c.ref), ico = k < 0 ? "" : "<i class='sk-cb-" + c.kind + "'>" + {sp: "&#xf0d0;", eq: "&#xf3ed;", ti: "&#xf24d;"}[c.kind] + "</i>";
+            return "<div class='sk-mz sk-mgrow" + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(name + " · " + n) + "'>"
+                + "<span class='sk-mgname'>" + ico + e(name) + "</span><div class='sk-mgems'>" + groupsCode(n, S.icon("gem"), "sk-mgem", z) + "</div>"
+                + "<span class='sk-mcount'>" + n + "</span></div>";
+        }).join("") + "</div>";
+};
+var placeGemPop = function() {
+    var pop = S.root.querySelector(".sk-mgpop"), tile = S._mgpop && S.root.querySelector("[data-mtile='" + S._mgpop + "']");
+    if (!pop || !tile) return;
+    var r = tile.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    var x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+    var y = r.top - h - 8; if (y < 8) y = Math.min(window.innerHeight - h - 8, r.bottom + 8);
+    pop.style.left = x + "px"; pop.style.top = y + "px";
+};
+S.openGemPop = function(uid) { S._mgpop = uid; S.renderGame(); };
+var closeGemPop = function() { if (!S._mgpop) return; S._mgpop = null; var p = S.root.querySelector(".sk-mgpop"); if (p) p.remove(); };
+
+// Mode studio : pastille de couleur du socle sur les tuiles qui en ont plusieurs (un appui passe à la suivante).
+var socleCode = function(s) {
+    if (!S.studio) return "";
+    var socles = S.socles(S.tileOf(s)); if (socles.length < 2) return "";
+    var c = socles.indexOf(s.color) >= 0 ? s.color : socles[0], lbl = t("socle_next", S.socleName(c));
+    return "<button class='sk-socle' data-msocle='" + s.uid + "' style='--socle:" + SOCLE[c] + "' title='" + e(lbl) + "' aria-label='" + e(lbl) + "'></button>";
 };
 
 var tilesCode = function() {
@@ -163,7 +255,7 @@ var tilesCode = function() {
         return "<div class='sk-mtile sk-tilebox" + (s.dead ? " dead" : "") + "' data-mtile='" + s.uid + "'" + (S.isEvent(s) ? " data-eventuid='" + s.uid + "'" : "")
             + " role='img' aria-label='" + e(S.tileName(s)) + "'>" + S.tileCode(s)
             + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-            + (s.lpMax && !S.hpOnTrack() ? S.hpBadge(s) : "") + cardsBadge(s) + "</div>";
+            + (s.lpMax && !S.hpOnTrack() ? S.hpBadge(s) : "") + cardsBadge(s) + tileGemsCode(s) + socleCode(s) + "</div>";
     }).join("") + "</div>";
 };
 
@@ -172,15 +264,17 @@ S.renderManual = function() {
     var keep = S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
     S.screen = "game"; S.selected = null;
     var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + "'><div class='sk-desk'>" + trackCode()
-        + "<div class='sk-book'>"
-        + "<div class='sk-mb1'>" + BAND1.map(function(z) { return zoneCode(z, "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
+        + "<div class='sk-mmid'>" + reserveCode() + "<div class='sk-book'>"
+        + "<div class='sk-mb1'>" + band1().map(function(z) { return zoneCode(z, z == "slot4" ? "<span class='sk-mico sk-mico4' aria-hidden='true'>4</span>" : "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
         + "<div class='sk-mb2'>" + zoneCode("energy", "", coop() ? t("tokens_pool") : t("energy")) + restCode() + zoneCode("fatigue", "", t("fatigue")) + "</div>"
         + "<div class='sk-mb3'>" + holesCode() + "</div>"
-        + tilesCode() + "</div>"
+        + tilesCode() + "</div>" + pileCode() + "</div>"
         + deskRowCode()
-        + "</div></div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
+        + "</div>" + gemPopCode() + "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
     root.innerHTML = h;
     S._lastScreen = "game";
+    // Survol (souris) et appui long (iPad) des compétences : branchés une fois sur la racine, même sans plateau automatique.
+    if (!S._pressBound) { S.bindPress(root); S._pressBound = true; }
     S.placeTabs();
     // Barre des onglets : bouton Studio et disquette comme sur le plateau automatique (S.placeTabs) ; l'interrupteur
     // Aventure / Coop reste visible hors du mode studio (le clic est pris en charge par S.placeTabs → S.switchMode).
@@ -193,6 +287,7 @@ S.renderManual = function() {
     S.syncFullscreenButton();
     S.fitDesk();
     if (keep != null) root.scrollTop = keep;
+    placeGemPop();
     bind(root.querySelector(".sk-manual"));
     bindZoomHp();
     showHand();
@@ -225,6 +320,69 @@ S.manualMoveGems = function(from, to, n) {
     S.snapshot();
     setCount(from, count(from) - n); setCount(to, count(to) + n);
     commit(from == "reserve" ? t("man_log_gems_add", n, zoneLabel(to)) : to == "reserve" ? t("man_log_gems_rm", n, zoneLabel(from)) : t("man_log_gems", n, zoneLabel(from), zoneLabel(to)));
+};
+
+// Double appui sur la tuile de repos : les gemmes dépensées (Mouvement, Défense, Relance) passent en Fatigue,
+// puis autant de gemmes que la Récupération reviennent de la Fatigue vers l'Énergie disponible.
+// Les gemmes posées sur les tuiles et leurs cartes ne bougent pas.
+S.manualRecover = function() {
+    var st = S.state; if (coop()) return;
+    var spent = S.boostSum(), back = Math.min(st.recovery || 0, st.fatigue + spent);
+    if (!spent && !back) { S.toast(t("man_recover_none")); return; }
+    S.snapshot();
+    S.clearBoosts();
+    st.fatigue -= back; st.energy += back;
+    commit(t("man_log_recover", spent, back));
+};
+
+// Coop, double appui sur la tuile Héros en jeu : les jetons tirés (Mouvement, Défense, Relance, 4e) passent en Fatigue.
+// Quand le dernier jeton a été tiré (zone verte vide), tous les jetons reviennent dans la zone verte, disponibles.
+var DRAWN = ["move", "defense", "reroll", "slot4"];
+S.manualCoopClear = function() {
+    var st = S.state; if (!coop()) return;
+    if (!poolCount()) {
+        var back = st.river.filter(function(s) { return live(s.uid) && s.token && st.pool.indexOf(s.uid) < 0 && st.used.indexOf(s.uid) >= 0; });
+        if (!back.length) { S.toast(t("man_coop_none")); return; }
+        S.snapshot();
+        back.forEach(function(s) { st.pool.push(s.uid); });
+        st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
+        st.tokLoc = {};
+        commit(t("man_log_coop_reset", back.length));
+        return;
+    }
+    var drawn = st.river.filter(function(s) { return live(s.uid) && DRAWN.indexOf(tokLoc(s.uid)) >= 0; });
+    if (!drawn.length) { S.toast(t("man_coop_none")); return; }
+    S.snapshot();
+    st.tokLoc = st.tokLoc || {};
+    drawn.forEach(function(s) { st.tokLoc[s.uid] = "fatigue"; });
+    commit(t("man_log_coop_clear", drawn.length));
+};
+
+// Gemmes des tuiles et de leurs cartes : comptées dans le total ; une tuile ou une carte retirée rend les siennes à la Fatigue.
+var baseTotal = S.gemTotal;
+S.gemTotal = function() {
+    var n = baseTotal.apply(S, arguments);
+    return S.state ? n + S.state.river.reduce(function(a, s) { return a + tileGems(s); }, 0) : n;
+};
+// Une seule étape d'annulation : on prend l'instantané avant de rendre les gemmes, puis on fait taire celui de la fonction de base.
+var withGemsBack = function(base, args, holders) {
+    var n = holders.reduce(function(a, h) { return a + (h.gems || 0); }, 0);
+    if (!n || !S.manualOn()) return base.apply(S, args);
+    S.snapshot();
+    S.state.fatigue += n; holders.forEach(function(h) { delete h.gems; });
+    S.log(t("man_log_gems_back", n));
+    var snap = S.snapshot; S.snapshot = function() {};
+    try { return base.apply(S, args); } finally { S.snapshot = snap; }
+};
+var baseRemove = S.studioRemove;
+S.studioRemove = function(uid) {
+    var s = S.slotByUid(uid);
+    return withGemsBack(baseRemove, arguments, s ? [s].concat(s.cards || []) : []);
+};
+var baseRemoveCard = S.studioRemoveCard;
+S.studioRemoveCard = function(uid, kind, k) {
+    var s = S.slotByUid(uid), c = s && S.slotCards(s, kind)[k];
+    return withGemsBack(baseRemoveCard, arguments, c ? [c] : []);
 };
 
 S.manualMoveToken = function(uid, to) {
@@ -336,6 +494,15 @@ var ghostStart = function(src, x, y, html) {
 };
 var ghostMove = function(x, y) { if (ghost) { ghost.style.left = x + "px"; ghost.style.top = y + "px"; } };
 var ghostEnd = function() { if (ghost) ghost.remove(); ghost = null; };
+// Pion de vie pris en main : agrandi (avec une petite animation) pour bien le reconnaître sous le doigt.
+var HPG = 84;
+var ghostHp = function(on, html, src) {
+    if (!ghost) return;
+    var r = src.getBoundingClientRect();
+    ghost.classList.toggle("sk-mghost-hp", !!on);
+    ghost.style.width = (on ? HPG : r.width) + "px"; ghost.style.height = (on ? HPG : r.height) + "px";
+    ghost.innerHTML = html;
+};
 
 var under = function(x, y, sel) {
     var el = document.elementFromPoint(x, y);
@@ -351,6 +518,17 @@ var tileIndexAt = function(x) {
     return Math.floor((x - r.left) / w);
 };
 
+// Gemmes lâchées sur une tuile : sur la tuile si elle ne porte pas de carte ; sinon la liste « tuile + cartes »
+// s'ouvre et les gemmes restent en main jusqu'au choix de la ligne.
+var dropOnTile = function(from, n, tile, x, y) {
+    if (!tile) return;
+    var s = S.slotByUid(tile.dataset.mtile); if (!s) return;
+    if (!(s.cards || []).length) { S.manualMoveGems(from, "g:" + s.uid + ":-1", n); return; }
+    hand = {from: from, n: n, x: x, y: y, pinned: true};
+    S.openGemPop(s.uid);
+    S.toast(t("man_gems_pick"));
+};
+
 // ---------- Gestes ----------
 var lastTap = {uid: null, at: 0};
 var hinted = false;
@@ -359,6 +537,18 @@ var bind = function(board) {
     if (!board) return;
     board.addEventListener("click", function(ev) {
         if (ev.target.closest("[data-tilepile]")) { S.studioPick(); return; }
+        if (ev.target.closest("[data-mgpclose]")) { closeGemPop(); return; }
+        var sc = ev.target.closest("[data-msocle]");
+        if (sc) { S.nextSocle(sc.dataset.msocle); return; }
+        var tg = ev.target.closest("[data-tgems]");
+        if (tg) { S.openGemPop(tg.dataset.tgems); return; }
+        // Double appui sur la tuile de repos : fin de tour des gemmes (dépensées → Fatigue, Récupération → Énergie).
+        if (ev.target.closest("[data-mrest]") && !ev.target.closest("button")) {
+            var now = Date.now();
+            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; if (coop()) S.manualCoopClear(); else S.manualRecover(); }
+            else { lastTap.uid = "rest"; lastTap.at = now; }
+            return;
+        }
         var b = ev.target.closest("[data-mact]"); if (!b) return;
         var f = b.dataset.mact, v = Math.max(f == "heroes" ? 1 : 0, (S.state[f] || 0) + +b.dataset.n);
         if (f == "heroes") v = Math.min(4, v);
@@ -371,12 +561,15 @@ var bind = function(board) {
         if (ev.target.closest("button, .sk-hpwrap, [data-hp], [data-skill]")) return;
         var x0 = ev.clientX, y0 = ev.clientY;
         var zone = ev.target.closest("[data-zone]");
+        if (S._mgpop && !zone && !ev.target.closest(".sk-mgpop, [data-tgems]")) closeGemPop();
+        if (ev.target.closest("[data-tgems]")) return;
 
-        // Gemmes en main : l'appui suivant les pose dans la zone touchée, ou les repose.
+        // Gemmes en main : l'appui suivant les pose dans la zone touchée (ou sur une tuile), ou les repose.
         if (hand && hand.pinned) {
             ev.preventDefault();
             var from = hand.from, n = hand.n; dropHand();
             if (zone && zone.dataset.zone != from) S.manualMoveGems(from, zone.dataset.zone, n);
+            else if (!zone) dropOnTile(from, n, ev.target.closest("[data-mtile]"), x0, y0);
             return;
         }
 
@@ -400,7 +593,7 @@ var bind = function(board) {
         if (hpm) {
             ev.preventDefault();
             listen(function(e2) {
-                if (!g.moved && far(e2)) { g.moved = true; hpm.classList.add("sk-mdragging"); ghostStart(hpm, e2.clientX, e2.clientY); }
+                if (!g.moved && far(e2)) { g.moved = true; hpm.classList.add("sk-mdragging"); ghostStart(hpm, e2.clientX, e2.clientY); ghostHp(true, hpm.outerHTML, hpm); }
                 if (g.moved) { ghostMove(e2.clientX, e2.clientY); markTarget(under(e2.clientX, e2.clientY, "[data-cell]")); }
             }, function(e2, cancel) {
                 ghostEnd(); hpm.classList.remove("sk-mdragging");
@@ -467,13 +660,14 @@ var bind = function(board) {
                     g.moved = true; clearTimeout(g.timer); clearInterval(g.tick);
                     if (!hand) hand = {from: from, n: 1, pinned: false};
                 }
-                if (g.moved && hand) { hand.x = e2.clientX; hand.y = e2.clientY; showHand(); markTarget(under(e2.clientX, e2.clientY, "[data-zone]")); }
+                if (g.moved && hand) { hand.x = e2.clientX; hand.y = e2.clientY; showHand(); markTarget(under(e2.clientX, e2.clientY, "[data-zone]") || under(e2.clientX, e2.clientY, "[data-mtile]")); }
             }, function(e2, cancel) {
                 if (cancel) { dropHand(); return; }
                 if (g.moved && hand) {
                     var to = under(e2.clientX, e2.clientY, "[data-zone]"), n = hand.n;
                     dropHand();
                     if (to) S.manualMoveGems(from, to.dataset.zone, n);
+                    else dropOnTile(from, n, under(e2.clientX, e2.clientY, "[data-mtile]"), e2.clientX, e2.clientY);
                 } else if (hand) { hand.pinned = true; showHand(); S.toast(t("man_hand_hint")); }
                 else if (!hinted) { hinted = true; S.toast(t("man_gem_hint")); }
             });
@@ -488,6 +682,10 @@ var bind = function(board) {
                 if (!g.moved && !long && far(e2)) { g.moved = true; clearTimeout(g.timer); tile.classList.add("sk-dragging"); ghostStart(tile, e2.clientX, e2.clientY); }
                 if (g.moved) {
                     e2.preventDefault(); ghostMove(e2.clientX, e2.clientY);
+                    // Hors de la bande des tuiles (et hors du tas), la tuile devient son pion de vie, prêt à poser sur la piste.
+                    var slot = S.slotByUid(uid);
+                    var wantHp = S.hpOnTrack() && slot && !S.isEvent(slot) && !onTrack(slot) && !under(e2.clientX, e2.clientY, ".sk-mb4") && !under(e2.clientX, e2.clientY, "[data-tilepile]");
+                    if (!!wantHp != !!g.hp) { g.hp = wantHp; ghostHp(wantHp, wantHp ? hpMarkerCode(slot, 0) : tile.outerHTML, tile); }
                     markTarget(under(e2.clientX, e2.clientY, "[data-tilepile]") || (S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null));
                 }
             }, function(e2, cancel) {
@@ -562,6 +760,7 @@ S.killSlot = function(slot) {
 // Un appui hors du livre repose les gemmes en main.
 document.addEventListener("pointerdown", function(ev) {
     if (hand && hand.pinned && !ev.target.closest(".sk-manual")) dropHand();
+    if (S._mgpop && !ev.target.closest(".sk-manual")) closeGemPop();
 }, true);
 
 // ---------- Branchements ----------

@@ -1160,7 +1160,7 @@ S.zoomTile = function(uid, opts) {
     var s = S.slotByUid(uid); if (!s) return;
     var hand = !!opts.hand, studio = S.studio, game = !studio;
     // À droite : les équipements, puis les tuiles portées par la tuile.
-    var sp = S.slotCards(s, "sp"), eq = S.slotCards(s, "eq").concat(S.slotCards(s, "ti"));
+    var sp = S.slotCards(s, "sp"), eq = S.slotCards(s, "ti").concat(S.slotCards(s, "eq"));
     var minPos = -sp.length - (studio ? 1 : 0), maxPos = eq.length + (studio ? 1 : 0);
     var pos = Math.max(minPos, Math.min(maxPos, opts.pos == null ? (hand ? -1 : 0) : opts.pos));
     S._zoom = {uid: uid, pos: pos, hand: hand};
@@ -1305,7 +1305,7 @@ S.bindZoom = function(ov) {
     };
 };
 // Studio : cartes d'une tuile. Les deux « + » ouvrent le même choix : sorts de l'Overlord, équipements ou tuiles,
-// une ou plusieurs d'un coup. Les sorts se rangent à gauche, les équipements puis les tuiles à droite.
+// une ou plusieurs d'un coup. Les sorts se rangent à gauche, les tuiles puis les équipements à droite.
 S.studioAddCards = function(uid, side) {
     var back = function(pos) { S.zoomTile(uid, {pos: pos}); };
     var right = function(s) { return S.slotCards(s, "eq").length + S.slotCards(s, "ti").length; };
@@ -1325,7 +1325,7 @@ S.studioAddCards = function(uid, side) {
 S.studioRemoveCard = function(uid, kind, k) {
     var s = S.slotByUid(uid); if (!s) return;
     var c = S.slotCards(s, kind)[k]; if (!c) return;
-    var side = kind == "sp" ? S.slotCards(s, "sp") : S.slotCards(s, "eq").concat(S.slotCards(s, "ti")), at = side.indexOf(c);
+    var side = kind == "sp" ? S.slotCards(s, "sp") : S.slotCards(s, "ti").concat(S.slotCards(s, "eq")), at = side.indexOf(c);
     S.snapshot();
     s.cards.splice(s.cards.indexOf(c), 1);
     commit();
@@ -2229,7 +2229,7 @@ S.cardsBadgeCode = function(s) {
     if (!sp && !eq && !ti) return "";
     var lbl = t("cards_badge3", sp, eq, ti);
     return "<span class='sk-cardsbadge' role='img' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'>"
-        + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + (ti ? "<i class='sk-cb-ti'>&#xf24d;</i>" + ti : "") + "</span>";
+        + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (ti ? "<i class='sk-cb-ti'>&#xf24d;</i>" + ti : "") + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + "</span>";
 };
 S.decorateCards = function() {
     if (!S.root || !S.state) return;

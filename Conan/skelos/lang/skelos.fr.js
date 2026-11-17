@@ -579,5 +579,18 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_reserve_hint': "Prenez des gemmes dans la réserve pour en ajouter au livre ; reposez-en dans la réserve pour en retirer.",
     'man_pile_hint': "Touchez le tas pour ajouter une tuile ; glissez une tuile sur le tas pour l’enlever.",
     'man_log_gems_add': "{0} gemme(s) ajoutée(s) : {1}",
-    'man_log_gems_rm': "{0} gemme(s) retirée(s) : {1}"
+    'man_log_gems_rm': "{0} gemme(s) retirée(s) : {1}",
+    'man_on_card': "{0} (sur {1})",
+    'man_tile_gems': "{0} gemme(s) sur {1}",
+    'man_gems_on': "Gemmes sur {0}",
+    'man_gems_pick': "Touchez la tuile ou la carte qui reçoit les gemmes.",
+    'man_rest_hint': "Double appui : les gemmes dépensées passent en Fatigue, puis la Récupération revient vers l’Énergie disponible.",
+    'man_recover_none': "Aucune gemme dépensée ni en Fatigue.",
+    'man_log_recover': "Récupération : {0} gemme(s) dépensée(s) en Fatigue, {1} vers l’Énergie disponible",
+    'man_log_gems_back': "{0} gemme(s) rendue(s) à la Fatigue",
+    'man_slot4': "4e jeton",
+    'man_coop_rest_hint': "Double appui : les jetons tirés passent en Fatigue ; une fois le dernier jeton tiré, tous redeviennent disponibles.",
+    'man_coop_none': "Aucun jeton tiré à ranger.",
+    'man_log_coop_clear': "{0} jeton(s) tiré(s) passé(s) en Fatigue",
+    'man_log_coop_reset': "Dernier jeton tiré : {0} jeton(s) de nouveau disponibles"
 });
