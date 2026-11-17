@@ -576,11 +576,11 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_recover': "Recovery: {0} spent gem(s) to Fatigue, {1} to Available energy",
     'man_log_gems_back': "{0} gem(s) returned to Fatigue",
     'man_slot4': "4th token",
-    'man_coop_rest_hint': "Double tap: drawn tokens go to Fatigue; once the last token is drawn, all become available again.",
+    'man_coop_rest_hint': "Double tap: drawn tokens go to Fatigue. As soon as the last token is drawn, tokens in Fatigue and set aside become available again.",
     'man_coop_none': "No drawn token to put away.",
     'man_log_coop_clear': "{0} drawn token(s) moved to Fatigue",
     'man_log_coop_reset': "Last token drawn: {0} token(s) available again",
     'man_track_prev': "Previous cards",
     'man_track_next': "Next cards",
-    'man_coop_reset_toast': "Last token drawn: {0} ({1}). All tokens are available again."
+    'man_coop_reset_toast': "Last token drawn: {0} ({1}). Tokens in Fatigue and set aside are available again."
 });

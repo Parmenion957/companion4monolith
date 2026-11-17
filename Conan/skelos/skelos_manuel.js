@@ -461,13 +461,13 @@ S.manualMoveToken = function(uid, to) {
         st.tokLoc[uid] = to;
     }
     var msg = t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(s), zoneLabel(to));
-    // Dès que le dernier jeton est tiré, tous les jetons redeviennent disponibles (zone verte), comme dans le jeu.
-    if (from == "energy" && !poolCount()) {
-        var all = st.river.filter(function(x) { return live(x.uid) && st.used.indexOf(x.uid) >= 0; });
+    // Dès que le dernier jeton est tiré, les jetons redeviennent disponibles (zone verte), comme dans le jeu ;
+    // ceux posés sur Mouvement, Défense, Relance et le 4e emplacement restent en place pour jouer leur activation.
+    var all = from == "energy" && !poolCount() ? st.river.filter(function(x) { return live(x.uid) && st.used.indexOf(x.uid) >= 0 && DRAWN.indexOf(tokLoc(x.uid)) < 0; }) : [];
+    if (all.length) {
         var fromR = all.map(function(x) { return x.uid == uid ? rectOf("[data-zone='" + to + "']") : rectOf("[data-tok='" + x.uid + "']"); });
-        all.forEach(function(x) { st.pool.push(x.uid); });
+        all.forEach(function(x) { st.pool.push(x.uid); delete st.tokLoc[x.uid]; });
         st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
-        st.tokLoc = {};
         S.log(msg);
         commit(t("man_log_coop_reset", all.length));
         S.toast(t("man_coop_reset_toast", s.token, S.tileName(s)));
