@@ -16,7 +16,8 @@ var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function
 var BAND1 = ["move", "defense", "reroll"];
 var LONG = 380, STEP = 260, MOVE = 9, RESERVE = 20;
 
-S.manualOn = function() { return S.prefs().board == "manual" && !!S.state && !S.editing; };
+// Un seul plateau : le livre de Skelos manuel, en partie comme dans l'éditeur de scénario.
+S.manualOn = function() { return !!S.state; };
 var coop = function() { return S.state.mode == "solo"; };
 
 // ---------- Gemmes : nombre par zone ----------

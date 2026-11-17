@@ -551,8 +551,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_studio': "Le mode studio",
     'ghelp_studio_items': "Le crayon en haut à droite ouvre le mode studio : on règle la partie sur le plateau au lieu de la jouer.|Faites glisser les tuiles pour changer leur ordre, ajoutez-en dans une case vide, jetez-en une dans la corbeille ; changez le socle et les points de vie d’une tuile.|Double appui sur une tuile, ou appui sur son cœur : le zoom règle ses points de vie. Au bout à gauche, un + ajoute des sorts de l’Overlord ; au bout à droite, un + ajoute des équipements. La pastille corbeille au coin d’une carte la retire de la tuile. Les cartes sont gardées avec le scénario.|Les − et + règlent le tour, la limite de tours, la Récupération, le total de gemmes, les activations par tour (ou les Héros en jeu en Coop) et qui commence.|Chaque changement est noté au Journal. Quittez le mode studio pour jouer le tour.",
     // Livre de Skelos manuel
-    'man_setting': "Livre de Skelos manuel (comme le jeu)",
-    'man_setting_help': "Coché : le plateau reproduit le livre et tout se déplace à la main (gemmes, jetons, tuiles, sablier). Décoché : le plateau automatique.",
     'man_aside': "Mis de côté",
     'man_track': "Piste des tours",
     'man_hourglass': "Sablier",

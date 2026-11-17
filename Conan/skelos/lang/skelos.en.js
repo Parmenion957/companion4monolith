@@ -538,8 +538,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_studio': "Studio mode",
     'ghelp_studio_items': "The pencil at the top right opens studio mode: you set up the game on the board instead of playing it.|Drag tiles to reorder them, add one in an empty slot, drop one in the bin; change a tile’s base and life points.|Double-tap a tile, or tap its heart: the zoom sets its life points. At the left end, a + adds Overlord spells; at the right end, a + adds equipment. The bin badge in a card’s corner removes it from the tile. The cards are saved with the scenario.|The − and + buttons set the turn, the turn limit, Recovery, the gem total, activations per turn (or Heroes in play in Coop) and who goes first.|Every change is recorded in the Log. Leave studio mode to play the turn.",
     // Livre de Skelos manuel
-    'man_setting': "Manual Book of Skelos (like the game)",
-    'man_setting_help': "Checked: the board reproduces the book and everything is moved by hand (gems, tokens, tiles, hourglass). Unchecked: the automatic board.",
     'man_aside': "Set aside",
     'man_track': "Turn track",
     'man_hourglass': "Hourglass",

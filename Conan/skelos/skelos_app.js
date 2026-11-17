@@ -887,8 +887,6 @@ S.renderSettings = function() {
     h += "<div class='sk-blk sk-c2'><h3>" + t("data") + "</h3><p>" + t("data_help") + "</p><button class='sk-btn' data-exp>" + t("export_all") + "</button><button class='sk-btn' data-imp>" + t("import") + "</button>"
         + "<h3 class='sk-mt'>" + t("display") + "</h3>"
         + "<label class='sk-sw'><span>" + t("animations") + "</span><input type='checkbox' data-pref='anim'" + (!pr.noAnim ? " checked" : "") + "></label>"
-        + "<label class='sk-sw'><span>" + t("man_setting") + "</span><input type='checkbox' data-pref='manual'" + (pr.board == "manual" ? " checked" : "") + "></label>"
-        + "<p>" + t("man_setting_help") + "</p>"
         // Points de vie : sur la piste, sur la tuile, ou les deux ; au moins une case reste cochée.
         + "<label class='sk-sw'><span>" + t("man_turn_mini") + "</span><input type='checkbox' data-pref='turnmini'" + (pr.turnMini ? " checked" : "") + "></label>"
         + "<p>" + t("man_turn_mini_help") + "</p>"
@@ -900,7 +898,6 @@ S.renderSettings = function() {
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
         if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
-        else if (x.dataset.pref == "manual") { pr.board = x.checked ? "manual" : "auto"; S.savePrefs(); }
         else if (x.dataset.pref == "turnmini") { pr.turnMini = x.checked; S.savePrefs(); S.renderSettings(); }
         else if (x.dataset.pref == "hpplace") {
             var tr = scr.querySelector("[data-pref='hpplace'][value='track']").checked, ti = scr.querySelector("[data-pref='hpplace'][value='tile']").checked;
