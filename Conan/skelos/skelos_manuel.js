@@ -782,14 +782,99 @@ var bind = function(board) {
 
 // Zoom d'une tuile depuis le livre manuel : on y ajoute et retire les cartes (comme en studio) et on règle les PV
 // de la partie, sans lancer de sort (les gemmes se déplacent à la main).
+// Le zoom du livre manuel : la tuile au centre et, de part et d'autre, ses cartes en plus petit sur deux pistes
+// qui défilent (à gauche les sorts, à droite les tuiles portées puis les équipements). Un appui sur une petite carte
+// l'agrandit ; la pastille corbeille la retire ; le + à droite des PV en ajoute. Glisser vers le haut ou le bas sur
+// la tuile passe à la tuile voisine.
 var baseZoom = S.zoomTile;
+var smallCard = function(s, c) {
+    var kind = c.kind, k = S.slotCards(s, kind).indexOf(c), name = S.itemName(kind, c.ref);
+    var real = S.realCardCode(kind, c.ref), face = kind == "ti" ? (real || "") : "<span class='sk-cardscale'>" + (real || "<span class='sk-upcard sk-k-" + kind + "'><b>" + e(name) + "</b></span>") + "</span>";
+    return "<div class='sk-mzc sk-mzc-" + kind + "' data-mzc='" + kind + ":" + k + "' role='button' tabindex='0' aria-label='" + e(name) + "' title='" + e(name) + "'>" + face
+        + (c.gems ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + c.gems + "</b></span>" : "")
+        + "<button class='sk-zoomrm sk-mzrm' data-zrm='" + kind + ":" + k + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button></div>";
+};
+var trackSide = function(s, list, side) {
+    if (!list.length) return "<div class='sk-mztrack sk-mztrack-" + side + " empty'></div>";
+    var more = list.length > 2;
+    return "<div class='sk-mztrack sk-mztrack-" + side + (more ? " more" : "") + "'>"
+        + (more ? "<button class='sk-mzrot' data-mzrot='-1' aria-label='" + e(t("man_track_prev")) + "'>&#xf077;</button>" : "")
+        + "<div class='sk-mzlist'>" + list.map(function(c) { return smallCard(s, c); }).join("") + "</div>"
+        + (more ? "<button class='sk-mzrot' data-mzrot='1' aria-label='" + e(t("man_track_next")) + "'>&#xf078;</button>" : "") + "</div>";
+};
 S.zoomTile = function(uid, opts) {
     if (!S.manualOn()) return baseZoom.apply(S, arguments);
-    var was = S.studio; S.studio = true;
-    try { baseZoom.apply(S, arguments); } finally { S.studio = was; }
+    var s = S.slotByUid(uid); if (!s) return;
+    opts = opts || {};
+    S._zoom = {uid: uid, pos: 0, hand: false, manual: true};
+    S.hideTip(); S.closeHp && S.closeHp();
+    var left = S.slotCards(s, "sp"), right = S.slotCards(s, "ti").concat(S.slotCards(s, "eq"));
+    var hp = S.isEvent(s) ? "" : S.studioHpCode(s).replace(/data-act='studiolp' data-uid='[^']*' data-n='(-?\d+)'/g, "data-zmhp='$1'");
+    var ring = S.zoomRing(false), idx = ring.indexOf(uid);
     var ov = S.root.querySelector("#sk-overlay");
-    if (ov) ov.querySelectorAll("[data-zlp]").forEach(function(b) { b.removeAttribute("data-zlp"); b.setAttribute("data-zmhp", b.dataset.n); });
+    // On garde la position des pistes d'un affichage à l'autre (ajout, retrait, PV) pour la même tuile.
+    var keep = {};
+    if (ov && S._mzLast == uid) ov.querySelectorAll(".sk-mzlist").forEach(function(l, i) { keep[i] = l.scrollTop; });
+    S._mzLast = uid;
+    ov.innerHTML = "<div class='sk-zoom sk-mzoom' role='dialog' tabindex='-1' aria-label='" + e(S.tileName(s)) + "'>"
+        + "<div class='sk-zoomhead'>" + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
+        + "<div class='sk-mzrow" + (opts.dir ? " sk-zin-" + opts.dir : "") + "'>" + trackSide(s, left, "l")
+        + "<div class='sk-mzcenter'><div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
+        + (s.gems ? "<span class='sk-mzgems'><img src='" + S.icon("gem") + "' alt=''><b>" + s.gems + "</b></span>" : "") + "</div>"
+        + "<div class='sk-mzfoot'>" + (hp ? "<div class='sk-zoomhp'>" + hp + "</div>" : "")
+        + "<button class='sk-mzadd' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button></div></div>"
+        + trackSide(s, right, "r") + "</div></div>";
+    ov.classList.add("on", "sk-zoomon");
+    ov.querySelectorAll(".sk-mzlist").forEach(function(l, i) { if (keep[i]) l.scrollTop = keep[i]; });
+    S.markSteppers && S.markSteppers(ov);
+    bindManualZoom(ov);
+    ov.querySelector(".sk-zoom").focus({preventScroll: true});
 };
+var bindManualZoom = function(ov) {
+    var sx = 0, sy = 0, down = false, inTrack = false;
+    ov.onkeydown = function(ev) {
+        if (ev.key == "Escape") { if (!closeBig(ov)) S.zoomShut(); return; }
+        var m = {ArrowUp: "up", ArrowDown: "down"}[ev.key];
+        if (m) { ev.preventDefault(); S.zoomGo(m); }
+    };
+    ov.onpointerdown = function(ev) { down = true; sx = ev.clientX; sy = ev.clientY; inTrack = !!ev.target.closest(".sk-mztrack, .sk-mzbig"); };
+    ov.onpointerup = function(ev) {
+        if (!down) return; down = false;
+        var dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (inTrack || Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx)) return;
+        S._zswipeAt = Date.now();
+        S.zoomGo(dy < 0 ? "down" : "up");
+    };
+    ov.onclick = function(ev) {
+        if (S._zswipeAt && Date.now() - S._zswipeAt < 450) { S._zswipeAt = 0; ev.stopPropagation(); return; }
+        var z = S._zoom; if (!z) return;
+        var uid = z.uid;
+        if (closeBig(ov)) { ev.stopPropagation(); return; }
+        var rm = ev.target.closest("[data-zrm]");
+        if (rm) { ev.stopPropagation(); var p = rm.dataset.zrm.split(":"); S.studioRemoveCard(uid, p[0], +p[1]); return; }
+        var add = ev.target.closest("[data-zadd]");
+        if (add) { ev.stopPropagation(); S.studioAddCards(uid, add.dataset.zadd); return; }
+        var rot = ev.target.closest("[data-mzrot]");
+        if (rot) {
+            ev.stopPropagation();
+            var list = rot.parentNode.querySelector(".sk-mzlist"), card = list.querySelector(".sk-mzc");
+            list.scrollBy({top: +rot.dataset.mzrot * (card ? card.offsetHeight + 10 : 100), behavior: "smooth"});
+            return;
+        }
+        var sc = ev.target.closest("[data-mzc]");
+        if (sc) { ev.stopPropagation(); openBig(ov, sc); return; }
+        var sk = ev.target.closest("[data-skill]");
+        if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
+        if (ev.target.closest(".sk-tip, .sk-zoomhead, .sk-mzcenter, .sk-mztrack")) return;
+        S.zoomShut();
+    };
+};
+// Petite carte agrandie au-dessus du zoom ; un appui n'importe où la repose.
+var openBig = function(ov, sc) {
+    var face = sc.cloneNode(true); face.querySelectorAll("button, .sk-mzgems").forEach(function(b) { b.remove(); });
+    ov.querySelector(".sk-mzoom").insertAdjacentHTML("beforeend", "<div class='sk-mzbig' role='dialog' aria-label='" + e(sc.getAttribute("aria-label")) + "'><div class='sk-mzbigcard'>" + face.innerHTML + "</div></div>");
+};
+var closeBig = function(ov) { var b = ov.querySelector(".sk-mzbig"); if (b) { b.remove(); return true; } return false; };
 var zoomBound = false;
 var bindZoomHp = function() {
     if (zoomBound || !S.root) return; zoomBound = true;

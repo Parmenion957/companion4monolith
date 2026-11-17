@@ -579,5 +579,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_coop_rest_hint': "Double tap: drawn tokens go to Fatigue; once the last token is drawn, all become available again.",
     'man_coop_none': "No drawn token to put away.",
     'man_log_coop_clear': "{0} drawn token(s) moved to Fatigue",
-    'man_log_coop_reset': "Last token drawn: {0} token(s) available again"
+    'man_log_coop_reset': "Last token drawn: {0} token(s) available again",
+    'man_track_prev': "Previous cards",
+    'man_track_next': "Next cards"
 });

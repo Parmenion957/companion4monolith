@@ -592,5 +592,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_coop_rest_hint': "Double appui : les jetons tirés passent en Fatigue ; une fois le dernier jeton tiré, tous redeviennent disponibles.",
     'man_coop_none': "Aucun jeton tiré à ranger.",
     'man_log_coop_clear': "{0} jeton(s) tiré(s) passé(s) en Fatigue",
-    'man_log_coop_reset': "Dernier jeton tiré : {0} jeton(s) de nouveau disponibles"
+    'man_log_coop_reset': "Dernier jeton tiré : {0} jeton(s) de nouveau disponibles",
+    'man_track_prev': "Cartes précédentes",
+    'man_track_next': "Cartes suivantes"
 });
