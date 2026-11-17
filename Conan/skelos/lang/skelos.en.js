@@ -588,6 +588,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_rest_hint': "Double tap: everything spent (Movement, Defense, Reroll, gems on tiles and their cards) goes to Fatigue, then Recovery moves gems back to Available energy.",
     'man_recover_none': "No spent gems and no Fatigue.",
     'man_collect_none': "No spent gems to bring back.",
+    'man_fatigue_hint': "Double tap: all spent gems (Movement, Defense, Reroll, tiles and cards) go back to Fatigue.",
     'man_log_collect': "Fatigue: {0} spent gem(s) brought back",
     'man_log_recover': "Recovery: {0} spent gem(s) to Fatigue, {1} to Available energy",
     'man_log_gems_back': "{0} gem(s) returned to Fatigue",

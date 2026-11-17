@@ -117,7 +117,9 @@ var zoneCode = function(z, inner, title, nShown) {
     var label = zoneLabel(z) + " · " + n + (coop() && count(z) ? " · " + t("man_tile_gems", count(z), zoneLabel(z)) : "");
     // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
     var groups = Math.ceil((coop() ? count(z) : n) / 3), gs = BAND1.indexOf(z) >= 0 ? " style='--g:calc(" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw * var(--gz, 1))'" : "";
-    return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'" + gs + ">"
+    // La Fatigue rappelle son double appui (coop : jetons tirés et gemmes ; sinon : gemmes dépensées).
+    var tip = z == "fatigue" ? label + " — " + t(coop() ? "man_coop_rest_hint" : "man_fatigue_hint") : label;
+    return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(tip) + "'" + gs + ">"
         + (inner || "") + (title ? "<span class='sk-mtitle'>" + e(title) + "</span>" : "")
         + "<div class='sk-mgems'>" + content + "</div>"
         + (n ? "<span class='sk-mcount' aria-hidden='true'>" + n + "</span>" : "") + "</div>";
@@ -228,7 +230,7 @@ var restCode = function() {
     // Sans texte écrit : le nom et l'aide restent en info-bulle. Avec une image de tuile de récupération (réglages),
     // la flèche dessinée laisse place à l'image et la valeur passe en chiffre dans le coin.
     var img = S.skin().rest, aria = " role='group' aria-label='" + e(t("recovery") + (coop() ? "" : " · " + recLabel())) + "'";
-    if (coop()) return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_coop_rest_hint")) + "'>" + (img ? "<div class='sk-mrestcard'><img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'></div>" : S.token("recover", "")) + "</div>";
+    if (coop()) return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery")) + "'>" + (img ? "<div class='sk-mrestcard'><img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'></div>" : S.token("recover", "")) + "</div>";
     // Tuile d'origine : la valeur est la gemme du pion numéroté (1 à 8), sinon un chiffre posé sur la gemme vide ;
     // le − et le + encadrent la gemme, sur la flèche (en mode studio seulement : en jeu, la valeur est fixée).
     if (img) {
@@ -529,7 +531,7 @@ var pulse = function(sel) {
     el.animate([{transform: "scale(1)"}, {transform: "scale(1.06)", filter: "brightness(1.15)"}, {transform: "scale(1)"}], {duration: 380, easing: "ease-out"});
 };
 
-// Coop, double appui sur la tuile Héros en jeu : les jetons tirés (Mouvement, Défense, Relance) passent en Fatigue.
+// Coop, double appui sur la Fatigue : les jetons tirés (Mouvement, Défense, Relance) passent en Fatigue.
 // Quand le dernier jeton a été tiré (zone verte vide), tous les jetons reviennent dans la zone verte, disponibles.
 var DRAWN = ["move", "defense", "reroll"];
 S.manualCoopClear = function() {
@@ -555,7 +557,7 @@ S.manualCoopClear = function() {
     if (gems) S.log(t("man_log_coop_gems", gems));
     commit(toks.length ? t(reset ? "man_log_coop_reset" : "man_log_coop_clear", toks.length) : null);
     // Animation : gemmes vers la Fatigue ; jetons vers la Fatigue (ou, quand tout a été tiré, vers la zone verte, retournés).
-    pulse("[data-mrest]");
+    pulse("[data-zone='fatigue']");
     var fat = rectOf("[data-zone='fatigue']"), en = rectOf("[data-zone='energy']"), g = ++animGen, end = 0, gem = S.icon("gem");
     paths.forEach(function(p, i) { end = Math.max(end, fly(gem, p.from, fat, p.n, i * 90)); });
     toks.forEach(function(s, i) { end = Math.max(end, reset ? fly(S.marker(s.token), fromT[i], en, 1, i * 70, S.icon("tokenback")) : fly(S.marker(s.token), fromT[i], fat, 1, i * 90)); });
@@ -833,14 +835,16 @@ var bind = function(board) {
         // Double appui sur la tuile de repos : fin de tour des gemmes (dépensées → Fatigue, Récupération → Énergie).
         if (ev.target.closest("[data-mrest]") && !ev.target.closest("button")) {
             var now = Date.now();
-            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; if (coop()) S.manualCoopClear(); else S.manualRecover(); }
+            // (En coop, plus rien : le double appui qui range les jetons tirés est passé sur la Fatigue.)
+            if (coop()) return;
+            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; S.manualRecover(); }
             else { lastTap.uid = "rest"; lastTap.at = now; }
             return;
         }
-        // Double appui sur la Fatigue : toutes les gemmes dépensées y reviennent.
+        // Double appui sur la Fatigue : toutes les gemmes dépensées y reviennent ; en coop, les jetons tirés aussi.
         if (ev.target.closest(".sk-manual [data-zone='fatigue']") && !ev.target.closest("button")) {
             var now2 = Date.now();
-            if (lastTap.uid == "fatigue" && now2 - lastTap.at < 400) { lastTap.uid = null; S.manualCollect(); }
+            if (lastTap.uid == "fatigue" && now2 - lastTap.at < 400) { lastTap.uid = null; if (coop()) S.manualCoopClear(); else S.manualCollect(); }
             else { lastTap.uid = "fatigue"; lastTap.at = now2; }
             return;
         }
