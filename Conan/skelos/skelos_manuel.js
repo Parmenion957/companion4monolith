@@ -1003,7 +1003,7 @@ var bindManualZoom = function(ov) {
         if (rot) {
             ev.stopPropagation();
             var list = rot.parentNode.querySelector(".sk-mzlist"), card = list.querySelector(".sk-mzc");
-            list.scrollBy({top: +rot.dataset.mzrot * (card ? card.offsetHeight + 10 : 100), behavior: "smooth"});
+            list.scrollBy({top: +rot.dataset.mzrot * (card ? card.offsetHeight + 24 : 100), behavior: "smooth"});
             return;
         }
         var sc = ev.target.closest("[data-mzc]");

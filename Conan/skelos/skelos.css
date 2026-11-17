@@ -1937,3 +1937,8 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mturn .sk-tokimg b { min-width: 2.9cqw; height: 2.6cqw; border-radius: 1.3cqw; padding: 0 .5cqw; right: -1cqw; bottom: -.6cqw; font-size: 1.8cqw; }
 .sk-mturn .sk-ptok .sk-pstep { width: 3.4cqw; height: 3.4cqw; margin-top: -1.7cqw; font-size: 2cqw; padding: 0; }
 .sk-mturn .sk-ptok .sk-pstep:first-child { right: calc(100% + .3cqw); } .sk-mturn .sk-ptok .sk-pstep:last-child { left: calc(100% + .3cqw); }
+
+/* Zoom (double appui) : gemmes de la tuile à droite, sous le nom ; celles d'une carte à cheval sur sa tranche haute */
+.sk-zoombox > .sk-mzgems { top: 13%; right: 4%; }
+.sk-mzc > .sk-mzgems { top: 0; right: 10%; transform: translateY(-55%); box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.sk-mzlist { padding-top: 22px; scroll-padding-top: 22px; gap: 24px; }
