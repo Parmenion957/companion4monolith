@@ -110,7 +110,8 @@ var zoneCode = function(z, inner, title, nShown) {
         var gn = z == "aside" ? 0 : count(z);
         if (z == "energy") { n = nShown != null ? nShown : poolCount(); content = groupsCode(n, S.icon("tokenback"), "sk-mback", z); }
         else { var l = tokensIn(z); n = l.length; content = l.map(tokCode).join(""); }
-        content += gn ? "<span class='sk-mcgems'>" + groupsCode(gn, S.icon("gem"), "sk-mgem", z) + "</span>" : "";
+        // Gemmes à gauche (leur nombre est dans le coin gauche), jetons à droite (leur nombre dans le coin droit).
+        content = (gn ? "<span class='sk-mcgems'>" + groupsCode(gn, S.icon("gem"), "sk-mgem", z) + "</span>" : "") + content;
         if (gn) inner = (inner || "") + "<span class='sk-mgcount' aria-hidden='true'><img src='" + S.icon("gem") + "' alt=''>" + gn + "</span>";
     }
     else { n = nShown != null ? nShown : count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
