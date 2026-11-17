@@ -1916,3 +1916,10 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     .sk-panel .sk-a-phase, .sk-panel.solo .sk-a-phase { grid-column: 1 / 5; grid-row: 5; }
     .sk-panel.solo .sk-a-ov { grid-column: 1 / 5; grid-row: 4; }
 }
+
+/* Livre manuel : place d'arrivée d'une tuile glissée dans sa bande (cadre pointillé, comme le plateau automatique) */
+.sk-mb4 { position: relative; }
+.sk-mspot { position: absolute; top: -.2cqw; bottom: -.2cqw; left: calc(-.2cqw + (100% - 1cqw) / 8 * var(--i, 0)); width: calc((100% - 1cqw) / 8 + 1.4cqw); box-sizing: border-box; box-shadow: 0 0 1.2cqw var(--highlight-color);
+    outline: 4px dashed var(--highlight-color); outline-offset: -4px; border-radius: .8cqw; background: color-mix(in srgb, var(--highlight-color) 18%, transparent);
+    pointer-events: none; z-index: 4; transition: left .12s ease-out; }
+@media (prefers-reduced-motion: reduce) { .sk-mspot { transition: none; } }

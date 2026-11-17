@@ -618,6 +618,16 @@ var markTarget = function(el) {
     document.querySelectorAll(".sk-manual .sk-mtarget").forEach(function(n) { if (n !== el) n.classList.remove("sk-mtarget"); });
     if (el) el.classList.add("sk-mtarget");
 };
+// Pendant le glisser d'une tuile dans sa bande, un cadre pointillé montre la place où elle se posera
+// (comme sur le plateau automatique) ; rien quand elle reviendrait à sa place.
+var showSpot = function(uid, x) {
+    var band = S.root.querySelector(".sk-mb4"); if (!band) return;
+    var spot = band.querySelector(".sk-mspot"), st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
+    var idx = x == null ? -1 : Math.max(0, Math.min(st.river.length - 1, tileIndexAt(x)));
+    if (idx < 0 || idx == i) { if (spot) spot.remove(); return; }
+    if (!spot) { band.insertAdjacentHTML("beforeend", "<span class='sk-mspot' aria-hidden='true'></span>"); spot = band.querySelector(".sk-mspot"); }
+    spot.style.setProperty("--i", idx);
+};
 var tileIndexAt = function(x) {
     var band = S.root.querySelector(".sk-mb4"); if (!band) return -1;
     var r = band.getBoundingClientRect(), w = r.width / S.RIVER_SIZE;
@@ -796,10 +806,11 @@ var bind = function(board) {
                     var slot = S.slotByUid(uid);
                     var wantHp = S.hpOnTrack() && slot && !S.isEvent(slot) && !onTrack(slot) && !under(e2.clientX, e2.clientY, ".sk-mb4") && !under(e2.clientX, e2.clientY, "[data-tilepile]");
                     if (!!wantHp != !!g.hp) { g.hp = wantHp; ghostHp(wantHp, wantHp ? hpMarkerCode(slot, 0) : tile.outerHTML, tile); }
+                    showSpot(uid, under(e2.clientX, e2.clientY, ".sk-mb4") ? e2.clientX : null);
                     markTarget(under(e2.clientX, e2.clientY, "[data-tilepile]") || (S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null));
                 }
             }, function(e2, cancel) {
-                ghostEnd(); tile.classList.remove("sk-dragging");
+                ghostEnd(); tile.classList.remove("sk-dragging"); showSpot(uid, null);
                 if (cancel || long) return;
                 if (g.moved) {
                     if (under(e2.clientX, e2.clientY, ".sk-mb4")) S.manualMoveTile(uid, tileIndexAt(e2.clientX));
