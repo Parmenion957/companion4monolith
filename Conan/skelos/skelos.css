@@ -1923,3 +1923,17 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     outline: 4px dashed var(--highlight-color); outline-offset: -4px; border-radius: .8cqw; background: color-mix(in srgb, var(--highlight-color) 18%, transparent);
     pointer-events: none; z-index: 4; transition: left .12s ease-out; }
 @media (prefers-reduced-motion: reduce) { .sk-mspot { transition: none; } }
+
+/* Livre manuel, piste des tours réduite : le cadre Tour du plateau automatique, à gauche de la bande 1
+   (les cases Mouvement, Défense, Relance restent centrées) */
+.sk-mb1 { position: relative; }
+.sk-mturn { position: absolute; left: .4cqw; top: 0; bottom: 0; width: 25cqw; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4cqw;
+    padding: .5cqw; border-radius: .9cqw; background: color-mix(in srgb, var(--body-bg-color, #f8f6f6) 82%, transparent); border: 1px solid color-mix(in srgb, var(--main-color, #542f23) 35%, transparent);
+    box-shadow: 0 .3cqw .8cqw rgba(0,0,0,.35); color: var(--body-color); }
+.sk-mturn .sk-ptitle { font-family: 'Primary', serif; color: var(--main-color); font-size: 1.9cqw; line-height: 1; letter-spacing: .03em; }
+.sk-mturn .sk-ppair { display: flex; width: 100%; justify-content: space-around; align-items: center; }
+.sk-mturn .sk-tokimg { cursor: pointer; touch-action: none; }
+.sk-mturn .sk-tokimg img { width: 5.4cqw; height: 5.4cqw; }
+.sk-mturn .sk-tokimg b { min-width: 2.9cqw; height: 2.6cqw; border-radius: 1.3cqw; padding: 0 .5cqw; right: -1cqw; bottom: -.6cqw; font-size: 1.8cqw; }
+.sk-mturn .sk-ptok .sk-pstep { width: 3.4cqw; height: 3.4cqw; margin-top: -1.7cqw; font-size: 2cqw; padding: 0; }
+.sk-mturn .sk-ptok .sk-pstep:first-child { right: calc(100% + .3cqw); } .sk-mturn .sk-ptok .sk-pstep:last-child { left: calc(100% + .3cqw); }

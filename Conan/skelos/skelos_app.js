@@ -826,15 +826,18 @@ S.renderSettings = function() {
         + "<label class='sk-sw'><span>" + t("man_setting") + "</span><input type='checkbox' data-pref='manual'" + (pr.board == "manual" ? " checked" : "") + "></label>"
         + "<p>" + t("man_setting_help") + "</p>"
         // Points de vie : sur la piste, sur la tuile, ou les deux ; au moins une case reste cochée.
-        + "<fieldset class='sk-hpplace'><legend>" + t("man_hp_place") + "</legend>"
-        + "<label class='sk-sw'><span>" + t("man_hp_track") + "</span><input type='checkbox' data-pref='hpplace' value='track'" + (pr.hpPlace != "tile" ? " checked" : "") + "></label>"
-        + "<label class='sk-sw'><span>" + t("man_hp_tile") + "</span><input type='checkbox' data-pref='hpplace' value='tile'" + (pr.hpPlace == "tile" || pr.hpPlace == "both" ? " checked" : "") + "></label></fieldset></div>";
+        + "<label class='sk-sw'><span>" + t("man_turn_mini") + "</span><input type='checkbox' data-pref='turnmini'" + (pr.turnMini ? " checked" : "") + "></label>"
+        + "<p>" + t("man_turn_mini_help") + "</p>"
+        + "<fieldset class='sk-hpplace'" + (pr.turnMini ? " disabled" : "") + "><legend>" + t("man_hp_place") + "</legend>"
+        + "<label class='sk-sw'><span>" + t("man_hp_track") + "</span><input type='checkbox' data-pref='hpplace' value='track'" + (pr.hpPlace != "tile" && !pr.turnMini ? " checked" : "") + "></label>"
+        + "<label class='sk-sw'><span>" + t("man_hp_tile") + "</span><input type='checkbox' data-pref='hpplace' value='tile'" + (pr.hpPlace == "tile" || pr.hpPlace == "both" || pr.turnMini ? " checked" : "") + "></label></fieldset></div>";
     S.mount(shell("sk-settings", h));
     var scr = S.root.querySelector(".sk-screen");
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
         if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
         else if (x.dataset.pref == "manual") { pr.board = x.checked ? "manual" : "auto"; S.savePrefs(); }
+        else if (x.dataset.pref == "turnmini") { pr.turnMini = x.checked; S.savePrefs(); S.renderSettings(); }
         else if (x.dataset.pref == "hpplace") {
             var tr = scr.querySelector("[data-pref='hpplace'][value='track']").checked, ti = scr.querySelector("[data-pref='hpplace'][value='tile']").checked;
             if (!tr && !ti) { x.checked = true; return; }

@@ -115,8 +115,10 @@ var zoneCode = function(z, inner, title, nShown) {
 // Une tuile glissée sur la piste y pose sa pastille, sur la case de ses points de vie ; la pastille se déplace
 // ensuite sur la piste pour changer les PV. Le cœur disparaît alors de la tuile. Une pastille par groupe de PV partagés.
 // Réglage hpPlace : "track" (par défaut), "tile" ou "both" (pastille sur la piste et cœur sur la tuile).
-S.hpOnTrack = function() { return S.prefs().hpPlace != "tile"; };
-S.hpOnTile = function() { var v = S.prefs().hpPlace; return v == "tile" || v == "both"; };
+// Piste des tours réduite (réglage turnMini) : plus de piste, donc les points de vie passent d'office sur la tuile.
+S.turnMini = function() { return !!S.prefs().turnMini; };
+S.hpOnTrack = function() { return S.prefs().hpPlace != "tile" && !S.turnMini(); };
+S.hpOnTile = function() { var v = S.prefs().hpPlace; return v == "tile" || v == "both" || S.turnMini(); };
 var SOCLE = {gray: "#8a8a8a", red: "#b3161b", green: "#2e8b3e", blue: "#2a63ad", purple: "#7a3d9a", orange: "#e07a1f", black: "#222"};
 var trackHp = function() {
     var st = S.state, seen = {};
@@ -153,6 +155,54 @@ var trackCode = function() {
     // Sans limite de tours, le marqueur de fin attend à droite de la piste.
     h += "<span class='sk-mpark' data-cell='none' title='" + e(t("turn_limit_none")) + "'>" + (st.turns ? "" : end(false)) + "</span>";
     return "<div class='sk-mtrack' role='group' aria-label='" + e(t("man_track") + " · " + t("turn") + " " + st.turn + (st.turns ? " / " + st.turns : "")) + "'>" + h + "</div>";
+};
+
+// Piste réduite : le cadre Tour du plateau automatique (sablier et alarme), à gauche de la bande 1. Un appui long sur
+// un jeton fait paraître − et + de part et d'autre ; un appui ailleurs les range. Pas de fond rouge au dernier tour.
+var turnMiniCode = function() {
+    var st = S.state;
+    var tok = function(kind) {
+        var turn = kind == "turn", val = turn ? st.turn : (st.turns || "–"), open = S._mturnEdit == kind;
+        var label = turn ? t("turn") + " " + st.turn : (st.turns ? t("turn_limit") + " " + st.turns : t("turn_limit_none"));
+        return "<span class='sk-ptok" + (open ? " editing" : "") + "' data-mturnwrap='" + kind + "'>"
+            + "<button class='sk-pstep' data-mturn='" + kind + "' data-n='-1' tabindex='" + (open ? 0 : -1) + "' aria-label='" + e(t(turn ? "aria_turn_prev" : "aria_limit_minus")) + "'>−</button>"
+            + "<span class='sk-tokimg sk-tokround' data-turnkind='" + kind + "' role='img' aria-label='" + e(label) + "' title='" + e(label + " · " + t("man_long_press")) + "'>"
+            + "<img src='" + S.icon(turn ? "time" : "alarm") + "' alt='' draggable='false'><b>" + val + "</b></span>"
+            + "<button class='sk-pstep' data-mturn='" + kind + "' data-n='1' tabindex='" + (open ? 0 : -1) + "' aria-label='" + e(t(turn ? "aria_turn_next" : "aria_limit_plus")) + "'>+</button></span>";
+    };
+    return "<div class='sk-mturn' role='group' aria-label='" + e(t("turn") + " " + st.turn + (st.turns ? " / " + st.turns : "")) + "'>"
+        + "<div class='sk-ptitle'>" + e(t("turn")) + "</div><div class='sk-ppair'>" + tok("turn") + tok("turns") + "</div></div>";
+};
+S.manualTurnStep = function(kind, d) {
+    var st = S.state;
+    if (kind == "turn") S.manualPiece("turn", Math.max(0, st.turn + d));
+    else { var v = Math.max(0, (st.turns || 0) + d); S.manualPiece("end", v ? v : "none"); }
+};
+var bindTurnMini = function(root) {
+    if (S._mturnBound) return; S._mturnBound = true;
+    var timer = null;
+    root.addEventListener("pointerdown", function(ev) {
+        if (!S.manualOn() || !S.turnMini()) return;
+        var tk = ev.target.closest(".sk-mturn [data-turnkind]");
+        if (!tk && S._mturnEdit && !ev.target.closest(".sk-mturn .sk-pstep")) { S._mturnEdit = null; syncTurnMini(); }
+        if (!tk) return;
+        clearTimeout(timer);
+        timer = setTimeout(function() { S._mturnEdit = tk.dataset.turnkind; syncTurnMini(); if (navigator.vibrate) navigator.vibrate(15); }, 450);
+    }, true);
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { root.addEventListener(n, function() { clearTimeout(timer); }, true); });
+    root.addEventListener("click", function(ev) {
+        var b = ev.target.closest(".sk-mturn [data-mturn]"); if (!b) return;
+        ev.stopPropagation();
+        S.manualTurnStep(b.dataset.mturn, +b.dataset.n);
+    });
+    root.addEventListener("contextmenu", function(ev) { if (ev.target.closest(".sk-mturn")) ev.preventDefault(); });
+};
+var syncTurnMini = function() {
+    S.root.querySelectorAll(".sk-mturn [data-mturnwrap]").forEach(function(w) {
+        var on = S._mturnEdit == w.dataset.mturnwrap;
+        w.classList.toggle("editing", on);
+        w.querySelectorAll(".sk-pstep").forEach(function(b) { b.tabIndex = on ? 0 : -1; });
+    });
 };
 
 var restCode = function() {
@@ -276,9 +326,10 @@ S.renderManual = function() {
     var st = S.state, root = S.root;
     var keep = S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
     S.screen = "game"; S.selected = null;
-    var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + "'><div class='sk-desk'>" + trackCode()
+    var mini = S.turnMini();
+    var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + (mini ? " sk-mmini" : "") + "'><div class='sk-desk'>" + (mini ? "" : trackCode())
         + "<div class='sk-mmid'>" + reserveCode() + "<div class='sk-book'>"
-        + "<div class='sk-mb1'>" + BAND1.map(function(z) { return zoneCode(z, "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
+        + "<div class='sk-mb1'>" + (mini ? turnMiniCode() : "") + BAND1.map(function(z) { return zoneCode(z, "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
         + "<div class='sk-mb2'>" + zoneCode("energy", "", coop() ? t("tokens_pool") : t("energy")) + restCode() + zoneCode("fatigue", "", t("fatigue")) + "</div>"
         + "<div class='sk-mb3'>" + holesCode() + "</div>"
         + tilesCode() + "</div>" + pileCode() + "</div>"
@@ -287,6 +338,7 @@ S.renderManual = function() {
     S._lastScreen = "game";
     // Survol (souris) et appui long (iPad) des compétences : branchés une fois sur la racine, même sans plateau automatique.
     if (!S._pressBound) { S.bindPress(root); S._pressBound = true; }
+    bindTurnMini(root);
     S.placeTabs();
     // Barre des onglets : bouton Studio et disquette comme sur le plateau automatique (S.placeTabs) ; l'interrupteur
     // Aventure / Coop reste visible hors du mode studio (le clic est pris en charge par S.placeTabs → S.switchMode).
@@ -526,8 +578,11 @@ S.manualPiece = function(which, cell) {
     var st = S.state;
     if (which == "turn") {
         if (cell == "none" || +cell == st.turn) return;
+        var up = +cell > st.turn;
         S.snapshot(); st.turn = +cell;
         commit(t("man_log_turn", st.turn));
+        // Dernier tour : l'alarme vibre et la cloche sonne, comme sur le plateau automatique (sans fond rouge).
+        if (up && st.turns && st.turn == st.turns) S.lastTurnBell && S.lastTurnBell(S.root.querySelector(".sk-mturn [data-turnkind='turns'], .sk-mtrack .sk-mend"));
     } else {
         var v = cell == "none" ? 0 : +cell;
         if (v == (st.turns || 0)) return;

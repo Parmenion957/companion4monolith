@@ -213,8 +213,8 @@ var bell = function() {
         });
     } catch (x) {}
 };
-var lastTurnBell = function(r) {
-    var gong = r.querySelector("[data-turnkind='turns']"), img = gong && gong.querySelector("img");
+var lastTurnBell = function(r, el) {
+    var gong = el || r.querySelector("[data-turnkind='turns']"), img = gong && (gong.tagName == "IMG" ? gong : gong.querySelector("img"));
     var frames = [{transform: "none"}];
     for (var i = 1; i <= 9; i++) frames.push({transform: "rotate(" + ((i % 2 ? 1 : -1) * (10 - i)) + "deg) scale(" + (1 + .012 * (10 - i)) + ")"});
     frames.push({transform: "none"});
@@ -222,6 +222,9 @@ var lastTurnBell = function(r) {
     anim(gong, [{filter: "drop-shadow(0 0 0 #ff7900)"}, {filter: "drop-shadow(0 0 12px #ff7900)", offset: .25}, {filter: "drop-shadow(0 0 0 #ff7900)"}], {duration: 1500, delay: 250});
     setTimeout(bell, 250);
 };
+
+// Livre manuel : même cloche sur l'alarme donnée (piste des tours ou cadre Tour réduit), si les animations sont actives.
+S.lastTurnBell = function(el) { if (enabled() && el) lastTurnBell(S.root, el); };
 
 // ---------- Branchements ----------
 var baseRender = S.renderGame;
