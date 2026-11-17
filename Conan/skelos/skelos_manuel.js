@@ -1048,7 +1048,6 @@ var bind = function(board) {
 // qui défilent (à gauche les sorts, à droite les tuiles portées puis les équipements). Un appui sur une petite carte
 // l'agrandit ; la pastille corbeille la retire ; le + à droite des PV en ajoute. Glisser vers le haut ou le bas sur
 // la tuile passe à la tuile voisine.
-var baseZoom = S.zoomTile;
 // Gemmes visibles sur une petite carte : posées à la main (livre manuel) ou, sur le plateau automatique, celles des sorts lancés ce tour.
 var gemsOn = function(s, c) { return c.gems || (c.kind == "sp" && !S.manualOn() ? S.castCount(s.uid, c.ref) : 0); };
 // Sur le plateau automatique, on ne retire ni n'ajoute de carte qu'en studio (comme l'ancien zoom).
@@ -1068,10 +1067,10 @@ var trackSide = function(s, list, side) {
         + "<div class='sk-mzlist'>" + list.map(function(c) { return smallCard(s, c); }).join("") + "</div>"
         + (more ? "<button class='sk-mzrot' data-mzrot='1' aria-label='" + e(t("man_track_next")) + "'>&#xf078;</button>" : "") + "</div>";
 };
-// Les deux plateaux utilisent ce zoom ; seule la « main des sorts » (bouton Sort du plateau automatique) garde l'ancien.
+// Zoom d'une tuile du livre : la tuile au centre, ses sorts à gauche, ses équipements et tuiles portées à droite.
 S.zoomTile = function(uid, opts) {
     opts = opts || {};
-    if (!S.state || opts.hand) { var o0 = S.root && S.root.querySelector("#sk-overlay"); if (o0) o0.classList.remove("sk-mzon"); return baseZoom.apply(S, arguments); }
+    if (!S.state) return;
     var s = S.slotByUid(uid); if (!s) return;
     var manual = S.manualOn();
     S._zoom = {uid: uid, pos: 0, hand: false, manual: true};
@@ -1223,11 +1222,10 @@ document.addEventListener("pointerdown", function(ev) {
 }, true);
 
 // ---------- Branchements ----------
-var baseRender = S.renderGame;
+// Le plateau de la partie : le livre (un seul plateau depuis l'étape 27).
 S.renderGame = function() {
     if (S.manualOn()) return S.renderManual();
     dropHand();
-    return baseRender.apply(S, arguments);
 };
 // Les autres écrans font disparaître la main.
 var baseMount = S.mount;

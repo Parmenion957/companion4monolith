@@ -116,13 +116,6 @@ S.itemName = function(kind, ref) {
 // ---------- Gemmes : conservation et réglage en cours de partie ----------
 S.boostSum = function() { var b = S.state.boosts || {}, n = 0; for (var k in b) n += b[k] || 0; return n; };
 S.gemTotal = function() { return S.state.energy + S.state.fatigue + S.boostSum(); };
-S.transferGem = function(dir) {
-    var st = S.state;
-    if (dir == "tofatigue" && st.energy > 0) { S.snapshot(); st.energy--; st.fatigue++; }
-    else if (dir == "toenergy" && st.fatigue > 0) { S.snapshot(); st.fatigue--; st.energy++; }
-    else return;
-    S.save(); S.renderGame();
-};
 S.newSlot = function(tile) {
     var st = S.state, n = 0;
     st.river.concat(st.removedSlots || []).forEach(function(s) { var k = parseInt(String(s.uid).slice(1), 10); if (k >= n) n = k + 1; });
