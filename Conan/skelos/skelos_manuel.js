@@ -993,7 +993,7 @@ var trackSide = function(s, list, side) {
 // Les deux plateaux utilisent ce zoom ; seule la « main des sorts » (bouton Sort du plateau automatique) garde l'ancien.
 S.zoomTile = function(uid, opts) {
     opts = opts || {};
-    if (!S.state || opts.hand) return baseZoom.apply(S, arguments);
+    if (!S.state || opts.hand) { var o0 = S.root && S.root.querySelector("#sk-overlay"); if (o0) o0.classList.remove("sk-mzon"); return baseZoom.apply(S, arguments); }
     var s = S.slotByUid(uid); if (!s) return;
     var manual = S.manualOn();
     S._zoom = {uid: uid, pos: 0, hand: false, manual: true};
@@ -1015,30 +1015,32 @@ S.zoomTile = function(uid, opts) {
     S._mzLast = uid;
     ov.innerHTML = "<div class='sk-zoom sk-mzoom' role='dialog' tabindex='-1' aria-label='" + e(S.tileName(s)) + "'>"
         + "<div class='sk-zoomhead'>" + (ring.length > 1 ? "<span class='sk-zoomring'>" + (idx + 1) + " / " + ring.length + "</span>" : "") + "</div>"
+        // Sortie toujours à portée de doigt, même quand le zoom remplit l'écran du téléphone.
+        + "<button class='sk-mzclose' data-mzclose aria-label='" + e(t("close")) + "' title='" + e(t("close")) + "'>×</button>"
         + "<div class='sk-mzrow" + (opts.dir ? " sk-zin-" + opts.dir : "") + "'>" + trackSide(s, left, "l")
         + "<div class='sk-mzcenter'><div class='sk-tilebox sk-zoombox" + (s.dead ? " dead" : "") + "'>" + S.tileCode(s) + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
         + pipsCode(s.gems, "sk-gpips-tile") + "</div>"
         + "<div class='sk-mzfoot'>" + (hp ? "<div class='sk-zoomhp'>" + hp + "</div>" : "")
         + (canEdit() ? "<button class='sk-mzadd' data-zadd='eq' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button>" : "") + "</div></div>"
         + trackSide(s, right, "r") + "</div></div>";
-    ov.classList.add("on", "sk-zoomon");
+    ov.classList.add("on", "sk-zoomon", "sk-mzon");
     ov.querySelectorAll(".sk-mzlist").forEach(function(l, i) { if (keep[i]) l.scrollTop = keep[i]; });
     S.markSteppers && S.markSteppers(ov);
     bindManualZoom(ov);
     ov.querySelector(".sk-zoom").focus({preventScroll: true});
 };
 var bindManualZoom = function(ov) {
-    var sx = 0, sy = 0, down = false, inTrack = false;
+    var sx = 0, sy = 0, down = false, noSwipe = false;
     ov.onkeydown = function(ev) {
         if (ev.key == "Escape") { if (!closeBig(ov)) S.zoomShut(); return; }
         var m = {ArrowUp: "up", ArrowDown: "down"}[ev.key];
         if (m) { ev.preventDefault(); S.zoomGo(m); }
     };
-    ov.onpointerdown = function(ev) { down = true; sx = ev.clientX; sy = ev.clientY; inTrack = !!ev.target.closest(".sk-mztrack, .sk-mzbig"); };
+    ov.onpointerdown = function(ev) { down = true; sx = ev.clientX; sy = ev.clientY; noSwipe = !ev.target.closest(".sk-zoombox") || !!ev.target.closest(".sk-mzbig"); };
     ov.onpointerup = function(ev) {
         if (!down) return; down = false;
         var dx = ev.clientX - sx, dy = ev.clientY - sy;
-        if (inTrack || Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx)) return;
+        if (noSwipe || Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx)) return;
         S._zswipeAt = Date.now();
         S.zoomGo(dy < 0 ? "down" : "up");
     };
@@ -1056,6 +1058,7 @@ var bindManualZoom = function(ov) {
             if (S.castSpell(uid, cs.dataset.zcast, n)) S.zoomTile(uid);
             return;
         }
+        if (ev.target.closest("[data-mzclose]")) { ev.stopPropagation(); if (!closeBig(ov)) S.zoomShut(); return; }
         if (ev.target.closest(".sk-mzcast")) { ev.stopPropagation(); return; }
         if (closeBig(ov)) { ev.stopPropagation(); return; }
         var lp = ev.target.closest("[data-zlp], [data-zhp]");
@@ -1080,7 +1083,7 @@ var bindManualZoom = function(ov) {
         if (sc) { ev.stopPropagation(); openBig(ov, sc, uid); return; }
         var sk = ev.target.closest("[data-skill]");
         if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
-        if (ev.target.closest(".sk-tip, .sk-zoomhead, .sk-mzcenter, .sk-mztrack")) return;
+        if (ev.target.closest(".sk-tip, .sk-zoombox, .sk-mzfoot, .sk-mzc")) return;
         S.zoomShut();
     };
 };

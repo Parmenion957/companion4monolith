@@ -1279,7 +1279,7 @@ S.zoomGo = function(dir) {
 };
 S.zoomShut = function() {
     var ov = S.root && S.root.querySelector("#sk-overlay"); S._zoom = null; S.hideTip();
-    if (ov) { ov.classList.remove("on", "sk-zoomon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; ov.onpointerdown = null; ov.onpointerup = null; }
+    if (ov) { ov.classList.remove("on", "sk-zoomon", "sk-mzon"); ov.innerHTML = ""; ov.onclick = null; ov.onkeydown = null; ov.onpointerdown = null; ov.onpointerup = null; }
 };
 S.bindZoom = function(ov) {
     // Le zoom se redessine à chaque glissement : le repère « vient de glisser » vit hors du redessin.
