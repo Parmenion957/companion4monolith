@@ -14,8 +14,6 @@
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 
 var BAND1 = ["move", "defense", "reroll"];
-// Coop : le 4e jeton tiré se pose à droite de Relance.
-var band1 = function() { return coop() ? BAND1.concat(["slot4"]) : BAND1; };
 var LONG = 380, STEP = 260, MOVE = 9, RESERVE = 20;
 
 S.manualOn = function() { return S.prefs().board == "manual" && !!S.state && !S.editing; };
@@ -53,7 +51,6 @@ var zoneLabel = function(z) {
     if (z == "energy") return t(S.state && coop() ? "tokens_pool" : "energy");
     if (z == "fatigue") return t("fatigue");
     if (z == "aside") return t("man_aside");
-    if (z == "slot4") return t("man_slot4");
     if (z == "reserve") return t("man_reserve");
     return t("boost_" + z);
 };
@@ -80,9 +77,9 @@ var live = function(uid) { return S.state.removed.indexOf(uid) < 0; };
 var tokLoc = function(uid) {
     var st = S.state;
     if (st.pool.indexOf(uid) >= 0) return "energy";
-    // Plus de zone « Mis de côté » : un jeton tiré sans place (ou mis de côté dans une ancienne partie) est en Fatigue.
+    // Plus de zone « Mis de côté » ni de 4e emplacement : un jeton tiré sans place (ou posé là dans une ancienne partie) est en Fatigue.
     var l = st.tokLoc && st.tokLoc[uid];
-    return l && l != "aside" ? l : "fatigue";
+    return l && l != "aside" && l != "slot4" ? l : "fatigue";
 };
 var tokensIn = function(z) {
     return S.state.river.filter(function(s) { return live(s.uid) && tokLoc(s.uid) == z; });
@@ -152,9 +149,9 @@ var trackCode = function() {
 
 var restCode = function() {
     var st = S.state;
-    if (coop()) return "<div class='sk-mrest' data-mrest title='" + e(t("man_coop_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("heroes")) + "</span>"
-        + "<div class='sk-mstep'><button class='sk-pstep' data-mact='heroes' data-n='-1' aria-label='" + e(t("aria_heroes_minus")) + "'>−</button>"
-        + S.token("heroes", st.heroes) + "<button class='sk-pstep' data-mact='heroes' data-n='1' aria-label='" + e(t("aria_heroes_plus")) + "'>+</button></div></div>";
+    // Coop : pas de nombre au centre, seulement la tuile de repos (double appui : ranger les jetons tirés).
+    if (coop()) return "<div class='sk-mrest' data-mrest title='" + e(t("man_coop_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("recovery")) + "</span>"
+        + S.token("recover", "") + "<span class='sk-mtotal'>" + e(t("man_dbl_tap")) + "</span></div>";
     return "<div class='sk-mrest' data-mrest title='" + e(t("man_rest_hint")) + "'><span class='sk-mresttitle'>" + e(t("recovery")) + "</span>" + S.token("recover", st.recovery)
         + "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
         + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div></div>";
@@ -273,7 +270,7 @@ S.renderManual = function() {
     S.screen = "game"; S.selected = null;
     var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + "'><div class='sk-desk'>" + trackCode()
         + "<div class='sk-mmid'>" + reserveCode() + "<div class='sk-book'>"
-        + "<div class='sk-mb1'>" + band1().map(function(z) { return zoneCode(z, z == "slot4" ? "<span class='sk-mico sk-mico4' aria-hidden='true'>4</span>" : "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
+        + "<div class='sk-mb1'>" + BAND1.map(function(z) { return zoneCode(z, "<img class='sk-mico' src='" + S.icon(z) + "' alt='' draggable='false'>"); }).join("") + "</div>"
         + "<div class='sk-mb2'>" + zoneCode("energy", "", coop() ? t("tokens_pool") : t("energy")) + restCode() + zoneCode("fatigue", "", t("fatigue")) + "</div>"
         + "<div class='sk-mb3'>" + holesCode() + "</div>"
         + tilesCode() + "</div>" + pileCode() + "</div>"
@@ -397,9 +394,9 @@ var pulse = function(sel) {
     el.animate([{transform: "scale(1)"}, {transform: "scale(1.06)", filter: "brightness(1.15)"}, {transform: "scale(1)"}], {duration: 380, easing: "ease-out"});
 };
 
-// Coop, double appui sur la tuile Héros en jeu : les jetons tirés (Mouvement, Défense, Relance, 4e) passent en Fatigue.
+// Coop, double appui sur la tuile Héros en jeu : les jetons tirés (Mouvement, Défense, Relance) passent en Fatigue.
 // Quand le dernier jeton a été tiré (zone verte vide), tous les jetons reviennent dans la zone verte, disponibles.
-var DRAWN = ["move", "defense", "reroll", "slot4"];
+var DRAWN = ["move", "defense", "reroll"];
 S.manualCoopClear = function() {
     var st = S.state; if (!coop()) return;
     if (!poolCount()) {
@@ -473,7 +470,7 @@ S.manualMoveToken = function(uid, to) {
     }
     var msg = t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(s), zoneLabel(to));
     // Dès que le dernier jeton est tiré, les jetons redeviennent disponibles (zone verte), comme dans le jeu ;
-    // ceux posés sur Mouvement, Défense, Relance et le 4e emplacement restent en place pour jouer leur activation.
+    // ceux posés sur Mouvement, Défense et Relance restent en place pour jouer leur activation.
     var all = from == "energy" && !poolCount() ? st.river.filter(function(x) { return live(x.uid) && st.used.indexOf(x.uid) >= 0 && DRAWN.indexOf(tokLoc(x.uid)) < 0; }) : [];
     if (all.length) {
         var fromR = all.map(function(x) { return x.uid == uid ? rectOf("[data-zone='" + to + "']") : rectOf("[data-tok='" + x.uid + "']"); });
@@ -631,6 +628,9 @@ var bind = function(board) {
         if (sc) { S.nextSocle(sc.dataset.msocle); return; }
         var tg = ev.target.closest("[data-tgems]");
         if (tg) { S.openGemPop(tg.dataset.tgems); return; }
+        // La pastille des cartes sous une tuile ouvre aussi la tuile et ses cartes (pour y poser des gemmes).
+        var cb = ev.target.closest("[data-mtile] .sk-cardsbadge");
+        if (cb) { S.openGemPop(cb.closest("[data-mtile]").dataset.mtile); return; }
         // Double appui sur la tuile de repos : fin de tour des gemmes (dépensées → Fatigue, Récupération → Énergie).
         if (ev.target.closest("[data-mrest]") && !ev.target.closest("button")) {
             var now = Date.now();
@@ -651,7 +651,7 @@ var bind = function(board) {
         var x0 = ev.clientX, y0 = ev.clientY;
         var zone = ev.target.closest("[data-zone]");
         if (S._mgpop && !zone && !ev.target.closest(".sk-mgpop, [data-tgems]")) closeGemPop();
-        if (ev.target.closest("[data-tgems]")) return;
+        if (ev.target.closest("[data-tgems], [data-mtile] .sk-cardsbadge")) return;
 
         // Gemmes en main : l'appui suivant les pose dans la zone touchée (ou sur une tuile), ou les repose.
         if (hand && hand.pinned) {

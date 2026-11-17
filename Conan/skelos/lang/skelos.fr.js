@@ -595,5 +595,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_log_coop_reset': "Dernier jeton tiré : {0} jeton(s) de nouveau disponibles",
     'man_track_prev': "Cartes précédentes",
     'man_track_next': "Cartes suivantes",
-    'man_coop_reset_toast': "Dernier jeton tiré : {0} ({1}). Les jetons de la Fatigue redeviennent disponibles."
+    'man_coop_reset_toast': "Dernier jeton tiré : {0} ({1}). Les jetons de la Fatigue redeviennent disponibles.",
+    'man_dbl_tap': "Double appui"
 });
