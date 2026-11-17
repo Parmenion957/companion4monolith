@@ -116,7 +116,7 @@ var zoneCode = function(z, inner, title, nShown) {
     else { n = nShown != null ? nShown : count(z); content = groupsCode(n, S.icon("gem"), "sk-mgem", z); }
     var label = zoneLabel(z) + " · " + n + (coop() && count(z) ? " · " + t("man_tile_gems", count(z), zoneLabel(z)) : "");
     // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
-    var groups = Math.ceil((coop() ? count(z) : n) / 3), gs = BAND1.indexOf(z) >= 0 ? " style='--g:" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw'" : "";
+    var groups = Math.ceil((coop() ? count(z) : n) / 3), gs = BAND1.indexOf(z) >= 0 ? " style='--g:calc(" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw * var(--gz, 1))'" : "";
     return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(label) + "'" + gs + ">"
         + (inner || "") + (title ? "<span class='sk-mtitle'>" + e(title) + "</span>" : "")
         + "<div class='sk-mgems'>" + content + "</div>"
@@ -128,7 +128,10 @@ var zoneCode = function(z, inner, title, nShown) {
 // ensuite sur la piste pour changer les PV. Le cœur disparaît alors de la tuile. Une pastille par groupe de PV partagés.
 // Réglage hpPlace : "track" (par défaut), "tile" ou "both" (pastille sur la piste et cœur sur la tuile).
 // Piste des tours réduite (réglage turnMini) : plus de piste, donc les points de vie passent d'office sur la tuile.
-S.turnMini = function() { return !!S.prefs().turnMini; };
+// Téléphone (portrait étroit ou paysage bas) : le livre se découpe comme le plateau automatique et la piste est réduite d'office.
+S.PHONE_MQ = "(max-width: 600px), (max-height: 500px) and (orientation: landscape)";
+S.phone = function() { return !!(window.matchMedia && window.matchMedia(S.PHONE_MQ).matches); };
+S.turnMini = function() { return !!S.prefs().turnMini || S.phone(); };
 S.hpOnTrack = function() { return S.prefs().hpPlace != "tile" && !S.turnMini(); };
 S.hpOnTile = function() { var v = S.prefs().hpPlace; return v == "tile" || v == "both" || S.turnMini(); };
 var SOCLE = {gray: "#8a8a8a", red: "#b3161b", green: "#2e8b3e", blue: "#2a63ad", purple: "#7a3d9a", orange: "#e07a1f", black: "#222"};
@@ -243,13 +246,17 @@ var restCode = function() {
 };
 
 // Bande 3 : un pion gemme rouge numéroté au-dessus de chaque case de tuile.
+var holeInner = function(i) {
+    var sk = S.skin();
+    return sk["gem" + (i + 1)] ? "<img class='sk-mrankimg' src='" + sk["gem" + (i + 1)] + "' alt='" + (i + 1) + "' draggable='false'>" : S.rankToken(i + 1, "sk-mrank");
+};
 var holesCode = function() {
     var h = "";
-    var sk = S.skin();
-    for (var i = 0; i < S.RIVER_SIZE; i++) h += "<span class='sk-mhole'>" + (sk["gem" + (i + 1)]
-        ? "<img class='sk-mrankimg' src='" + sk["gem" + (i + 1)] + "' alt='" + (i + 1) + "' draggable='false'>" : S.rankToken(i + 1, "sk-mrank")) + "</span>";
+    for (var i = 0; i < S.RIVER_SIZE; i++) h += "<span class='sk-mhole'>" + holeInner(i) + "</span>";
     return h;
 };
+// Place d'une case dans la bande des tuiles sur téléphone : 4 colonnes, un rang de pions au-dessus de chaque rang de tuiles.
+var cellPos = function(i) { return "--i:" + i + ";--c:" + (i % 4 + 1) + ";--r:" + (Math.floor(i / 4) * 2 + 2); };
 
 // Pastille des cartes portées par une tuile (sorts, équipements, tuiles), comme sur le plateau automatique.
 var cardsBadge = function(s) { return S.cardsBadgeCode(s); };
@@ -344,8 +351,11 @@ var socleCode = function(s) {
 
 var tilesCode = function() {
     var st = S.state;
-    return "<div class='sk-mb4' data-band='tiles'>" + st.river.map(function(s) {
-        return "<div class='sk-mtile sk-tilebox" + (s.dead ? " dead" : "") + "' data-mtile='" + s.uid + "'" + (S.isEvent(s) ? " data-eventuid='" + s.uid + "'" : "")
+    // Sur téléphone, les pions numérotés passent dans la bande, au-dessus de leur case (cachés ailleurs).
+    var ph = "";
+    for (var i = 0; i < S.RIVER_SIZE; i++) ph += "<span class='sk-mhole sk-mph' style='--c:" + (i % 4 + 1) + ";--r:" + (Math.floor(i / 4) * 2 + 1) + "' aria-hidden='true'>" + holeInner(i) + "</span>";
+    return "<div class='sk-mb4' data-band='tiles'>" + ph + st.river.map(function(s, i) {
+        return "<div class='sk-mtile sk-tilebox" + (s.dead ? " dead" : "") + "' style='" + cellPos(i) + "' data-mtile='" + s.uid + "'" + (S.isEvent(s) ? " data-eventuid='" + s.uid + "'" : "")
             + " role='img' aria-label='" + e(S.tileName(s)) + "'>" + S.tileCode(s)
             + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
             + (s.lpMax && S.hpOnTile() ? S.hpBadge(s) : "") + cardsBadge(s) + tileGemsCode(s) + socleCode(s) + "</div>";
@@ -370,6 +380,12 @@ S.renderManual = function() {
     S._lastScreen = "game";
     // Survol (souris) et appui long (iPad) des compétences : branchés une fois sur la racine, même sans plateau automatique.
     if (!S._pressBound) { S.bindPress(root); S._pressBound = true; }
+    // Passage téléphone ↔ tablette (rotation, fenêtre) : le livre change de découpage, on le redessine.
+    if (!S._phoneMq && window.matchMedia) {
+        S._phoneMq = window.matchMedia(S.PHONE_MQ);
+        var re = function() { if (S.screen == "game" && S.manualOn()) S.renderGame(); };
+        if (S._phoneMq.addEventListener) S._phoneMq.addEventListener("change", re); else if (S._phoneMq.addListener) S._phoneMq.addListener(re);
+    }
     bindTurnMini(root);
     S.placeTabs();
     // Barre des onglets : bouton Studio et disquette comme sur le plateau automatique (S.placeTabs) ; l'interrupteur
@@ -724,18 +740,23 @@ var markTarget = function(el) {
 };
 // Pendant le glisser d'une tuile dans sa bande, un cadre pointillé montre la place où elle se posera
 // (comme sur le plateau automatique) ; rien quand elle reviendrait à sa place.
-var showSpot = function(uid, x) {
+var showSpot = function(uid, x, y) {
     var band = S.root.querySelector(".sk-mb4"); if (!band) return;
     var spot = band.querySelector(".sk-mspot"), st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
-    var idx = x == null ? -1 : Math.max(0, Math.min(st.river.length - 1, tileIndexAt(x)));
+    var idx = x == null ? -1 : Math.max(0, Math.min(st.river.length - 1, tileIndexAt(x, y)));
     if (idx < 0 || idx == i) { if (spot) spot.remove(); return; }
     if (!spot) { band.insertAdjacentHTML("beforeend", "<span class='sk-mspot' aria-hidden='true'></span>"); spot = band.querySelector(".sk-mspot"); }
-    spot.style.setProperty("--i", idx);
+    spot.setAttribute("style", cellPos(idx));
 };
-var tileIndexAt = function(x) {
+var tileIndexAt = function(x, y) {
     var band = S.root.querySelector(".sk-mb4"); if (!band) return -1;
-    var r = band.getBoundingClientRect(), w = r.width / S.RIVER_SIZE;
-    return Math.floor((x - r.left) / w);
+    var r = band.getBoundingClientRect();
+    // Téléphone : bande en grille de 4 colonnes sur deux rangs.
+    if (getComputedStyle(band).display == "grid") {
+        var col = Math.max(0, Math.min(3, Math.floor((x - r.left) / (r.width / 4))));
+        return (y != null && y > r.top + r.height / 2 ? 4 : 0) + col;
+    }
+    return Math.floor((x - r.left) / (r.width / S.RIVER_SIZE));
 };
 
 // Gemmes lâchées sur une tuile : sur la tuile si elle ne porte pas de carte ; sinon la liste « tuile + cartes »
@@ -910,14 +931,14 @@ var bind = function(board) {
                     var slot = S.slotByUid(uid);
                     var wantHp = S.hpOnTrack() && slot && !S.isEvent(slot) && !onTrack(slot) && !under(e2.clientX, e2.clientY, ".sk-mb4") && !under(e2.clientX, e2.clientY, "[data-tilepile]");
                     if (!!wantHp != !!g.hp) { g.hp = wantHp; ghostHp(wantHp, wantHp ? hpMarkerCode(slot, 0) : tile.outerHTML, tile); }
-                    showSpot(uid, under(e2.clientX, e2.clientY, ".sk-mb4") ? e2.clientX : null);
+                    showSpot(uid, under(e2.clientX, e2.clientY, ".sk-mb4") ? e2.clientX : null, e2.clientY);
                     markTarget(under(e2.clientX, e2.clientY, "[data-tilepile]") || (S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null));
                 }
             }, function(e2, cancel) {
                 ghostEnd(); tile.classList.remove("sk-dragging"); showSpot(uid, null);
                 if (cancel || long) return;
                 if (g.moved) {
-                    if (under(e2.clientX, e2.clientY, ".sk-mb4")) S.manualMoveTile(uid, tileIndexAt(e2.clientX));
+                    if (under(e2.clientX, e2.clientY, ".sk-mb4")) S.manualMoveTile(uid, tileIndexAt(e2.clientX, e2.clientY));
                     else if (under(e2.clientX, e2.clientY, "[data-tilepile]")) S.studioRemove(uid);
                     else if (S.hpOnTrack() && under(e2.clientX, e2.clientY, ".sk-mtrack")) {
                         var c = under(e2.clientX, e2.clientY, "[data-cell]");

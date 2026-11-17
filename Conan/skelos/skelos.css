@@ -2004,3 +2004,76 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-manual.sk-has-rest .sk-mrestcard .sk-pstep { width: 20cqw; height: 20cqw; }
 .sk-mrestcard .sk-pstep::before, .sk-mrestcard .sk-pstep::after { width: 56% !important; height: 14% !important; border-radius: 2px; }
 .sk-mrestcard .sk-plus::after { width: 14% !important; height: 56% !important; }
+
+/* Livre manuel sur téléphone (portrait) : découpage du plateau automatique. Le cadre Tour et la tuile de récupération
+   en haut, Mouvement / Défense / Relance dessous, Énergie et Fatigue côte à côte, puis les tuiles sur deux rangs de 4,
+   chaque rang sous ses pions numérotés. Les bandes 1 et 2 s'effacent (display: contents) pour que leurs cases
+   se rangent dans la grille du livre. */
+.sk-mph { display: none; }
+@media (max-width: 600px) {
+    .sk-manual .sk-desk { gap: 3cqw; }
+    .sk-manual .sk-book { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 40cqw 22cqw 40cqw auto; gap: 2.4cqw; padding: 2.4cqw; border-radius: 3cqw; }
+    .sk-manual .sk-mb1, .sk-manual .sk-mb2 { display: contents; }
+    .sk-manual .sk-mturn { position: relative; left: auto; top: auto; bottom: auto; width: auto; grid-column: 1 / 4; grid-row: 1; padding: 2cqw; gap: 2.4cqw; border-radius: 2.4cqw; }
+    .sk-manual .sk-mturn .sk-ptitle { font-size: 5.4cqw; }
+    .sk-manual .sk-mturn .sk-tokimg img { width: 14cqw; height: 14cqw; }
+    .sk-manual .sk-mturn .sk-tokimg b { min-width: 7cqw; height: 6.4cqw; border-radius: 3.2cqw; padding: 0 1.2cqw; right: -2.4cqw; bottom: -1.4cqw; font-size: 4.4cqw; }
+    .sk-manual .sk-mturn .sk-ptok .sk-pstep { width: 8cqw; height: 8cqw; margin-top: -4cqw; }
+    .sk-manual .sk-mrest { grid-column: 4 / 7; grid-row: 1; height: auto; min-height: 0; border-radius: 2.4cqw; }
+    .sk-manual .sk-mb1 .sk-mz { width: auto; height: auto; aspect-ratio: auto; grid-row: 2; grid-column: span 2; border-radius: 2cqw; --gz: 2.6; }
+    .sk-manual .sk-mb1 .sk-mgems { inset: 1cqw; }
+    .sk-manual .sk-mb1 .sk-mico { border-radius: 1.4cqw; }
+    .sk-manual .sk-mz-energy { grid-column: 1 / 4; grid-row: 3; }
+    .sk-manual .sk-mz-fatigue { grid-column: 4 / 7; grid-row: 3; }
+    .sk-manual .sk-mz { --g: 6.4cqw; border-radius: 2cqw; }
+    .sk-manual .sk-mgems { inset: 2cqw; }
+    .sk-manual .sk-mcount { font-size: 5cqw; right: 2cqw; bottom: 1.4cqw; }
+    .sk-manual .sk-mb3 { display: none; }
+    .sk-manual .sk-mb4 { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto 33.4cqw auto 33.4cqw;
+        gap: 1.4cqw 1.6cqw; min-height: 0; padding: 1.6cqw; border-radius: 2cqw; }
+    .sk-manual .sk-mb4 .sk-mtile { width: auto; grid-column: var(--c); grid-row: var(--r); }
+    .sk-manual .sk-mph { display: grid; grid-column: var(--c); grid-row: var(--r); justify-self: center; width: 12cqw; }
+    .sk-manual .sk-mph .sk-rankgem { width: 10cqw; height: 10cqw; }
+    .sk-manual .sk-mspot { grid-column: var(--c) / span 1; grid-row: var(--r) / span 1; left: -1cqw; right: -1cqw; top: -1cqw; bottom: -1cqw; width: auto; border-radius: 1.6cqw; transition: none; }
+    /* Studio : le livre en entier, la réserve et le tas de tuiles dessous, côte à côte */
+    .sk-manual .sk-mmid { flex-wrap: wrap; }
+    .sk-manual .sk-mmid > .sk-book { flex: 1 0 100%; order: -1; }
+    .sk-manual .sk-mside { flex: 1 1 0; height: 30cqw; }
+}
+@media (max-width: 600px) {
+    .sk-manual .sk-mph .sk-mrankimg { width: 11cqw; height: 11cqw; }
+    .sk-manual .sk-mph { background: none; box-shadow: none; }
+    .sk-modesw button { padding: 0 7px; font-size: calc(var(--primary-size) * .66rem); }
+}
+
+/* Zoom d'une tuile : la tuile plus grande, ses cartes collées à elle (colonnes à leur taille, centrées) */
+.sk-mzoom { --mzw: min(40vw, calc((100dvh - var(--sk-bottom, 0px) - 190px) * 0.656), 500px); }
+.sk-mzrow { grid-template-columns: auto auto auto; justify-content: center; gap: 12px; }
+/* Téléphone en paysage : toute la hauteur pour la tuile, les PV et le + passent à sa droite, en colonne */
+@media (max-height: 500px) and (orientation: landscape) {
+    .sk-mzoom { --mzw: min(30vw, calc((100dvh - var(--sk-bottom, 0px) - 50px) * 0.656)); gap: 2px; }
+    .sk-mzoom .sk-zoomhead { font-size: 14px; }
+    .sk-mzcenter { flex-direction: row; gap: 8px; }
+    .sk-mzfoot { flex-direction: column; transform: none; gap: 8px; }
+    .sk-mzfoot .sk-zoomhp { width: 170px; max-width: none; }
+    .sk-mzlist { padding-top: 18px; scroll-padding-top: 18px; gap: 18px; }
+}
+/* Téléphone en portrait : la tuile en haut, ses cartes dessous sur deux rangées qui défilent de côté
+   (les sorts, puis les tuiles portées et les équipements) */
+@media (max-width: 600px) {
+    .sk-mzoom { --mzw: min(54vw, calc((100dvh - var(--sk-bottom, 0px) - 420px) * 0.656)); gap: 6px; max-height: calc(100dvh - var(--sk-bottom, 0px)); overflow-y: auto; }
+    .sk-mzrow { grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 6px; padding: 0 6px; }
+    .sk-mzcenter { grid-row: 1; }
+    .sk-mzoom .sk-mztrack { width: 100%; height: auto; justify-self: stretch; flex-direction: row; }
+    .sk-mzoom .sk-mztrack.empty { display: none; }
+    .sk-mzoom .sk-mzlist { flex-direction: row; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; padding: 16px 8px 4px; scroll-padding: 0 8px;
+        justify-content: safe center; gap: 10px; }
+    .sk-mzoom .sk-mzc { width: 24vw; scroll-snap-align: start; }
+    .sk-mzoom .sk-mzrot { display: none; }
+    .sk-mzoom .sk-mztrack.more .sk-mzlist { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+        mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%); }
+    .sk-mzoom .sk-mzrm { width: 30px; height: 30px; right: -4px; bottom: -4px; font-size: 13px; }
+}
+@media (max-width: 600px) {
+    #skelos > .sk-tabs .sk-tabbtn { padding: 0 4px; font-size: calc(var(--primary-size) * .74rem); }
+}
