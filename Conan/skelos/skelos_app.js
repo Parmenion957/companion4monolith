@@ -876,7 +876,7 @@ S.renderSettings = function() {
             + "<label class='sk-fl'>" + t("offset_x") + "<input type='range' min='0' max='100' value='" + (b.x == null ? 50 : b.x) + "' data-bg='x'></label>"
             + "<label class='sk-fl'>" + t("offset_y") + "<input type='range' min='0' max='100' value='" + (b.y == null ? 50 : b.y) + "' data-bg='y'></label>"
             + "<button class='sk-btn' data-bgrm>" + t("remove_background") + "</button>" : "") + "</div>";
-    // Fonds du livre manuel : une image par élément, à charger depuis l'appareil ; sans image, le dessin du module.
+    // Fonds du livre : une image par élément, à charger depuis l'appareil ; sans image, le dessin du module.
     var sk = S.skin(), skinItem = function(k) {
         return "<div class='sk-skinitem sk-skin-" + (k.indexOf("gem") == 0 ? "gem" : k) + "'><label class='sk-skinprev' title='" + e(t("skin_" + (k.indexOf("gem") == 0 ? "gem" : k), k.slice(3))) + "'>"
             + "<img src='" + sk[k] + "' alt=''>"
