@@ -27,7 +27,7 @@ Le bureau porte la **piste des tours** en haut. Le livre a ensuite quatre bandes
 | Appui long sur une tuile, puis lâcher | menu : Zoom, Mort, Renfort, Dépolluer |
 | Double appui sur une tuile | zoom de la tuile et de ses cartes |
 | Glisser le sablier ou la fin de partie | les place sur une case de la piste des tours ; l'alarme sonne au dernier tour |
-| Glisser une tuile sur la piste des tours | pose sa pastille de points de vie sur la case de ses PV ; la pastille se déplace ensuite pour changer les PV |
+| Glisser une tuile sur la piste des tours | pose sa pastille de points de vie sur la case de ses PV ; la pastille se déplace ensuite pour changer les PV. Les tuiles qui ont des PV y sont placées d'office dès que la piste est affichée ; une pastille sortie de la piste à la main n'y revient pas |
 | Survol ou appui long sur une compétence | sa description (aussi sur les tuiles portées) |
 
 La dernière tuile déplacée, ou en Coop le dernier jeton tiré et la tuile qu'il désigne, portent une auréole dorée jusqu'à la prochaine récupération ou au prochain entretien.

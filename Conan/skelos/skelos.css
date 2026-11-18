@@ -1498,7 +1498,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 @keyframes skmPulse { 50% { box-shadow: 0 0 0 6px rgba(255,121,0,.55), 0 4px 14px rgba(0,0,0,.5); } }
 .sk-mghost { position: fixed; z-index: 100001; pointer-events: none; transform: translate(-50%, -50%) scale(1.06); opacity: .9; container-type: inline-size; }
 .sk-mghost > * { position: static !important; width: 100% !important; height: 100% !important; transform: none !important; opacity: 1 !important; }
-.sk-mghost img { width: 100%; height: 100%; object-fit: contain; }
+/* Seules les pièces prises seules (gemme, jeton, sablier) remplissent le fantôme ; une tuile garde ses images à leur place */
+.sk-mghost > img { width: 100%; height: 100%; object-fit: contain; }
+.sk-mghost.sk-mghost-tile { opacity: 1; filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); }
 
 /* Pastilles des points de vie des tuiles sur la piste des tours : portrait de la tuile cerclé de la couleur du socle.
    Plusieurs pastilles sur une même case se décalent ; elles passent au-dessus du sablier pour rester attrapables. */

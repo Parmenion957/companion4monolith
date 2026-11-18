@@ -651,6 +651,7 @@ var Skelos = {
         ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { container.addEventListener(n, cancel); });
         container.addEventListener("contextmenu", function(ev) { if (ev.target.closest(".tile, [data-hp], [data-card]")) ev.preventDefault(); });
         container.addEventListener("mouseover", function(ev) {
+            if (document.querySelector(".sk-mghost")) return;   // une pièce ou une tuile est en cours de glisser
             var sk = ev.target.closest("[data-skill]");
             if (sk) Skelos.showTip(sk); else if (!ev.target.closest(".sk-tip")) Skelos.hideTip();
         });
