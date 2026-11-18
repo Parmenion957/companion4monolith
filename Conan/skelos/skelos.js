@@ -180,7 +180,7 @@ var Skelos = {
             var t = Skelos.tileById(id);
             if (t) s.river.push({tileId: id, color: t.colors[0], lp: (id == "zogar-sag" ? 6 : id == "thak" ? 8 : id == "giant-snake" ? 8 : null)});
         });
-        s.events = "Renfort : 4 points\nLes tambours résonnent : chaque Chasseur picte gagne 1 point de mouvement";
+        s.events = Skelos.t("example_events");
         return s;
     },
 
@@ -651,6 +651,7 @@ var Skelos = {
         ["pointerup", "pointercancel", "pointerleave"].forEach(function(n) { container.addEventListener(n, cancel); });
         container.addEventListener("contextmenu", function(ev) { if (ev.target.closest(".tile, [data-hp], [data-card]")) ev.preventDefault(); });
         container.addEventListener("mouseover", function(ev) {
+            if (document.querySelector(".sk-mghost")) return;   // une pièce ou une tuile est en cours de glisser
             var sk = ev.target.closest("[data-skill]");
             if (sk) Skelos.showTip(sk); else if (!ev.target.closest(".sk-tip")) Skelos.hideTip();
         });

@@ -148,6 +148,17 @@ var trackHp = function() {
     });
 };
 var onTrack = function(s) { return S.hpOnTrack() && trackHp().some(function(x) { return S.hpGroup(x).indexOf(s) >= 0; }); };
+// Tant que la piste est visible (réglage, piste réduite quittée, tablette), les tuiles qui ont des PV
+// y ont leur pastille, une par groupe de PV partagés. Une pastille retirée à la main (st.hpOff) n'est pas remise.
+S.syncHpTrack = function() {
+    var st = S.state; if (!st || !S.hpOnTrack()) return false;
+    var off = st.hpOff || [], added = false;
+    st.river.forEach(function(s) {
+        if (S.isEvent(s) || !s.lpMax || off.indexOf(s.uid) >= 0 || onTrack(s)) return;
+        st.hpTrack = (st.hpTrack || []).concat([s.uid]); added = true;
+    });
+    return added;
+};
 // Le pion de vie de l'unité, tel que l'encyclopédie le définit (tile.tokens : recadrage de l'image de la tuile, comme
 // le Studio du Compagnon le dessine) ; à défaut, le portrait de la tuile.
 var hpMarkerCode = function(s, k) {
@@ -379,6 +390,8 @@ S.renderManual = function() {
     var keep = S.screen == "game" && S._lastScreen == "game" ? root.scrollTop : null;
     S.screen = "game"; S.selected = null;
     var mini = S.turnMini();
+    // Piste visible : les PV des tuiles qui en ont s'y placent d'eux-mêmes (sauf pastille retirée à la main).
+    if (S.syncHpTrack()) S.save();
     var sk = S.skin(), skv = ["green", "red", "rest"];
     var h = "<div class='skelos-game sk-manual" + (coop() ? " solo" : "") + (mini ? " sk-mmini" : "") + skv.map(function(k) { return " sk-has-" + k; }).join("") + "'"
         + (skv.length ? " style=\"" + skv.map(function(k) { return "--sk-" + k + ":url('" + sk[k] + "')"; }).join(";") + "\"" : "") + "><div class='sk-desk'>" + (mini ? "" : trackCode())
@@ -738,6 +751,8 @@ S.manualTrackTile = function(uid, cell) {
     if (onTrack(s)) { S.toast(t("man_hp_already", S.tileName(s))); return; }
     S.snapshot();
     st.hpTrack = (st.hpTrack || []).concat([uid]);
+    var grp = S.hpGroup(s).map(function(g) { return g.uid; });
+    if (st.hpOff) st.hpOff = st.hpOff.filter(function(u) { return grp.indexOf(u) < 0; });
     if (!s.lpMax && cell != null && cell != "none") S.hpGroup(s).forEach(function(g) { g.lp = +cell; g.lpMax = +cell || null; });
     commit(t("man_log_hp_on", S.tileName(s), s.lp || 0));
 };
@@ -746,6 +761,7 @@ S.manualUntrack = function(uid) {
     var group = S.hpGroup(s).map(function(g) { return g.uid; });
     S.snapshot();
     st.hpTrack = (st.hpTrack || []).filter(function(u) { return group.indexOf(u) < 0; });
+    st.hpOff = (st.hpOff || []).filter(function(u) { return group.indexOf(u) < 0; }).concat(group);
     commit(t("man_log_hp_off", S.tileName(s)));
 };
 
@@ -798,12 +814,20 @@ var leavePop = function(y) {
 
 // ---------- Fantôme d'une pièce glissée (jeton, sablier, tuile) ----------
 var ghost = null;
+// Tuile : la copie qui suit le doigt est pleine (sans l'effacement ni l'auréole de la tuile laissée en place).
+var cleanGhost = function() {
+    var first = ghost && ghost.firstElementChild, isTile = !!(first && first.classList.contains("sk-mtile"));
+    if (isTile) first.classList.remove("sk-dragging", "sk-mlift", "sk-halo", "sk-mtarget");
+    if (ghost) ghost.classList.toggle("sk-mghost-tile", isTile);
+};
 var ghostStart = function(src, x, y, html) {
     var r = src.getBoundingClientRect();
     ghost = document.createElement("div");
     ghost.className = "sk-mghost";
     ghost.style.width = r.width + "px"; ghost.style.height = r.height + "px";
     ghost.innerHTML = html || src.outerHTML;
+    cleanGhost();
+    S.hideTip();
     document.body.appendChild(ghost);
     ghostMove(x, y);
 };
@@ -819,7 +843,7 @@ var ghostHp = function(on, html, src) {
     var r = src.getBoundingClientRect(), hpg = on ? hpGhostSize() : 0;
     ghost.classList.toggle("sk-mghost-hp", !!on);
     ghost.style.width = (on ? hpg : r.width) + "px"; ghost.style.height = (on ? hpg : r.height) + "px";
-    ghost.innerHTML = html;
+    ghost.innerHTML = html; cleanGhost();
 };
 
 var under = function(x, y, sel) {

@@ -225,8 +225,21 @@ S.renderHome = function() {
 // Chaque scénario a un identifiant (sid), une origine (« user » ou, plus tard, « official ») et ses dates.
 var nowIso = function() { return new Date().toISOString(); };
 var newSid = function() { return "sc" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); };
+// Scénario inclus d'office : « Dans les griffes des Pictes », préparé sur le livre (Rivière, gemmes, points de vie).
+S.pictsScenario = function() {
+    var T = t("picts_title"), EV = t("picts_event");
+    return {"title": T, "mode": "classic", "turns": 10, "recovery": 5, "energy": 10, "fatigue": 3, "maxActivations": 2, "heroes": 4, "river": [{"tileId": "pict-hunters", "img": "data/tiles/img/pict-hunters.webp", "color": "blue", "lp": null, "eventText": "", "cards": []}, {"tileId": "zogar-sag", "img": "data/tiles/img/zogar-sag.webp", "color": "gray", "lp": 5, "eventText": "", "cards": []}, {"tileId": "pict-warriors", "img": "data/heroes/img/grom.webp", "color": "purple", "lp": null, "eventText": "", "cards": []}, {"tileId": "hyenas", "img": "data/tiles/img/hyenas.webp", "color": "gray", "lp": null, "eventText": "", "cards": []}, {"tileId": "pict-hunters", "img": "data/tiles/img/pict-hunters.webp", "color": "green", "lp": null, "eventText": "", "cards": []}, {"tileId": "giant-snake", "img": "data/tiles/img/giant-snake.webp", "color": "gray", "lp": 8, "eventText": "", "cards": []}, {"tileId": "pict-hunters", "img": "data/tiles/img/pict-hunters.webp", "color": "red", "lp": null, "eventText": "", "cards": []}, {"tileId": "event", "img": "data/tiles/img/event-1.webp", "color": "none", "lp": null, "eventText": EV, "cards": []}], "events": "", "notes": "", "saved": {"scenario": {"title": T, "mode": "classic", "turns": 10, "recovery": 5, "energy": 10, "fatigue": 0, "maxActivations": 2, "heroes": 4, "river": [], "events": "", "notes": ""}, "mode": "classic", "turn": 0, "turns": 10, "energy": 10, "fatigue": 3, "recovery": 5, "maxActivations": 2, "activations": 0, "heroes": 4, "pool": [], "used": [], "removed": [], "river": [{"uid": "u1", "token": 2, "tileId": "pict-hunters", "img": "data/tiles/img/pict-hunters.webp", "color": "blue", "dead": false, "lpMax": null, "lp": null}, {"uid": "u2", "token": 3, "tileId": "zogar-sag", "img": "data/tiles/img/zogar-sag.webp", "color": "gray", "dead": false, "lpMax": 5, "lp": 5}, {"uid": "u3", "token": 4, "tileId": "pict-warriors", "img": "data/heroes/img/grom.webp", "color": "purple", "dead": false, "lpMax": null, "lp": null}, {"uid": "u4", "token": 5, "tileId": "hyenas", "img": "data/tiles/img/hyenas.webp", "color": "gray", "dead": false, "lpMax": null, "lp": null}, {"uid": "u5", "token": 6, "tileId": "pict-hunters", "img": "data/tiles/img/pict-hunters.webp", "color": "green", "dead": false, "lpMax": null, "lp": null}, {"uid": "u6", "token": 7, "tileId": "giant-snake", "img": "data/tiles/img/giant-snake.webp", "color": "gray", "dead": false, "lpMax": 8, "lp": 8}, {"uid": "u7", "token": 8, "tileId": "pict-hunters", "img": "data/tiles/img/pict-hunters.webp", "color": "red", "dead": false, "lpMax": null, "lp": null}, {"uid": "u0", "token": 1, "tileId": "event", "img": "data/tiles/img/event-1.webp", "color": "none", "dead": false, "lpMax": null, "lp": null, "eventText": EV}], "lastEvent": false, "highlight": null, "log": [], "phase": "heroes", "boosts": {"move": 0, "reroll": 0, "defense": 0, "spell": 0}, "current": null, "campaign": null}};
+};
 S.scenarioList = function() {
-    var l = S.scenarios(), changed = false;
+    var l = S.scenarios(), changed = false, pr = S.prefs();
+    // Le scénario des Pictes est inclus une fois dans l'onglet Scénarios ; supprimé, il ne revient pas.
+    if (!pr.pictsSeeded && S.tileById && S.tileById("pict-hunters")) {
+        var x = S.pictsScenario();
+        x.sid = newSid(); x.source = "user"; x.created = x.updated = nowIso();
+        x.saved.scenario.sid = x.sid;
+        l.push(x); changed = true;
+        pr.pictsSeeded = true; S.savePrefs();
+    }
     l.forEach(function(sc) {
         if (!sc.sid) { sc.sid = newSid(); changed = true; }
         if (!sc.source) { sc.source = "user"; changed = true; }
@@ -1483,7 +1496,12 @@ S.heroSheetFull = function(ref) {
     try {
         if (typeof HeroSheet == "undefined" || typeof EncyclopediaHeroes == "undefined") return null;
         var x = (Encyclopedia.heroes.list || []).filter(function(h) { return h.id == ref; })[0];
-        return x ? HeroSheet._cardCode(EncyclopediaHeroes._convertHeroToStudio(x, false)) : null;
+        if (!x) return null;
+        // Compétences repérées comme sur les tuiles : survol ou appui long pour leur description.
+        return HeroSheet._cardCode(EncyclopediaHeroes._convertHeroToStudio(x, false)).replace(/src="([^"?]+)(\?[^"]*)?"/g, function(m, p, q) {
+            var code = S.skillCodeByImage(p);
+            return (code ? 'data-skill="' + code + '" ' : '') + m;
+        });
     } catch (err) { return null; }
 };
 S.companyFree = function(c) { return Math.max(0, COMPANY_SIZE - (c.heroes || []).filter(function(h) { return !h.dead; }).length); };

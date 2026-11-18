@@ -1498,12 +1498,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 @keyframes skmPulse { 50% { box-shadow: 0 0 0 6px rgba(255,121,0,.55), 0 4px 14px rgba(0,0,0,.5); } }
 .sk-mghost { position: fixed; z-index: 100001; pointer-events: none; transform: translate(-50%, -50%) scale(1.06); opacity: .9; container-type: inline-size; }
 .sk-mghost > * { position: static !important; width: 100% !important; height: 100% !important; transform: none !important; opacity: 1 !important; }
-.sk-mghost img { width: 100%; height: 100%; object-fit: contain; }
+/* Seules les pièces prises seules (gemme, jeton, sablier) remplissent le fantôme ; une tuile garde ses images à leur place */
+.sk-mghost > img { width: 100%; height: 100%; object-fit: contain; }
+.sk-mghost.sk-mghost-tile { opacity: 1; filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); }
 
 /* Pastilles des points de vie des tuiles sur la piste des tours : portrait de la tuile cerclé de la couleur du socle.
    Plusieurs pastilles sur une même case se décalent ; elles passent au-dessus du sablier pour rester attrapables. */
 .sk-mhpm { position: absolute; z-index: 4; width: 86%; aspect-ratio: 1; left: calc(30% + var(--k, 0) * 34%); top: 38%; border-radius: 50%; box-sizing: border-box;
-    border: .3cqw solid var(--c, #8a8a8a); background: #222 center 20% / cover no-repeat; box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.6); cursor: grab; touch-action: none; }
+    border: .3cqw solid var(--c, #8a8a8a); background: #fff center 20% / cover no-repeat;  /* fond blanc : les illustrations des tuiles sont détourées */ box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.6); cursor: grab; touch-action: none; }
 .sk-mhpm.dead { filter: grayscale(1) brightness(.6); }
 .sk-mhpm.sk-mdragging { opacity: .3; }
 .sk-mghost .sk-mhpm { width: 100% !important; height: 100% !important; }
@@ -1905,3 +1907,5 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-tcard .sk-tiface, .sk-czoom-c .sk-tiface { display: block; width: 100%; line-height: normal; }
 .sk-tcard .sk-tiface .sk-tilebox { pointer-events: none; }
 .sk-czoom-c .sk-tiface [data-skill] { pointer-events: auto; cursor: help; }
+/* Fiches de héros (campagne, zoom du héros) : leurs compétences gardent la description au survol et à l'appui long */
+.sk-hsheetscale [data-skill] { pointer-events: auto; cursor: help; }
