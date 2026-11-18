@@ -96,8 +96,10 @@ var tokensIn = function(z) {
     return S.state.river.filter(function(s) { return live(s.uid) && tokLoc(s.uid) == z; });
 };
 var poolCount = function() { return S.state.pool.filter(live).length; };
+// Un jeton désigne la case de la Rivière qui porte son numéro, quelle que soit la tuile qui s'y trouve maintenant.
+var tokTile = function(s) { return S.state.river[s.token - 1] || s; };
 var tokCode = function(s) {
-    return "<img class='sk-mtok' data-tok='" + s.uid + "' src='" + S.marker(s.token) + "' alt='" + s.token + "' draggable='false' title='" + e(S.tileName(s)) + "'>";
+    return "<img class='sk-mtok' data-tok='" + s.uid + "' src='" + S.marker(s.token) + "' alt='" + s.token + "' draggable='false' title='" + e(S.tileName(tokTile(s))) + "'>";
 };
 
 // ---------- Rendu ----------
@@ -387,7 +389,8 @@ S.renderManual = function() {
     S._lastScreen = "game";
     // Auréole : la dernière tuile déplacée ; en Coop, le dernier jeton tiré et la tuile qu'il désigne.
     var ha = st.halo;
-    if (ha) root.querySelectorAll(".sk-manual [data-mtile='" + ha.uid + "']" + (ha.k == "tok" ? ", .sk-manual [data-tok='" + ha.uid + "']" : "")).forEach(function(n) { n.classList.add("sk-halo"); });
+    var hs = ha && ha.k == "tok" && S.slotByUid(ha.uid), hu = ha && (hs ? tokTile(hs).uid : ha.uid);
+    if (ha) root.querySelectorAll(".sk-manual [data-mtile='" + hu + "']" + (ha.k == "tok" ? ", .sk-manual [data-tok='" + ha.uid + "']" : "")).forEach(function(n) { n.classList.add("sk-halo"); });
     var left = (S._toastUntil || 0) - Date.now(), to = root.querySelector("#sk-toast");
     if (left > 300 && to) { to.textContent = S._toastMsg; to.classList.add("on"); clearTimeout(S._toastTimer); S._toastTimer = setTimeout(function() { to.classList.remove("on"); }, left); }
     // Survol (souris) et appui long (iPad) des compétences : branchés une fois sur la racine, même sans plateau automatique.
@@ -644,7 +647,7 @@ S.manualMoveToken = function(uid, to) {
         st.tokLoc[uid] = to;
     }
     if (from == "energy") halo("tok", uid);
-    var msg = t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(s), zoneLabel(to));
+    var msg = t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(tokTile(s)), zoneLabel(to));
     // Dès que le dernier jeton est tiré, les jetons redeviennent disponibles (zone verte), comme dans le jeu ;
     // ceux posés sur Mouvement, Défense et Relance restent en place pour jouer leur activation.
     var all = from == "energy" && !poolCount() ? st.river.filter(function(x) { return live(x.uid) && st.used.indexOf(x.uid) >= 0 && DRAWN.indexOf(tokLoc(x.uid)) < 0; }) : [];
@@ -654,7 +657,7 @@ S.manualMoveToken = function(uid, to) {
         st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
         S.log(msg);
         commit(t("man_log_coop_reset", all.length));
-        S.toast(t("man_coop_reset_toast", s.token, S.tileName(s)));
+        S.toast(t("man_coop_reset_toast", s.token, S.tileName(tokTile(s))));
         var en = rectOf("[data-zone='energy']"), g = ++animGen, end = 0;
         all.forEach(function(x, i) { end = Math.max(end, fly(S.marker(x.token), fromR[i], en, 1, 150 + i * 70, S.icon("tokenback"))); });
         if (end) { hold("energy", zoneCode("energy", "", t("tokens_pool"), 0)); later(g, end, S.renderGame); }
