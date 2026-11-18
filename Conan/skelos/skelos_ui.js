@@ -1075,7 +1075,7 @@ S.openCampaignHelp = function() {
 S.openGameHelp = function() {
     var solo = S.state && S.state.mode == "solo";
     var h = "<div class='sk-journal sk-help-doc'><h1>" + e(t("ghelp_title")) + "</h1><p>" + e(t("ghelp_intro")) + "</p>";
-    ["board", solo ? "coop" : "adventure", "tiles", "cards"].concat(solo ? [] : ["gems"]).concat(["tools", "studio"]).forEach(function(k) {
+    ["board", "gems", solo ? "coop" : "adventure", "tiles", "cards", "auto", "tools", "studio", "phone"].forEach(function(k) {
         h += "<h2>" + e(t("ghelp_" + k)) + "</h2><ul>" + t("ghelp_" + k + "_items").split("|").map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul>";
     });
     Nav.dialog(e(t("help")), h + "</div>", null, []);

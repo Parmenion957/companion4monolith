@@ -30,7 +30,7 @@ Le bureau porte la **piste des tours** en haut. Le livre a ensuite quatre bandes
 | Glisser une tuile sur la piste des tours | pose sa pastille de points de vie sur la case de ses PV ; la pastille se déplace ensuite pour changer les PV |
 | Survol ou appui long sur une compétence | sa description (aussi sur les tuiles portées) |
 
-La dernière tuile déplacée, ou en Coop le dernier jeton tiré, porte une auréole dorée jusqu'à la prochaine récupération ou au prochain entretien.
+La dernière tuile déplacée, ou en Coop le dernier jeton tiré et la tuile qu'il désigne, portent une auréole dorée jusqu'à la prochaine récupération ou au prochain entretien.
 
 **Fenêtre « tuile + cartes »** : les cartes défilent au doigt, ou seules quand une gemme approche du bord. Emmener une gemme vers le haut ou le bas, hors de la fenêtre, la ferme.
 
@@ -68,7 +68,7 @@ En portrait étroit ou en paysage bas, le livre se découpe en grille (4 tuiles 
 - **Campagnes** : fil des scénarios (préparer, lancer, date, points de victoire), compagnie de héros (couleur, héros tombés), cache commune (équipements, sorts, améliorations, tuiles), vue d'ensemble de l'équipement, fin de scénario avec butin, journal de campagne. Une carte de la cache se glisse tout de suite vers un héros en montant ou descendant le doigt ; un glissé horizontal fait défiler la piste.
 - **Améliorations** : encyclopédie locale des améliorations de campagne (création, import, export).
 - **Réglages** :
-  - automatisations, chacune à activer ou non : entretien (double appui sur la Fatigue), récupération (double appui sur la case Récupération), avancée du tour avec la récupération ; en Aventure, activation payante (une tuile vivante glissée en fin de Rivière coûte le pion de sa case, de l'Énergie à la Fatigue) et dépollution à 2 gemmes. Rien ne bloque : s'il manque des gemmes, un message le dit ;
+  - automatisations, chacune à activer ou non : entretien (double appui sur la Fatigue), récupération (double appui sur la case Récupération), avancée du tour avec la récupération ; en Aventure, activation payante (une tuile vivante glissée en fin de Rivière coûte le pion de sa case, de l'Énergie à la Fatigue) et dépollution à 2 gemmes. Rien ne bloque : s'il manque des gemmes, un message le dit. Aucune automatisation ne se déroule en mode studio ;
   - animations ;
   - piste des tours réduite ;
   - place des points de vie (piste, tuile ou les deux) ;
