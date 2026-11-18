@@ -64,8 +64,8 @@ En portrait étroit ou en paysage bas, le livre se découpe en grille (4 tuiles 
 
 ## Autour du plateau
 
-- **Scénarios** : enregistrer la partie comme scénario (disquette), éditer un scénario sur le même livre en mode studio, le jouer.
-- **Campagnes** : fil des scénarios (préparer, lancer, date, points de victoire), compagnie de héros (couleur, héros tombés), cache commune (équipements, sorts, améliorations, tuiles), vue d'ensemble de l'équipement, fin de scénario avec butin, journal de campagne. Une carte de la cache se glisse tout de suite vers un héros en montant ou descendant le doigt ; un glissé horizontal fait défiler la piste.
+- **Scénarios** : enregistrer la partie comme scénario (disquette), éditer un scénario sur le même livre en mode studio, le jouer. Le scénario « Dans les griffes des Pictes » est inclus d'office une fois ; supprimé, il ne revient pas.
+- **Campagnes** : fil des scénarios (préparer, lancer, date, points de victoire), compagnie de héros (couleur, héros tombés), cache commune (équipements, sorts, améliorations, tuiles), vue d'ensemble de l'équipement, fin de scénario avec butin, journal de campagne. Survol ou appui long sur une compétence d'une fiche de héros : sa description. Une carte de la cache se glisse tout de suite vers un héros en montant ou descendant le doigt ; un glissé horizontal fait défiler la piste.
 - **Améliorations** : encyclopédie locale des améliorations de campagne (création, import, export).
 - **Réglages** :
   - automatisations, chacune à activer ou non : entretien (double appui sur la Fatigue), récupération (double appui sur la case Récupération), avancée du tour avec la récupération ; en Aventure, activation payante (une tuile vivante glissée en fin de Rivière coûte le pion de sa case, de l'Énergie à la Fatigue) et dépollution à 2 gemmes. Rien ne bloque : s'il manque des gemmes, un message le dit. Aucune automatisation ne se déroule en mode studio ;

@@ -537,5 +537,8 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_auto': "Automations (Settings)",
     'ghelp_auto_items': "No automation runs in studio mode.|Upkeep: the double tap on Fatigue (on by default).|Recovery: the double tap on the Recovery space (on by default); it can also advance the turn.|In Adventure: paid activation (a living tile dragged to the end of the River costs its space's pawn) and clean-up at 2 gems.|Nothing is blocked: if gems are missing, the action still happens and a message says how many were missing.",
     'ghelp_phone': "On a phone",
-    'ghelp_phone_items': "In narrow portrait or low landscape, the book is split into a grid: 4 tiles per row, each pawn above its space.|The turn track is reduced to the Turn frame: a long press on the hourglass or the alarm shows − and +. Hit points move onto the tiles.|The Reduced turn track setting gives the same layout on a tablet."
+    'ghelp_phone_items': "In narrow portrait or low landscape, the book is split into a grid: 4 tiles per row, each pawn above its space.|The turn track is reduced to the Turn frame: a long press on the hourglass or the alarm shows − and +. Hit points move onto the tiles.|The Reduced turn track setting gives the same layout on a tablet.",
+    'example_events': "Reinforcement: 4 points\nThe drums echo: each Pict Hunter gains 1 movement point",
+    'picts_title': "In the claws of the Picts",
+    'picts_event': "Reinforcement: 4 reinforcement points"
 });

@@ -1905,3 +1905,5 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-tcard .sk-tiface, .sk-czoom-c .sk-tiface { display: block; width: 100%; line-height: normal; }
 .sk-tcard .sk-tiface .sk-tilebox { pointer-events: none; }
 .sk-czoom-c .sk-tiface [data-skill] { pointer-events: auto; cursor: help; }
+/* Fiches de héros (campagne, zoom du héros) : leurs compétences gardent la description au survol et à l'appui long */
+.sk-hsheetscale [data-skill] { pointer-events: auto; cursor: help; }

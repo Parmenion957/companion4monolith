@@ -180,7 +180,7 @@ var Skelos = {
             var t = Skelos.tileById(id);
             if (t) s.river.push({tileId: id, color: t.colors[0], lp: (id == "zogar-sag" ? 6 : id == "thak" ? 8 : id == "giant-snake" ? 8 : null)});
         });
-        s.events = "Renfort : 4 points\nLes tambours résonnent : chaque Chasseur picte gagne 1 point de mouvement";
+        s.events = Skelos.t("example_events");
         return s;
     },
 
