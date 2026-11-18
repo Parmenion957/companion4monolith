@@ -30,7 +30,7 @@ Le bureau porte la **piste des tours** en haut. Le livre a ensuite quatre bandes
 | Glisser une tuile sur la piste des tours | pose sa pastille de points de vie sur la case de ses PV ; la pastille se déplace ensuite pour changer les PV |
 | Survol ou appui long sur une compétence | sa description (aussi sur les tuiles portées) |
 
-La dernière tuile déplacée, ou en Coop le dernier jeton tiré, porte une auréole dorée jusqu'à la prochaine récupération ou au prochain entretien.
+La dernière tuile déplacée, ou en Coop le dernier jeton tiré et la tuile qu'il désigne, portent une auréole dorée jusqu'à la prochaine récupération ou au prochain entretien.
 
 **Fenêtre « tuile + cartes »** : les cartes défilent au doigt, ou seules quand une gemme approche du bord. Emmener une gemme vers le haut ou le bas, hors de la fenêtre, la ferme.
 

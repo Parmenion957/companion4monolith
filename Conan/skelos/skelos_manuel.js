@@ -390,8 +390,9 @@ S.renderManual = function() {
         + "</div>" + gemPopCode() + "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
     root.innerHTML = h;
     S._lastScreen = "game";
-    var ha = st.halo, he = ha && root.querySelector(ha.k == "tok" ? ".sk-manual [data-tok='" + ha.uid + "']" : ".sk-manual [data-mtile='" + ha.uid + "']");
-    if (he) he.classList.add("sk-halo");
+    // Auréole : la dernière tuile déplacée ; en Coop, le dernier jeton tiré et la tuile qu'il désigne.
+    var ha = st.halo;
+    if (ha) root.querySelectorAll(".sk-manual [data-mtile='" + ha.uid + "']" + (ha.k == "tok" ? ", .sk-manual [data-tok='" + ha.uid + "']" : "")).forEach(function(n) { n.classList.add("sk-halo"); });
     var left = (S._toastUntil || 0) - Date.now(), to = root.querySelector("#sk-toast");
     if (left > 300 && to) { to.textContent = S._toastMsg; to.classList.add("on"); clearTimeout(S._toastTimer); S._toastTimer = setTimeout(function() { to.classList.remove("on"); }, left); }
     // Survol (souris) et appui long (iPad) des compétences : branchés une fois sur la racine, même sans plateau automatique.
