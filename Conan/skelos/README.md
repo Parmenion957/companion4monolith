@@ -56,7 +56,7 @@ Le bouton Studio (crayon) prépare ou corrige la partie :
 
 ### Outils
 
-Une icône discrète ouvre la bande d'outils : **Annuler** (sans limite), **Recommencer**, **Terminer** le scénario, **Journal**, **Aide**.
+Une icône discrète ouvre la bande d'outils : **Annuler** (les 100 dernières actions, jusqu'au rechargement de la page), **Recommencer** (retour à l'état de départ : celui du lancement, ou de la préparation en studio au tour 0 ; pour un scénario enregistré en cours de partie, le point d'enregistrement), **Terminer** le scénario, **Journal**, **Aide**.
 
 ### Téléphone
 
