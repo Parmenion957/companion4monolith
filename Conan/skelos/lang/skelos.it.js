@@ -515,5 +515,22 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_track_prev': "Previous cards",
     'man_track_next': "Next cards",
     'man_coop_reset_toast': "Last token drawn: {0} ({1}). Tokens in Fatigue are available again.",
-    'man_log_coop_gems': "{0} spent gem(s) to Fatigue"
+    'man_log_coop_gems': "{0} spent gem(s) to Fatigue",
+    'auto_title': "Automations",
+    'auto_help': "Each automation performs one of the book's gestures for you. When off, nothing happens by itself: you move the gems by hand.",
+    'auto_adventure': "Adventure only",
+    'auto_collect': "Upkeep: double tap on Fatigue",
+    'auto_collect_help': "All spent gems (zones, tiles, cards) go back to Fatigue; in Coop, drawn tokens too.",
+    'auto_recover': "Recovery: double tap on the Recovery space",
+    'auto_recover_help': "Upkeep, then Recovery: that many gems go from Fatigue back to Energy.",
+    'auto_turn': "Recovery also advances the turn",
+    'auto_turn_help': "The hourglass moves one space, then the recovery happens. The alarm rings on the last turn.",
+    'auto_cost': "Paid activation",
+    'auto_cost_help': "A living tile dragged to the end of the River costs its space's pawn: that many gems go from Energy to Fatigue.",
+    'auto_purge': "Clean-up costs 2 gems",
+    'auto_purge_help': "Removing a dead tile from play discards 2 gems (Fatigue first). Otherwise the tile leaves for free.",
+    'auto_short': "Not enough gems: {0} missing.",
+    'man_log_activate': "{0} activated: {1} gem(s) from Energy to Fatigue",
+    'purge_free': "Clean up: remove from play",
+    'log_purge_free': "{0} removed from play"
 });

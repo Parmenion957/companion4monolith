@@ -390,6 +390,10 @@ S.renderManual = function() {
         + "</div>" + gemPopCode() + "</div><div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>";
     root.innerHTML = h;
     S._lastScreen = "game";
+    var ha = st.halo, he = ha && root.querySelector(ha.k == "tok" ? ".sk-manual [data-tok='" + ha.uid + "']" : ".sk-manual [data-mtile='" + ha.uid + "']");
+    if (he) he.classList.add("sk-halo");
+    var left = (S._toastUntil || 0) - Date.now(), to = root.querySelector("#sk-toast");
+    if (left > 300 && to) { to.textContent = S._toastMsg; to.classList.add("on"); clearTimeout(S._toastTimer); S._toastTimer = setTimeout(function() { to.classList.remove("on"); }, left); }
     // Survol (souris) et appui long (iPad) des compétences : branchés une fois sur la racine, même sans plateau automatique.
     if (!S._pressBound) { S.bindPress(root); S._pressBound = true; }
     // Passage téléphone ↔ tablette (rotation, fenêtre) : le livre change de découpage, on le redessine.
@@ -437,6 +441,8 @@ document.addEventListener("fullscreenchange", function() { setTimeout(function()
 
 // ---------- Actions (une étape d'annulation et une ligne de Journal chacune) ----------
 var commit = function(msg) { if (msg) S.log(msg); S.save(); S.renderGame(); };
+// Auréole dorée : la dernière tuile déplacée, ou le dernier jeton tiré (Coop). Elle s'efface à la récupération et à l'entretien.
+var halo = function(k, uid) { S.state.halo = uid ? {k: k, uid: uid} : null; };
 
 S.manualMoveGems = function(from, to, n) {
     n = Math.min(n, count(from));
@@ -460,15 +466,15 @@ var spentToFatigue = function() {
     S.clearBoosts();
     st.river.forEach(function(s) { var n = tileGems(s); if (n) { st.fatigue += n; delete s.gems; (s.cards || []).forEach(function(c) { delete c.gems; }); } });
 };
-S.manualRecover = function() {
-    var st = S.state; if (coop()) return;
+S.manualRecover = function(quiet) {
+    var st = S.state; if (coop()) return false;
     var onTiles = st.river.reduce(function(a, s) { return a + tileGems(s); }, 0);
     var spent = S.boostSum() + onTiles, back = Math.max(0, Math.min(st.recovery || 0, st.fatigue + spent)), fat0 = st.fatigue, en0 = st.energy;
-    if (!spent && !back) { S.toast(t("man_recover_none")); return; }
+    if (!spent && !back) { if (!quiet) S.toast(t("man_recover_none")); return false; }
     // Avant de changer l'état : d'où partent les gemmes (zones, tas posés sur les tuiles).
     var paths = spentPaths();
     S.snapshot();
-    spentToFatigue();
+    spentToFatigue(); halo();
     st.fatigue -= back; st.energy += back;
     commit(t("man_log_recover", spent, back));
     // Animation : les gemmes dépensées volent vers la Fatigue, puis la Récupération repart vers l'Énergie disponible.
@@ -481,6 +487,19 @@ S.manualRecover = function() {
     hold("fatigue", zoneCode("fatigue", "", t("fatigue"), fat0)); hold("energy", zoneCode("energy", "", t("energy"), en0));
     later(g, t1, function() { hold("fatigue", zoneCode("fatigue", "", t("fatigue"), fat0 + spent)); });
     later(g, Math.max(t1, t2), S.renderGame);
+    return true;
+};
+// Double appui sur la tuile de repos. Avec l'automatisation « la récupération avance aussi le tour » : le sablier avance
+// d'une case, puis la récupération a lieu ; le tout forme une seule étape d'annulation.
+S.manualRest = function() {
+    if (!S.auto("turn")) return S.manualRecover();
+    var st = S.state, next = (st.turn || 0) + 1;
+    S.snapshot(); st.turn = next; S.log(t("man_log_turn", next));
+    var snap = S.snapshot; S.snapshot = function() {};
+    var done; try { done = S.manualRecover(true); } finally { S.snapshot = snap; }
+    if (!done) commit();
+    pulse(".sk-mhour");
+    if (st.turns && st.turn == st.turns) S.lastTurnBell && S.lastTurnBell(S.root.querySelector(".sk-mturn [data-turnkind='turns'], .sk-mtrack .sk-mend"));
 };
 
 // Double appui sur la Fatigue : les gemmes dépensées (Mouvement, Défense, Relance, tuiles et cartes) y reviennent toutes,
@@ -490,7 +509,7 @@ S.manualCollect = function() {
     if (!spent) { S.toast(t("man_collect_none")); return; }
     var paths = spentPaths();
     S.snapshot();
-    spentToFatigue();
+    spentToFatigue(); halo();
     commit(t("man_log_collect", spent));
     var fat = rectOf("[data-zone='fatigue']"), gem = S.icon("gem"), d = 0, t1 = 0, g = ++animGen;
     pulse("[data-zone='fatigue']");
@@ -555,7 +574,7 @@ S.manualCoopClear = function() {
     var fromT = toks.map(function(s) { return rectOf("[data-tok='" + s.uid + "']"); }), paths = spentPaths();
     var oldFat = outerOf("fatigue"), pool0 = poolCount();
     S.snapshot();
-    spentToFatigue();
+    spentToFatigue(); halo();
     if (reset) {
         toks.forEach(function(s) { st.pool.push(s.uid); });
         st.used = st.used.filter(function(u) { return st.pool.indexOf(u) < 0; });
@@ -628,6 +647,7 @@ S.manualMoveToken = function(uid, to) {
         if (from == "energy") { st.pool = st.pool.filter(function(u) { return u != uid; }); if (st.used.indexOf(uid) < 0) st.used.push(uid); }
         st.tokLoc[uid] = to;
     }
+    if (from == "energy") halo("tok", uid);
     var msg = t(from == "energy" ? "man_log_draw" : "man_log_token", s.token, S.tileName(s), zoneLabel(to));
     // Dès que le dernier jeton est tiré, les jetons redeviennent disponibles (zone verte), comme dans le jeu ;
     // ceux posés sur Mouvement, Défense et Relance restent en place pour jouer leur activation.
@@ -657,9 +677,21 @@ S.manualMoveTile = function(uid, idx) {
     var st = S.state, i = st.river.findIndex(function(s) { return s.uid == uid; });
     idx = Math.max(0, Math.min(st.river.length - 1, idx));
     if (i < 0 || idx == i) return;
+    // Activation payante (Aventure, réglage) : une tuile vivante glissée en fin de rivière coûte le pion de sa case,
+    // autant de gemmes passent de l'Énergie à la Fatigue. Rien ne bloque : s'il en manque, on le signale.
+    var cost = !coop() && S.auto("cost") && idx == st.river.length - 1 && !st.river[i].dead ? i + 1 : 0;
+    var pay = Math.min(cost, st.energy || 0), en = rectOf("[data-zone='energy']"), fat0 = st.fatigue, en0 = st.energy;
     S.snapshot();
     var s = st.river.splice(i, 1)[0]; st.river.splice(idx, 0, s);
-    commit(t("man_log_tile", S.tileName(s), idx + 1));
+    halo("tile", uid);
+    if (!cost) { commit(t("man_log_tile", S.tileName(s), idx + 1)); return; }
+    st.energy -= pay; st.fatigue += pay;
+    commit(t("man_log_activate", S.tileName(s), pay));
+    if (pay < cost) S.toast(t("auto_short", cost - pay));
+    var g = ++animGen, end = fly(S.icon("gem"), en, rectOf("[data-zone='fatigue']"), pay, 0);
+    if (!end) return;
+    hold("fatigue", zoneCode("fatigue", "", t("fatigue"), fat0)); hold("energy", zoneCode("energy", "", t("energy"), en0 - pay));
+    later(g, end, S.renderGame);
 };
 
 S.manualPiece = function(which, cell) {
@@ -849,14 +881,15 @@ var bind = function(board) {
         if (ev.target.closest("[data-mrest]") && !ev.target.closest("button")) {
             var now = Date.now();
             // (En coop, plus rien : le double appui qui range les jetons tirés est passé sur la Fatigue.)
-            if (coop()) return;
-            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; S.manualRecover(); }
+            if (coop() || !S.auto("recover")) return;
+            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; S.manualRest(); }
             else { lastTap.uid = "rest"; lastTap.at = now; }
             return;
         }
         // Double appui sur la Fatigue : toutes les gemmes dépensées y reviennent ; en coop, les jetons tirés aussi.
         if (ev.target.closest(".sk-manual [data-zone='fatigue']") && !ev.target.closest("button")) {
             var now2 = Date.now();
+            if (!S.auto("collect")) return;
             if (lastTap.uid == "fatigue" && now2 - lastTap.at < 400) { lastTap.uid = null; if (coop()) S.manualCoopClear(); else S.manualCollect(); }
             else { lastTap.uid = "fatigue"; lastTap.at = now2; }
             return;
@@ -1009,12 +1042,19 @@ var bind = function(board) {
             return;
         }
 
-        // Tuiles : glisser pour les déplacer, appui long pour le menu, double appui pour l'agrandir.
+        // Tuiles, en partie : appui long, la tuile se soulève ; on la glisse alors pour la déplacer, ou on la lâche sans
+        // bouger pour son menu. Un glissé sans appui long ne fait rien (pas de déplacement involontaire en pleine partie).
+        // Double appui : l'agrandir. En mode studio : glisser tout de suite pour déplacer, appui long pour le menu.
         if (tile) {
-            var uid = tile.dataset.mtile, long = false;
-            if (!tile.hasAttribute("data-eventuid")) g.timer = setTimeout(function() { long = true; S._suppressClick = true; S.openTileMenu(uid); }, 450);
+            var uid = tile.dataset.mtile, long = false, lifted = !!S.studio, isEv = tile.hasAttribute("data-eventuid");
+            if (S.studio) { if (!isEv) g.timer = setTimeout(function() { long = true; S._suppressClick = true; S.openTileMenu(uid); }, 450); }
+            else g.timer = setTimeout(function() { lifted = true; S._suppressClick = true; S.hideTip(); tile.classList.add("sk-mlift"); if (navigator.vibrate) navigator.vibrate(20); }, 450);
             listen(function(e2) {
-                if (!g.moved && !long && far(e2)) { g.moved = true; clearTimeout(g.timer); tile.classList.add("sk-dragging"); ghostStart(tile, e2.clientX, e2.clientY); }
+                if (g.dead) return;
+                if (!g.moved && !long && far(e2)) {
+                    if (!lifted) { g.dead = true; clearTimeout(g.timer); return; }
+                    g.moved = true; clearTimeout(g.timer); tile.classList.remove("sk-mlift"); tile.classList.add("sk-dragging"); ghostStart(tile, e2.clientX, e2.clientY);
+                }
                 if (g.moved) {
                     e2.preventDefault(); ghostMove(e2.clientX, e2.clientY);
                     // Hors de la bande des tuiles (et hors du tas), la tuile devient son pion de vie, prêt à poser sur la piste.
@@ -1025,8 +1065,8 @@ var bind = function(board) {
                     markTarget(under(e2.clientX, e2.clientY, "[data-tilepile]") || (S.hpOnTrack() && !tile.hasAttribute("data-eventuid") ? under(e2.clientX, e2.clientY, "[data-cell]") : null));
                 }
             }, function(e2, cancel) {
-                ghostEnd(); tile.classList.remove("sk-dragging"); showSpot(uid, null);
-                if (cancel || long) return;
+                ghostEnd(); tile.classList.remove("sk-dragging", "sk-mlift"); showSpot(uid, null);
+                if (cancel || long || g.dead) return;
                 if (g.moved) {
                     if (under(e2.clientX, e2.clientY, ".sk-mb4")) S.manualMoveTile(uid, tileIndexAt(e2.clientX, e2.clientY));
                     else if (under(e2.clientX, e2.clientY, "[data-tilepile]")) S.studioRemove(uid);
@@ -1036,6 +1076,8 @@ var bind = function(board) {
                     }
                     return;
                 }
+                // Soulevée puis lâchée sans bouger : le menu de la tuile.
+                if (lifted && !S.studio) { lastTap.uid = null; if (!isEv) S.openTileMenu(uid); return; }
                 // Double appui : le texte d'une tuile Événement se modifie ; une autre tuile s'agrandit, avec ses cartes.
                 var now = Date.now();
                 if (lastTap.uid == uid && now - lastTap.at < 400) {
@@ -1169,10 +1211,11 @@ var bindManualZoom = function(ov) {
             list.scrollBy({top: +rot.dataset.mzrot * (card ? card.offsetHeight + 24 : 100), behavior: "smooth"});
             return;
         }
-        var sc = ev.target.closest("[data-mzc]");
-        if (sc) { ev.stopPropagation(); openBig(ov, sc, uid); return; }
+        // Compétence (y compris sur une tuile portée) : sa description, avant l'agrandissement de la carte.
         var sk = ev.target.closest("[data-skill]");
         if (sk) { ev.stopPropagation(); S.showTip(sk); return; }
+        var sc = ev.target.closest("[data-mzc]");
+        if (sc) { ev.stopPropagation(); openBig(ov, sc, uid); return; }
         if (ev.target.closest(".sk-tip, .sk-zoombox, .sk-mzfoot, .sk-mzc")) return;
         S.zoomShut();
     };

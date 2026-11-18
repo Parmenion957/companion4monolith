@@ -854,6 +854,11 @@ S.applyDisplayPrefs = function() {
     var pr = S.prefs();
     document.documentElement.classList.toggle("sk-noanim", !!pr.noAnim);
 };
+// Automatisations (Réglages) : chaque interrupteur fait à la place du joueur un geste du livre.
+// Valeurs par défaut : l'entretien et le renfort par double appui existaient déjà ; le reste est à activer.
+S.AUTO_DEFAULTS = {collect: true, recover: true, turn: false, cost: false, purge: false};
+S.auto = function(k) { var a = S.prefs().auto || {}; return a[k] == null ? !!S.AUTO_DEFAULTS[k] : !!a[k]; };
+
 S.renderSettings = function() {
     S.screen = "settings";
     var pr = S.prefs(), b = S.bg() || {};
@@ -886,11 +891,22 @@ S.renderSettings = function() {
         + "<fieldset class='sk-hpplace'" + (pr.turnMini ? " disabled" : "") + "><legend>" + t("man_hp_place") + "</legend>"
         + "<label class='sk-sw'><span>" + t("man_hp_track") + "</span><input type='checkbox' data-pref='hpplace' value='track'" + (pr.hpPlace != "tile" && !pr.turnMini ? " checked" : "") + "></label>"
         + "<label class='sk-sw'><span>" + t("man_hp_tile") + "</span><input type='checkbox' data-pref='hpplace' value='tile'" + (pr.hpPlace == "tile" || pr.hpPlace == "both" || pr.turnMini ? " checked" : "") + "></label></fieldset></div>";
+    var sw = function(k, sub) {
+        return "<label class='sk-sw" + (sub ? " sk-swsub" : "") + "'><span>" + t("auto_" + k) + "</span><input type='checkbox' data-auto='" + k + "'" + (S.auto(k) ? " checked" : "")
+            + (sub && !S.auto(sub) ? " disabled" : "") + "></label><p class='sk-swhelp'>" + t("auto_" + k + "_help") + "</p>";
+    };
+    h += "<div class='sk-blk sk-c2 sk-autoblk'><h3>" + t("auto_title") + "</h3><p>" + t("auto_help") + "</p>"
+        + sw("collect") + sw("recover") + sw("turn", "recover")
+        + "<h4>" + t("auto_adventure") + "</h4>" + sw("cost") + sw("purge") + "</div>";
     S.mount(shell("sk-settings", h));
     var scr = S.root.querySelector(".sk-screen");
     scr.addEventListener("change", function(ev) {
         var x = ev.target;
-        if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
+        if (x.dataset.auto) {
+            pr.auto = pr.auto || {}; pr.auto[x.dataset.auto] = x.checked; S.savePrefs();
+            var tu = scr.querySelector("[data-auto='turn']"); if (tu) tu.disabled = !S.auto("recover");
+        }
+        else if (x.dataset.pref == "anim") { pr.noAnim = !x.checked; S.savePrefs(); S.applyDisplayPrefs(); }
         else if (x.dataset.pref == "turnmini") { pr.turnMini = x.checked; S.savePrefs(); S.renderSettings(); }
         else if (x.dataset.pref == "hpplace") {
             var tr = scr.querySelector("[data-pref='hpplace'][value='track']").checked, ti = scr.querySelector("[data-pref='hpplace'][value='tile']").checked;

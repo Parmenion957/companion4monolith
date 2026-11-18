@@ -21,14 +21,16 @@ Le bureau porte la **piste des tours** en haut. Le livre a ensuite quatre bandes
 | Appui long sur une zone, puis glisser | prend plusieurs gemmes : le nombre monte tant que le doigt reste posé, la pastille rebondit à chaque gemme |
 | Appui long puis lâcher sans bouger | garde les gemmes « en main » ; l'appui suivant sur une zone ou une tuile les y pose |
 | Glisser des gemmes sur une tuile | les pose sur la tuile ; si la tuile porte des cartes, une fenêtre « tuile + cartes » s'ouvre pour choisir où les poser |
-| Double appui sur la tuile de repos | fin de tour des gemmes : tout ce qui est dépensé passe en Fatigue, puis la Récupération revient vers l'Énergie |
-| Double appui sur la Fatigue | ramène en Fatigue toutes les gemmes dépensées (zones, tuiles, cartes), sans Récupération |
-| Glisser une tuile dans sa bande | la déplace (un cadre pointillé montre où elle se posera) |
-| Appui long sur une tuile | menu : Zoom, Mort, Renfort, Purge |
+| Double appui sur la case Récupération | récupération : tout ce qui est dépensé passe en Fatigue, puis la Récupération revient vers l'Énergie (réglage ; peut aussi avancer le tour) |
+| Double appui sur la Fatigue | entretien : ramène en Fatigue toutes les gemmes dépensées (zones, tuiles, cartes), sans Récupération (réglage) |
+| Appui long sur une tuile, puis glisser | la tuile se soulève, puis se déplace dans sa bande (un cadre pointillé montre où elle se posera) ; un glissé sans appui long ne fait rien |
+| Appui long sur une tuile, puis lâcher | menu : Zoom, Mort, Renfort, Dépolluer |
 | Double appui sur une tuile | zoom de la tuile et de ses cartes |
 | Glisser le sablier ou la fin de partie | les place sur une case de la piste des tours ; l'alarme sonne au dernier tour |
 | Glisser une tuile sur la piste des tours | pose sa pastille de points de vie sur la case de ses PV ; la pastille se déplace ensuite pour changer les PV |
-| Survol ou appui long sur une compétence | sa description |
+| Survol ou appui long sur une compétence | sa description (aussi sur les tuiles portées) |
+
+La dernière tuile déplacée, ou en Coop le dernier jeton tiré, porte une auréole dorée jusqu'à la prochaine récupération ou au prochain entretien.
 
 **Fenêtre « tuile + cartes »** : les cartes défilent au doigt, ou seules quand une gemme approche du bord. Emmener une gemme vers le haut ou le bas, hors de la fenêtre, la ferme.
 
@@ -47,6 +49,7 @@ Le bouton Studio (crayon) prépare ou corrige la partie :
 
 - la **réserve** (bol, à gauche du livre) : y prendre des gemmes en ajoute au livre, y en reposer en retire ;
 - le **tas de tuiles** (à droite) : un appui ouvre le choix des tuiles ; y déposer une tuile la retire ;
+- les tuiles se glissent tout de suite, sans appui long ;
 - les − et + de la Récupération (1 à 8, puis X), du nombre de héros, des points de vie de départ ;
 - la couleur du socle des tuiles qui en ont plusieurs ;
 - les cartes des tuiles (sorts, équipements, tuiles portées) et le texte des tuiles Événement.
@@ -62,9 +65,10 @@ En portrait étroit ou en paysage bas, le livre se découpe en grille (4 tuiles 
 ## Autour du plateau
 
 - **Scénarios** : enregistrer la partie comme scénario (disquette), éditer un scénario sur le même livre en mode studio, le jouer.
-- **Campagnes** : fil des scénarios (préparer, lancer, date, points de victoire), compagnie de héros (couleur, héros tombés), cache commune (équipements, sorts, améliorations), vue d'ensemble de l'équipement, fin de scénario avec butin, journal de campagne.
+- **Campagnes** : fil des scénarios (préparer, lancer, date, points de victoire), compagnie de héros (couleur, héros tombés), cache commune (équipements, sorts, améliorations), vue d'ensemble de l'équipement, fin de scénario avec butin, journal de campagne. Une carte de la cache se glisse tout de suite vers un héros en montant ou descendant le doigt ; un glissé horizontal fait défiler la piste.
 - **Améliorations** : encyclopédie locale des améliorations de campagne (création, import, export).
 - **Réglages** :
+  - automatisations, chacune à activer ou non : entretien (double appui sur la Fatigue), récupération (double appui sur la case Récupération), avancée du tour avec la récupération ; en Aventure, activation payante (une tuile vivante glissée en fin de Rivière coûte le pion de sa case, de l'Énergie à la Fatigue) et dépollution à 2 gemmes. Rien ne bloque : s'il manque des gemmes, un message le dit ;
   - animations ;
   - piste des tours réduite ;
   - place des points de vie (piste, tuile ou les deux) ;

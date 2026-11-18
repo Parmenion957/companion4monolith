@@ -1883,3 +1883,21 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mhand.bump::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 3px solid rgba(255,121,0,.9); animation: skmRing .45s ease-out forwards; pointer-events: none; }
 @keyframes skmBump { 40% { transform: scale(1.35); } }
 @keyframes skmRing { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.7); } }
+
+/* Étape 29 : auréole dorée discrète sur la dernière tuile déplacée ou le dernier jeton tiré (Coop) */
+.sk-mtile.sk-halo { box-shadow: 0 0 0 .35cqw rgba(236,196,98,.95), 0 0 2.2cqw .7cqw rgba(236,196,98,.6); border-radius: 4%; z-index: 1; animation: skmHalo 2.6s ease-in-out infinite; }
+.sk-mtok.sk-halo { filter: drop-shadow(0 0 .5cqw rgba(232,194,96,.95)) drop-shadow(0 0 1.1cqw rgba(232,194,96,.55)); animation: skmHaloTok 2.6s ease-in-out infinite; }
+@keyframes skmHalo { 50% { box-shadow: 0 0 0 .35cqw rgba(236,196,98,.7), 0 0 3cqw .9cqw rgba(236,196,98,.35); } }
+@keyframes skmHaloTok { 50% { filter: drop-shadow(0 0 .4cqw rgba(232,194,96,.7)) drop-shadow(0 0 .8cqw rgba(232,194,96,.3)); } }
+.sk-noanim .sk-halo { animation: none; }
+@media (prefers-reduced-motion: reduce) { .sk-halo { animation: none; } }
+/* Réglages : textes d'aide des automatisations, interrupteur dépendant en retrait */
+.sk-swhelp { margin: 2px 0 8px; font-size: .82rem; opacity: .8; }
+.sk-sw.sk-swsub { padding-left: 18px; }
+.sk-sw:has(input:disabled) { opacity: .5; cursor: default; }
+/* Tuiles portées (zoom, fenêtre des gemmes) : leurs compétences gardent la description au survol et à l'appui long */
+.sk-mzc .sk-tilebox [data-skill], .sk-mgcard .sk-mgface [data-skill] { pointer-events: auto; cursor: help; }
+/* En partie, une tuile se soulève à l'appui long avant de pouvoir être déplacée */
+.sk-mb4 .sk-mtile.sk-mlift { position: relative; z-index: 3; animation: sk-lift .2s ease-out forwards; }
+.sk-manual:not(.sk-mstudio) .sk-mb4 .sk-mtile { cursor: pointer; }
+.sk-manual:not(.sk-mstudio) .sk-mb4 .sk-mtile.sk-mlift { cursor: grabbing; }

@@ -746,7 +746,7 @@ S.openTileMenu = function(uid) {
     else {
         var rc = S.reinforceCost(s);
         items.push(["reinf", rc ? t(rc == 1 ? "reinforce_cost_1" : "reinforce_cost", t("reinforce"), rc) : t("reinforce")]);
-        if (!solo) items.push(["purge", t("purge")]);
+        if (!solo) items.push(["purge", t(S.auto("purge") ? "purge" : "purge_free")]);
         if (solo && st.removed.indexOf(uid) < 0) items.push(["rmtoken", t("remove_token")]);
     }
     S.hideTip(); S.closeHp();
@@ -1943,12 +1943,14 @@ S.closeCompanyView = function() {
     var ov = S.root.querySelector("#sk-overlay"); S._cvSel = null; S._cvScroll = null; S._cvTap = null;
     ov.classList.remove("on", "sk-cvdrag"); ov.innerHTML = ""; ov.onclick = ov.onkeydown = null; S.rerender();
 };
-// Appui long sur une carte, puis glisser jusqu'à un héros, la cache ou la corbeille. Une carte choisie emmène toutes les cartes choisies.
+// Glisser une carte jusqu'à un héros, la cache ou la corbeille. Une carte choisie emmène toutes les cartes choisies.
+// Le glisser part tout de suite dès que le doigt monte ou descend (ou bouge, si la piste ne défile pas) ; un glissé
+// horizontal fait défiler la piste. L'appui long reste possible, pour glisser une carte dans n'importe quelle direction.
 // Les écouteurs ne sont posés qu'une fois sur le calque, qui est réutilisé à chaque nouvel affichage de la vue.
 S.bindCardDrag = function(ov, move) {
     S._cvMove = move;
     if (ov._cvDragBound) return; ov._cvDragBound = true;
-    var timer = null, drag = null, sx = 0, sy = 0;
+    var timer = null, drag = null, sx = 0, sy = 0, card = null, lift = null;
     var target = function(x, y) { var el = document.elementFromPoint(x, y); return el ? el.closest("#sk-overlay [data-dest]") : null; };
     var end = function() {
         clearTimeout(timer); timer = null;
@@ -1961,9 +1963,10 @@ S.bindCardDrag = function(ov, move) {
     };
     ov.addEventListener("pointerdown", function(ev) {
         var k = ev.target.closest("[data-tcard]"); if (!k || !ov.querySelector(".sk-cview")) return;
-        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
-        timer = setTimeout(function() {
-            timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true), sel = (S._cvSel && S._cvSel.uids) || [];
+        if (ev.pointerType == "mouse" && ev.button != 0) return;
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer); card = k;
+        lift = function() {
+            clearTimeout(timer); timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true), sel = (S._cvSel && S._cvSel.uids) || [];
             var uids = sel.indexOf(k.dataset.tcard) >= 0 ? sel.slice() : [k.dataset.tcard];
             g.className = "sk-tcard sk-tghost"; g.style.width = r.width + "px"; g.style.left = (sx - r.width / 2) + "px"; g.style.top = (sy - r.height / 2) + "px";
             if (uids.length > 1) g.insertAdjacentHTML("beforeend", "<b class='sk-tghostn'>" + uids.length + "</b>");
@@ -1972,10 +1975,15 @@ S.bindCardDrag = function(ov, move) {
             drag = {uids: uids, ghost: g, w: r.width, h: r.height, over: null};
             S._cvTap = null;
             if (navigator.vibrate) navigator.vibrate(20);
-        }, 400);
+        };
+        timer = setTimeout(lift, 400);
     });
     ov.addEventListener("pointermove", function(ev) {
-        if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; }
+        var dx = Math.abs(ev.clientX - sx), dy = Math.abs(ev.clientY - sy);
+        if (timer && (dx > 8 || dy > 8)) {
+            var tr = card && card.closest(".sk-ctrack"), scrolls = tr && tr.scrollWidth > tr.clientWidth + 2 && !tr.classList.contains("sk-ctrack-wrap");
+            if (!scrolls || dy > dx) lift(); else { clearTimeout(timer); timer = null; }
+        }
         if (!drag) return;
         ev.preventDefault();
         drag.ghost.style.left = (ev.clientX - drag.w / 2) + "px"; drag.ghost.style.top = (ev.clientY - drag.h / 2) + "px";
@@ -2082,13 +2090,14 @@ S.init = function(root) { var r = baseInitDS.apply(S, arguments); S.bindDragScro
 })();
 
 // ---------- Page d'une campagne : glisser une carte de la cache sur la fiche d'un héros (ou dans la corbeille) ----------
-// Appui long sur une carte de la cache, puis glisser : sur une fiche, le héros la prend ; sur la corbeille qui apparaît en bas, elle est supprimée
-// (sauf l'équipement de départ). Un simple appui l'ouvre toujours en grand.
+// Glisser une carte de la cache : sur une fiche, le héros la prend ; sur la corbeille qui apparaît en bas, elle est supprimée
+// (sauf l'équipement de départ). Le glisser part dès que le doigt monte ou descend ; un glissé horizontal fait défiler
+// la cache ; l'appui long reste possible. Un simple appui l'ouvre toujours en grand.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
 S.bindPageCardDrag = function(cid) {
     var blk = S.root.querySelector(".sk-caveblk"); if (!blk) return;
-    var timer = null, drag = null, sx = 0, sy = 0;
+    var timer = null, drag = null, sx = 0, sy = 0, card = null, lift = null;
     var scroller = function() { var n = blk.parentElement; while (n && n !== document.body) { var cs = getComputedStyle(n); if (/(auto|scroll)/.test(cs.overflowY) && n.scrollHeight > n.clientHeight) return n; n = n.parentElement; } return document.scrollingElement; };
     var target = function(x, y) {
         var el = document.elementFromPoint(x, y); if (!el) return null;
@@ -2108,19 +2117,24 @@ S.bindPageCardDrag = function(cid) {
     };
     blk.addEventListener("pointerdown", function(ev) {
         var k = ev.target.closest(".sk-ctrack [data-tcard]"); if (!k || (ev.pointerType == "mouse" && ev.button != 0)) return;
-        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer);
-        timer = setTimeout(function() {
-            timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true);
+        sx = ev.clientX; sy = ev.clientY; clearTimeout(timer); card = k;
+        lift = function() {
+            clearTimeout(timer); timer = null; var r = k.getBoundingClientRect(), g = k.cloneNode(true);
             g.className = "sk-tcard sk-tghost"; g.style.width = r.width + "px"; g.style.left = (sx - r.width / 2) + "px"; g.style.top = (sy - r.height / 2) + "px";
             document.body.appendChild(g); k.classList.add("sk-tdrag");
             var bin = document.createElement("div"); bin.className = "sk-trash sk-pgtrash"; bin.setAttribute("aria-hidden", "true");
             bin.innerHTML = "<i>&#xf2ed;</i><span>" + e(t("cv_drop_remove")) + "</span>"; document.body.appendChild(bin);
             drag = {uid: k.dataset.tcard, src: k, ghost: g, bin: bin, w: r.width, h: r.height, over: null, sc: scroller()};
             if (navigator.vibrate) navigator.vibrate(20);
-        }, 400);
+        };
+        timer = setTimeout(lift, 400);
     });
     S._pgMove = function(ev) {
-        if (timer && (Math.abs(ev.clientX - sx) > 10 || Math.abs(ev.clientY - sy) > 10)) { clearTimeout(timer); timer = null; }
+        var dx = Math.abs(ev.clientX - sx), dy = Math.abs(ev.clientY - sy);
+        if (timer && (dx > 8 || dy > 8)) {
+            var tr = card && card.closest(".sk-ctrack"), scrolls = tr && tr.scrollWidth > tr.clientWidth + 2 && !tr.classList.contains("sk-ctrack-wrap");
+            if (!scrolls || dy > dx) lift(); else { clearTimeout(timer); timer = null; }
+        }
         if (!drag) return;
         ev.preventDefault();
         drag.ghost.style.left = (ev.clientX - drag.w / 2) + "px"; drag.ghost.style.top = (ev.clientY - drag.h / 2) + "px";

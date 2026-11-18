@@ -605,20 +605,19 @@ var Skelos = {
         return n;
     },
 
-    // Dépolluer la Rivière : 2 gemmes retirées du jeu (fatigue, puis améliorations, puis énergie).
+    // Dépolluer la Rivière : la tuile morte quitte le jeu. Avec le réglage « Dépolluer coûte 2 gemmes » (Aventure),
+    // 2 gemmes sont retirées du jeu (fatigue, puis améliorations, puis énergie) ; rien ne bloque s'il en manque.
     purge: function(uid) {
-        var st = Skelos.state, need = 2, total = st.fatigue + st.energy;
-        Skelos.BOOSTS.forEach(function(k) { total += st.boosts[k] || 0; });
-        if (total < need) { Skelos.toast(Skelos.t("not_enough", need, total)); return; }
+        var st = Skelos.state, pay = st.mode != "solo" && Skelos.auto("purge"), need = pay ? 2 : 0;
         Skelos.snapshot();
-        var take = function(n) { return n; };
         var f = Math.min(st.fatigue, need); st.fatigue -= f; need -= f;
         Skelos.BOOSTS.forEach(function(k) { var x = Math.min(st.boosts[k] || 0, need); st.boosts[k] -= x; need -= x; });
         var en = Math.min(st.energy, need); st.energy -= en; need -= en;
+        if (need) Skelos.toast(Skelos.t("auto_short", need));
         var slot = Skelos.slotByUid(uid);
         st.river = st.river.filter(function(x) { return x.uid != uid; });
         if (Skelos.selected == uid) Skelos.selected = null;
-        Skelos.log(Skelos.t("log_purge", Skelos.tileName(slot)));
+        Skelos.log(Skelos.t(pay ? "log_purge" : "log_purge_free", Skelos.tileName(slot)));
         Skelos.save(); Skelos.renderGame();
     },
 
@@ -728,6 +727,8 @@ var Skelos = {
         var el = Skelos.root.querySelector("#sk-toast");
         if (!el) { alert(msg); return; }
         el.textContent = msg; el.classList.add("on");
+        // Gardé le temps de son affichage : un plateau redessiné juste après (fin d'animation) le remet en place.
+        Skelos._toastMsg = msg; Skelos._toastUntil = Date.now() + 3200;
         clearTimeout(Skelos._toastTimer);
         Skelos._toastTimer = setTimeout(function() { el.classList.remove("on"); }, 3200);
     }
