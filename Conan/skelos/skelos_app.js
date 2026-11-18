@@ -443,7 +443,8 @@ S.openCacheEditor = function(cid, done) {
     var c = S.campaign(cid); if (!c) return;
     var color = {}; (c.heroes || []).forEach(function(hh) { color[hh.id] = hh.color; });
     var init = S.sortItems((c.cache || []).slice()).map(function(it) { return {kind: it.kind, ref: it.ref, name: it.name, uid: it.uid, start: !!it.start, color: it.owner ? color[it.owner] : null}; });
-    S.openItemPicker({title: t("edit_cache"), initial: init, onClose: done || null, onAdd: function(sel) {
+    // Onglet Tuiles : une tuile peut aussi entrer dans la cache, puis passer à un héros (allié, monture…).
+    S.openItemPicker({title: t("edit_cache"), initial: init, tiles: true, tilesLast: true, kind: S.prefs().itemKind || "eq", onClose: done || null, onAdd: function(sel) {
         var keep = {}, added = sel.filter(function(x) { if (x.uid) keep[x.uid] = true; return !x.uid; });
         var gone = (S.campaign(cid).cache || []).filter(function(it) { return !keep[it.uid] && !it.start; });
         var apply = function() {
@@ -623,7 +624,8 @@ S.itemCardCode = function(it, badge) {
 S.openItemPicker = function(opts) {
     var pr = S.prefs(), kind = opts.kind || pr.itemKind || "eq", sel = (opts.initial || []).slice(), browse = !!opts.browse, editing = !!opts.initial;
     var ov = S.root.querySelector("#sk-overlay");
-    var tabs = (opts.tiles ? [["tile", "tab_tiles"]] : []).concat([["eq", "tab_eq"], ["sp", "tab_sp"], ["up", "tab_up"]]);
+    var tabs = [["eq", "tab_eq"], ["sp", "tab_sp"], ["up", "tab_up"]];
+    if (opts.tiles) tabs = opts.tilesLast ? tabs.concat([["tile", "tab_tiles"]]) : [["tile", "tab_tiles"]].concat(tabs);
     if (opts.tiles && !opts.kind && !pr.itemKind) kind = "tile";
     // Choix limité à certains types (cartes d'une tuile en studio : sorts ou équipements).
     if (opts.kinds) { tabs = tabs.filter(function(x) { return opts.kinds.indexOf(x[0]) >= 0; }); if (opts.kinds.indexOf(kind) < 0) kind = opts.kinds[0]; }

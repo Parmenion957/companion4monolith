@@ -433,7 +433,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'cv_drop_remove': "Delete from the campaign",
     'cv_unselect': "Clear selection",
     'cards_removed': "{0} card(s) deleted",
-    'cv_hint': "Tap one or more cards to select them, then a hero or the cache to send them there. Long-press to drag, double-tap to see the card large.",
+    'cv_hint': "Tap one or more cards to select them, then a hero or the cache to send them there. Drag a card up or down to move it, double-tap to see the card large.",
     'cv_hint_sel': "{0} card(s) selected: tap a hero or the cache to send them there, or the bin to delete them.",
     'no_card': "No card",
     'add_to_cave': "Add to the cache",
@@ -532,5 +532,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'auto_short': "Not enough gems: {0} missing.",
     'man_log_activate': "{0} activated: {1} gem(s) from Energy to Fatigue",
     'purge_free': "Clean up: remove from play",
-    'log_purge_free': "{0} removed from play"
+    'log_purge_free': "{0} removed from play",
+    'hero_tiles_badge': "{0} tile(s)"
 });

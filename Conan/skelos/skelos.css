@@ -1901,3 +1901,7 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mb4 .sk-mtile.sk-mlift { position: relative; z-index: 3; animation: sk-lift .2s ease-out forwards; }
 .sk-manual:not(.sk-mstudio) .sk-mb4 .sk-mtile { cursor: pointer; }
 .sk-manual:not(.sk-mstudio) .sk-mb4 .sk-mtile.sk-mlift { cursor: grabbing; }
+/* Tuile dans la cache ou chez un héros : la tuile entière à la largeur de la carte ; ses compétences gardent leur description */
+.sk-tcard .sk-tiface, .sk-czoom-c .sk-tiface { display: block; width: 100%; line-height: normal; }
+.sk-tcard .sk-tiface .sk-tilebox { pointer-events: none; }
+.sk-czoom-c .sk-tiface [data-skill] { pointer-events: auto; cursor: help; }

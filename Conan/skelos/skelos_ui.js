@@ -1343,7 +1343,7 @@ S.swatchClick = function(ev) {
 
 // ---------- Écran de campagne : objets triés, bouton Journal à droite des onglets ----------
 S.sortItems = function(list) {
-    var ord = {eq: 0, sp: 1, up: 2};
+    var ord = {eq: 0, sp: 1, up: 2, ti: 3};
     return list.slice().sort(function(a, b) { return (ord[a.kind] - ord[b.kind]) || String(a.name).localeCompare(String(b.name), "fr", {sensitivity: "base"}); });
 };
 S.openCampaignJournal = function(cid) {
@@ -1686,12 +1686,12 @@ S.heroRef = function(hh) {
     var n = S.norm(hh.name || ""), x = S.heroCatalog().filter(function(k) { return S.norm(k.name) == n; })[0];
     return x ? x.ref : null;
 };
-// Cartes d'un héros (hid) ou de la cave (hid = null), dans l'ordre : équipements, sorts, améliorations.
+// Cartes d'un héros (hid) ou de la cave (hid = null), dans l'ordre : équipements, sorts, améliorations, tuiles.
 S.cardsOf = function(c, hid) { return S.sortItems((c.cache || []).filter(function(it) { return (it.owner || null) == (hid || null); })); };
 // Dessin d'une carte d'objet : la carte du Compagnon (équipement, sort) ou la carte d'amélioration du module.
 S.itemFace = function(it) {
     var real = it.kind == "up" ? null : S.realCardCode(it.kind, it.ref);
-    if (real) return "<span class='sk-cardscale'>" + real + "</span>";
+    if (real) return it.kind == "ti" ? "<span class='sk-tiface'>" + real + "</span>" : "<span class='sk-cardscale'>" + real + "</span>";
     var d = (S.catalog(it.kind).filter(function(x) { return x.ref == it.ref; })[0] || {}).data || {};
     return "<span class='sk-upcard sk-k-" + it.kind + "'><b>" + e(it.name) + "</b><span>" + e(it.kind == "up" ? (d.effect || "") : t("kind_" + it.kind)) + "</span></span>";
 };
@@ -1702,11 +1702,11 @@ S.trackCard = function(c, it) {
 };
 // Pastille des cartes d'un héros, comme sur les tuiles : équipements, sorts, améliorations.
 S.heroBadge = function(c, hid) {
-    var l = S.cardsOf(c, hid), n = function(k) { return l.filter(function(x) { return x.kind == k; }).length; }, eq = n("eq"), sp = n("sp"), up = n("up");
+    var l = S.cardsOf(c, hid), n = function(k) { return l.filter(function(x) { return x.kind == k; }).length; }, eq = n("eq"), sp = n("sp"), up = n("up"), ti = n("ti");
     if (!l.length) return "";
-    var lbl = t("hero_cards_badge", eq, sp, up);
+    var lbl = t("hero_cards_badge", eq, sp, up) + (ti ? ", " + t("hero_tiles_badge", ti) : "");
     return "<span class='sk-cardsbadge sk-herobadge' role='img' aria-label='" + e(lbl) + "' title='" + e(lbl) + "'>"
-        + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (up ? "<i class='sk-cb-up'>&#xf062;</i>" + up : "") + "</span>";
+        + (eq ? "<i class='sk-cb-eq'>&#xf3ed;</i>" + eq : "") + (sp ? "<i class='sk-cb-sp'>&#xf0d0;</i>" + sp : "") + (up ? "<i class='sk-cb-up'>&#xf062;</i>" + up : "") + (ti ? "<i class='sk-cb-ti'>&#xf24d;</i>" + ti : "") + "</span>";
 };
 S.heroFace = function(hh) {
     var ref = S.heroRef(hh), full = ref ? S.heroSheetFull(ref) : null;

@@ -446,7 +446,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'cv_drop_remove': "Supprimer de la campagne",
     'cv_unselect': "Tout désélectionner",
     'cards_removed': "{0} carte(s) supprimée(s)",
-    'cv_hint': "Touchez une ou plusieurs cartes pour les choisir, puis un héros ou la cache pour les y envoyer. Appui long pour faire glisser, double appui pour voir la carte en grand.",
+    'cv_hint': "Touchez une ou plusieurs cartes pour les choisir, puis un héros ou la cache pour les y envoyer. Glissez une carte vers le haut ou le bas pour l'emmener, double appui pour voir la carte en grand.",
     'cv_hint_sel': "{0} carte(s) choisie(s) : touchez un héros ou la cache pour les y envoyer, ou la corbeille pour les supprimer.",
     'no_card': "Aucune carte",
     'add_to_cave': "Ajouter à la cache",
@@ -545,5 +545,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'auto_short': "Pas assez de gemmes : il en manquait {0}.",
     'man_log_activate': "{0} activée : {1} gemme(s) de l'Énergie à la Fatigue",
     'purge_free': "Dépolluer : retirer du jeu",
-    'log_purge_free': "{0} retirée du jeu"
+    'log_purge_free': "{0} retirée du jeu",
+    'hero_tiles_badge': "{0} tuile(s)"
 });
