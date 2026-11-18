@@ -129,7 +129,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'storage_full': "Storage full: unable to save.",
     'log_tile_added': "Settings: {0} added at the end of the River",
     'log_tile_removed': "Settings: {0} removed from the River",
-    'confirm_restart': "Restart the game at turn 0, with the starting tiles and counters? The log will be cleared.",
+    'confirm_restart': "Go back to the game's starting state (tiles, gems, hourglass and hit points from its launch or preparation)? The log will be cleared; Undo can reverse this.",
     'menu_end': "End the scenario",
     'resume_game': "Resume the game",
     'resume_short': "Resume",
@@ -452,7 +452,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_gems': "Gems",
     'ghelp_gems_items': "Drag a gem from one zone to another to move it.|Long-press a zone: the number of gems taken rises while your finger stays down, and the badge bounces with each gem. Then drag to drop them elsewhere.|Long-press then release without moving: the gems stay “in hand”; the next tap on a zone or a tile drops them there.|Drag gems onto a tile to place them there. If the tile carries cards, a “tile + cards” window opens to choose where to place them; the cards scroll with your finger, or by themselves when a gem nears the edge. Taking a gem out of the window, up or down, closes it.|A tile or card that is removed returns its gems to Fatigue.",
     'ghelp_tools': "Tools",
-    'ghelp_tools_items': "The discreet icon in the tab bar opens the tool strip: Undo (as many times as needed), Restart (the game goes back to its start), End the scenario (result, victory points, notes, saved in the campaign if there is one), Log (special rules, Events and every action) and this Help.|The Adventure / Coop switch is in the tab bar.",
+    'ghelp_tools_items': "The discreet icon in the tab bar opens the tool strip: Undo (the last 100 actions, until the page is reloaded), Restart (the game goes back to its start), End the scenario (result, victory points, notes, saved in the campaign if there is one), Log (special rules, Events and every action) and this Help.|The Adventure / Coop switch is in the tab bar.",
     'ghelp_studio': "Studio mode",
     'ghelp_studio_items': "The pencil in the tab bar opens studio mode, to prepare or correct the game.|The reserve (the bowl, left of the book): taking gems from it adds them, putting gems back removes them.|The tile pile (on the right): a tap opens the tile picker; dropping a tile on it removes it. In studio, tiles are dragged straight away, without a long press.|The − and + set the Recovery (1 to 8, then X), the number of heroes and the starting hit points. The base badge changes the colour of tiles that have several.|In the zoom, the + buttons add spells, equipment and carried tiles. The floppy disk saves the game as a scenario.",
     // Livre de Skelos manuel

@@ -141,7 +141,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'storage_full': "Espace de stockage plein : impossible d’enregistrer.",
     'log_tile_added': "Paramètres : {0} ajoutée au bout de la Rivière",
     'log_tile_removed': "Paramètres : {0} retirée de la Rivière",
-    'confirm_restart': "Recommencer la partie au tour 0, avec les tuiles et les compteurs du départ ? Le Journal sera vidé.",
+    'confirm_restart': "Revenir à l'état de départ de la partie (tuiles, gemmes, sablier et points de vie du lancement ou de la préparation) ? Le Journal sera vidé ; Annuler peut défaire ce retour.",
     'menu_end': "Terminer le scénario",
     'resume_game': "Reprendre la partie",
     'resume_short': "Reprendre",
@@ -465,7 +465,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'ghelp_gems': "Gemmes",
     'ghelp_gems_items': "Glissez une gemme d'une zone à l'autre pour la déplacer.|Appui long sur une zone : le nombre de gemmes prises monte tant que le doigt reste posé, la pastille rebondit à chaque gemme. Glissez ensuite pour les poser ailleurs.|Appui long puis lâcher sans bouger : les gemmes restent « en main » ; l'appui suivant sur une zone ou une tuile les y pose.|Glissez des gemmes sur une tuile pour les y poser. Si la tuile porte des cartes, une fenêtre « tuile + cartes » s'ouvre pour choisir où les poser ; les cartes défilent au doigt, ou seules quand une gemme approche du bord. Emmener une gemme hors de la fenêtre, vers le haut ou le bas, la ferme.|Une tuile ou une carte retirée rend ses gemmes à la Fatigue.",
     'ghelp_tools': "Les outils",
-    'ghelp_tools_items': "L'icône discrète de la barre des onglets ouvre la bande d'outils : Annuler (autant de fois que nécessaire), Recommencer (la partie revient à son départ), Terminer le scénario (résultat, points de victoire, notes, enregistrés dans la campagne s'il y en a une), Journal (règles spéciales, Événements et toutes les actions) et cette Aide.|L'interrupteur Aventure / Coop est dans la barre des onglets.",
+    'ghelp_tools_items': "L'icône discrète de la barre des onglets ouvre la bande d'outils : Annuler (les 100 dernières actions, jusqu'au rechargement de la page), Recommencer (la partie revient à son départ), Terminer le scénario (résultat, points de victoire, notes, enregistrés dans la campagne s'il y en a une), Journal (règles spéciales, Événements et toutes les actions) et cette Aide.|L'interrupteur Aventure / Coop est dans la barre des onglets.",
     'ghelp_studio': "Le mode studio",
     'ghelp_studio_items': "Le crayon de la barre des onglets ouvre le mode studio, pour préparer ou corriger la partie.|La réserve (le bol, à gauche du livre) : y prendre des gemmes en ajoute, y en reposer en retire.|Le tas de tuiles (à droite) : un appui ouvre le choix des tuiles ; y déposer une tuile la retire. En studio, les tuiles se glissent tout de suite, sans appui long.|Les − et + règlent la Récupération (1 à 8, puis X), le nombre de héros et les points de vie de départ. La pastille de socle change la couleur des tuiles qui en ont plusieurs.|Dans le zoom, les + ajoutent sorts, équipements et tuiles portées. La disquette enregistre la partie comme scénario.",
     // Livre de Skelos manuel
