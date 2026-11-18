@@ -1563,13 +1563,11 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Objets réalistes du bureau (mode studio) : coupe en bois ancienne pleine de gemmes, tas de tuiles */
 .sk-mobjname { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-family: 'Primary', serif; font-size: 1.3cqw; letter-spacing: .05em;
     text-transform: uppercase; color: var(--body-color); pointer-events: none; }
-.sk-mz.sk-mz-reserve.sk-mbowl { height: auto; width: 100%; aspect-ratio: 1 / .9; overflow: visible; background: none; box-shadow: none; border-radius: 0; --g: 1.9cqw; }
-.sk-mbowl svg { position: absolute; left: 0; bottom: 16%; width: 100%; height: auto; pointer-events: none; }
-.sk-mbowl-back { z-index: 1; }
-.sk-mbowl .sk-mgems { z-index: 2; inset: 8% 13% 51% 13%; flex-wrap: wrap-reverse; align-content: flex-start; gap: 0; }
-.sk-mbowl-front { z-index: 3; filter: drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.4)); }
+.sk-mz.sk-mz-reserve.sk-mbowl { height: auto; width: 100%; aspect-ratio: 1 / 1; overflow: visible; background: none; box-shadow: none; border-radius: 0; }
+.sk-mbowlimg { position: absolute; left: 0; top: 0; width: 100%; height: 86%; object-fit: contain; object-position: center bottom; pointer-events: none;
+    filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.35)); transition: filter .15s; }
 .sk-mbowl.sk-mtarget { outline: none; }
-.sk-mbowl.sk-mtarget .sk-mbowl-front { filter: drop-shadow(0 0 .5cqw #ff7900) drop-shadow(0 0 .2cqw #ff7900); }
+.sk-mbowl.sk-mtarget .sk-mbowlimg { filter: drop-shadow(0 0 .5cqw #ff7900) drop-shadow(0 0 .2cqw #ff7900); }
 .sk-mpile { height: auto; width: 100%; aspect-ratio: 1 / 1.35; background: none; box-shadow: none; }
 .sk-mstack { position: absolute; left: 18%; top: 6%; width: 64%; aspect-ratio: .656; }
 .sk-mslab { position: absolute; inset: 0; border-radius: .5cqw; box-sizing: border-box; overflow: hidden;
@@ -1589,14 +1587,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mghost.sk-mghost-hp { opacity: 1; transform: translate(-50%, -65%); animation: skmGrow .18s ease-out; filter: drop-shadow(0 6px 10px rgba(0,0,0,.55)); }
 .sk-mghost.sk-mghost-hp .sk-mhpm { border-width: 4px; }
 @keyframes skmGrow { from { transform: translate(-50%, -65%) scale(.45); } }
-/* Bol de bronze antique (remplace la coupe en bois) */
-.sk-mz.sk-mz-reserve.sk-mbowl { aspect-ratio: 1 / 1; }
-.sk-mbowl svg { bottom: 15%; }
-.sk-mbowl .sk-mgems { inset: 13% 14% 53% 14%; flex-wrap: wrap; align-content: flex-end; }
-.sk-mbowl-front { filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.35)); }
-.sk-mz.sk-mz-reserve.sk-mbowl { --g: 1.45cqw; }
-.sk-mbowl .sk-mgems { inset: 21% 13% 53% 13%; align-content: center; }
-
 /* Gemmes d'une tuile et de ses cartes : la tuile et les cartes montrées comme sur la table */
 .sk-mgpop { width: auto; max-width: calc(100vw - 32px); }
 .sk-mgcards { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; }
