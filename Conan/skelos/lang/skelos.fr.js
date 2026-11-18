@@ -530,7 +530,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_coop_reset_toast': "Dernier jeton tiré : {0} ({1}). Les jetons de la Fatigue redeviennent disponibles.",
     'man_log_coop_gems': "{0} gemme(s) dépensée(s) en Fatigue",
     'auto_title': "Automatisations",
-    'auto_help': "Chaque automatisation fait à votre place un geste du livre. Désactivée, rien ne se fait tout seul : vous déplacez les gemmes à la main.",
+    'auto_help': "Chaque automatisation fait à votre place un geste du livre, jamais en mode studio. Désactivée, rien ne se fait tout seul : vous déplacez les gemmes à la main.",
     'auto_adventure': "En Aventure seulement",
     'auto_collect': "Entretien : double appui sur la Fatigue",
     'auto_collect_help': "Toutes les gemmes dépensées (zones, tuiles, cartes) reviennent en Fatigue ; en Coop, les jetons tirés aussi.",
@@ -548,7 +548,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'log_purge_free': "{0} retirée du jeu",
     'hero_tiles_badge': "{0} tuile(s)",
     'ghelp_auto': "Automatisations (Réglages)",
-    'ghelp_auto_items': "Entretien : le double appui sur la Fatigue (actif par défaut).|Récupération : le double appui sur la case Récupération (actif par défaut) ; elle peut aussi avancer le tour.|En Aventure : activation payante (une tuile vivante glissée au bout de la Rivière coûte le pion de sa case) et dépollution à 2 gemmes.|Rien ne bloque : s'il manque des gemmes, l'action se fait quand même et un message dit combien il en manquait.",
+    'ghelp_auto_items': "Aucune automatisation ne se déroule en mode studio.|Entretien : le double appui sur la Fatigue (actif par défaut).|Récupération : le double appui sur la case Récupération (actif par défaut) ; elle peut aussi avancer le tour.|En Aventure : activation payante (une tuile vivante glissée au bout de la Rivière coûte le pion de sa case) et dépollution à 2 gemmes.|Rien ne bloque : s'il manque des gemmes, l'action se fait quand même et un message dit combien il en manquait.",
     'ghelp_phone': "Sur téléphone",
     'ghelp_phone_items': "En portrait étroit ou en paysage bas, le livre se découpe en grille : 4 tuiles par rang, chaque pion au-dessus de sa case.|La piste des tours est réduite au cadre Tour : un appui long sur le sablier ou l'alarme fait paraître − et +. Les points de vie passent sur les tuiles.|Le réglage Piste des tours réduite donne la même disposition sur tablette."
 });

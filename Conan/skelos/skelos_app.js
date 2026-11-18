@@ -859,7 +859,11 @@ S.applyDisplayPrefs = function() {
 // Automatisations (Réglages) : chaque interrupteur fait à la place du joueur un geste du livre.
 // Valeurs par défaut : l'entretien et le renfort par double appui existaient déjà ; le reste est à activer.
 S.AUTO_DEFAULTS = {collect: true, recover: true, turn: false, cost: false, purge: false};
-S.auto = function(k) { var a = S.prefs().auto || {}; return a[k] == null ? !!S.AUTO_DEFAULTS[k] : !!a[k]; };
+// En mode studio (partie en préparation ou en correction), aucune automatisation ne se déroule.
+S.auto = function(k) {
+    if (S.studio && S.screen == "game") return false;
+    var a = S.prefs().auto || {}; return a[k] == null ? !!S.AUTO_DEFAULTS[k] : !!a[k];
+};
 
 S.renderSettings = function() {
     S.screen = "settings";

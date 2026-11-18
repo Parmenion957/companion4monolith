@@ -517,7 +517,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'man_coop_reset_toast': "Last token drawn: {0} ({1}). Tokens in Fatigue are available again.",
     'man_log_coop_gems': "{0} spent gem(s) to Fatigue",
     'auto_title': "Automations",
-    'auto_help': "Each automation performs one of the book's gestures for you. When off, nothing happens by itself: you move the gems by hand.",
+    'auto_help': "Each automation performs one of the book's gestures for you, never in studio mode. When off, nothing happens by itself: you move the gems by hand.",
     'auto_adventure': "Adventure only",
     'auto_collect': "Upkeep: double tap on Fatigue",
     'auto_collect_help': "All spent gems (zones, tiles, cards) go back to Fatigue; in Coop, drawn tokens too.",
@@ -535,7 +535,7 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'log_purge_free': "{0} removed from play",
     'hero_tiles_badge': "{0} tile(s)",
     'ghelp_auto': "Automations (Settings)",
-    'ghelp_auto_items': "Upkeep: the double tap on Fatigue (on by default).|Recovery: the double tap on the Recovery space (on by default); it can also advance the turn.|In Adventure: paid activation (a living tile dragged to the end of the River costs its space's pawn) and clean-up at 2 gems.|Nothing is blocked: if gems are missing, the action still happens and a message says how many were missing.",
+    'ghelp_auto_items': "No automation runs in studio mode.|Upkeep: the double tap on Fatigue (on by default).|Recovery: the double tap on the Recovery space (on by default); it can also advance the turn.|In Adventure: paid activation (a living tile dragged to the end of the River costs its space's pawn) and clean-up at 2 gems.|Nothing is blocked: if gems are missing, the action still happens and a message says how many were missing.",
     'ghelp_phone': "On a phone",
     'ghelp_phone_items': "In narrow portrait or low landscape, the book is split into a grid: 4 tiles per row, each pawn above its space.|The turn track is reduced to the Turn frame: a long press on the hourglass or the alarm shows − and +. Hit points move onto the tiles.|The Reduced turn track setting gives the same layout on a tablet."
 });
