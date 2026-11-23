@@ -767,7 +767,7 @@ var baseTabs = S.placeTabs;
 S.placeTabs = function() {
     baseTabs.apply(S, arguments);
     var nav = S.root && S.root.querySelector(":scope > .sk-tabs"), tools = nav && nav.querySelector(".sk-tabtools");
-    if (!tools || (S.screen != "game" && S.screen != "heroes")) return;
+    if (!tools || (S.screen != "game" && S.screen != "heroes") || (S.editing && S.editing.cid)) return;
     tools.insertAdjacentHTML("afterbegin", viewSwitch()
         + (S.editing && S.screen == "heroes" ? "<button class='sk-tabico' data-hsave title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>" : ""));
     var sv = tools.querySelector("[data-hsave]"); if (sv) sv.addEventListener("click", function(ev) { ev.stopPropagation(); S.openSaveScenario(); });
@@ -841,12 +841,11 @@ S.playScenario = function(sc) {
 };
 
 // ---------- Campagne ----------
-// Au lancement d'un scénario de campagne, les fiches viennent de la compagnie : les héros vivants, avec les cartes qu'ils
-// portent (équipements, sorts, tuiles ; les améliorations n'ont pas de carte). La compagnie prime : du volet Héros du
-// scénario, on garde seulement, pour un héros de la compagnie, ses gemmes rouges, sa récupération et ses cartes en plus.
-// Chaque fiche garde le lien vers son héros (hid) et chaque carte vers son objet de la cave (iuid), pour le retour.
-S.campaignHeroBoards = function(c, setup) {
-    var extra = {}; ((setup && setup.heroBoards && setup.heroBoards.heroes) || []).forEach(function(x) { extra[x.ref] = x; });
+// En campagne, les héros sont ceux de la compagnie, seuls : les héros vivants, avec les cartes qu'ils portent
+// (équipements, sorts, tuiles ; les améliorations n'ont pas de carte). Un scénario de campagne n'a pas de volet Héros :
+// il n'est ni copié depuis un scénario existant, ni fusionné. Chaque fiche garde le lien vers son héros (hid) et chaque
+// carte vers son objet de la cave (iuid), pour le retour vers la compagnie.
+S.campaignHeroBoards = function(c) {
     return (c.heroes || []).filter(function(hh) { return !hh.dead; }).map(function(hh) {
         var ref = S.heroRef(hh); if (!ref) return null;
         var h = newHero(ref, hh.name); h.hid = hh.id;
@@ -854,30 +853,16 @@ S.campaignHeroBoards = function(c, setup) {
             if (it.kind == "up" || !S.heldBy(it, hh.id)) return;
             h.cards.push({kind: it.kind, ref: it.ref, gems: 0, iuid: it.uid});
         });
-        var x = extra[ref];
-        if (x) {
-            if (x.rec) h.rec = x.rec;
-            var have = {}; h.cards.forEach(function(k) { have[k.kind + "|" + k.ref] = (have[k.kind + "|" + k.ref] || 0) + 1; });
-            (x.cards || []).forEach(function(k) {
-                var key = k.kind + "|" + k.ref;
-                if (have[key]) { have[key]--; return; }
-                h.cards.push({kind: k.kind, ref: k.ref, gems: 0, red: k.red || 0, id: k.id, extra: true});
-            });
-            if (x.red) h.red = JSON.parse(JSON.stringify(x.red));
-            // Les rouges posées sur une carte de la compagnie suivent la carte du même nom.
-            h.cards.forEach(function(k) { if (k.extra) return; var src = (x.cards || []).filter(function(y) { return y.kind == k.kind && y.ref == k.ref && y.red; })[0]; if (src && !k.red) k.red = src.red; });
-            cardsOf(h);
-            if (x.redHome) h.redHome = redSnap(h);
-        }
+        cardsOf(h);
         return h;
     }).filter(Boolean);
 };
+var basePutCamp = S.putCampaignScenario;
+S.putCampaignScenario = function(cid, idx, setup) { if (setup) delete setup.heroBoards; return basePutCamp.apply(this, arguments); };
 var baseCampLaunch = S.launchCampaignScenario;
 S.launchCampaignScenario = function(cid, i) {
     var c = S.campaign(cid), sc = c && c.scenarios[i]; if (!sc) return;
-    var heroes = S.campaignHeroBoards(c, sc.setup);
-    // Compagnie vide : les héros préparés par le scénario, s'il en a.
-    if (!heroes.length && !(c.heroes || []).filter(function(x) { return !x.dead; }).length) heroes = cleanHeroes(sc.setup && sc.setup.heroBoards && sc.setup.heroBoards.heroes);
+    var heroes = S.campaignHeroBoards(c);
     if (!heroes.length) return baseCampLaunch.apply(this, arguments);
     var hasBook = !!(sc.setup && ((sc.setup.saved && sc.setup.saved.river) || sc.setup.river || []).length);
     var go = function() {
