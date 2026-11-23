@@ -2046,3 +2046,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hencw { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); min-width: 3.4cqw; padding: .2cqw .7cqw; border-radius: 999px;
     background: rgba(18,18,18,.85); color: #fff; font: 700 2.2cqw/1.2 system-ui, sans-serif; text-align: center; pointer-events: auto; cursor: help; white-space: nowrap; }
 .sk-hencw.over { background: #b3261e; box-shadow: 0 0 0 .3cqw #fff; }
+/* Compagnie : chaque héros dans sa case, cartes placées comme pour le héros seul (côtés, un côté ou dessous) pour que tout tienne à l'écran. */
+.sk-hbcompany { max-width: none; align-items: start; }
+.sk-hbcompany .sk-hbhero { container-type: normal; }
+.sk-hbsolo .sk-hbcadd { width: var(--cw, 120px); min-width: 0; }
+.sk-hbsolo > .sk-hbcadd { display: none; }
+.sk-hbcompany .sk-hbadd { max-height: calc(var(--hbH) / 2 - 7px); justify-self: center; width: 100%; max-width: calc((var(--hbH) / 2 - 7px) * 1.75); }

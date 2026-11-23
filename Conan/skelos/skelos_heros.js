@@ -182,10 +182,7 @@ var cardCode = function(h, c, i) {
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
             + "</div>";
 };
-var cardsCode = function(h, add) {
-    var l = cardsOf(h); if (!l.length && !add) return "";
-    return "<div class='sk-hbcards'>" + l.map(function(c, i) { return cardCode(h, c, i); }).join("") + (add ? "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>" : "") + "</div>";
-};
+var addCardCode = function() { return "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>"; };
 // Héros seul : la fiche reste la fiche, et les cartes sont les plus lisibles possible. Selon la place et le nombre de cartes,
 // on retient la meilleure disposition : des deux côtés (sorts à gauche, objets à droite), d'un seul côté, ou dessous.
 var GAP = 8;
@@ -211,11 +208,21 @@ var layouts = function(W, H, kL, kR) {
     ok.sort(function(a, b) { return Math.round(b.cw) - Math.round(a.cw) || b.sw - a.sw; });
     return ok;
 };
+// Le héros seul occupe toute la hauteur utile ; dans la compagnie, chaque héros a sa case de la grille (deux rangées dès
+// trois héros), et la même optimisation y place ses cartes à côté de la fiche ou dessous pour que tout tienne à l'écran.
 var layoutSolo = function() {
-    var solo = S.root && S.root.querySelector(".sk-hbsolo"); if (!solo) return;
-    var probe = document.createElement("div"); probe.style.cssText = "position:absolute;visibility:hidden;height:var(--hbH)"; solo.appendChild(probe);
+    var all = S.root ? [].slice.call(S.root.querySelectorAll(".sk-hbsolo")) : []; if (!all.length) return;
+    var probe = document.createElement("div"); probe.style.cssText = "position:absolute;visibility:hidden;height:var(--hbH)"; all[0].appendChild(probe);
     var H = Math.max(160, probe.offsetHeight); probe.remove();
-    var W = solo.clientWidth, cards = [].slice.call(solo.querySelectorAll(".sk-hbcardc"));
+    var comp = S.root.querySelector(".sk-hbcompany");
+    if (comp) {
+        var grid = getComputedStyle(comp).display == "grid", n = comp.querySelectorAll(".sk-hbhero, .sk-hbadd").length;
+        if (grid && n > 2) H = Math.max(120, (H - 14) / 2);
+    }
+    all.forEach(function(solo) { layoutOne(solo, H); });
+};
+var layoutOne = function(solo, H) {
+    var W = solo.clientWidth, cards = [].slice.call(solo.querySelectorAll(".sk-hbcardc, .sk-hbcadd"));
     var isL = function(c) { return c.dataset.kind == "sp"; };
     var kL = cards.filter(isL).length, best = layouts(W, H, kL, cards.length - kL)[0];
     var sheet = solo.querySelector(".sk-hbsheet");
@@ -256,7 +263,9 @@ var companyCode = function() {
     // Chaque fiche est aussi active que la fiche en grand : gemmes, gemme rouge, doubles appuis, cartes.
     h += b.heroes.map(function(x) {
         var nm = heroName(x);
-        return "<div class='sk-hbcard sk-hbhero' data-huid='" + x.uid + "'>" + boardCode(x, true) + cardsCode(x, S.hStudio)
+        return "<div class='sk-hbcard sk-hbhero' data-huid='" + x.uid + "'><div class='sk-hbsolo'><div class='sk-hbsheet'>" + boardCode(x, true) + "</div>"
+            + cardsOf(x).map(function(c, i) { return cardCode(x, c, i); }).join("")
+            + (S.hStudio ? addCardCode() : "") + "</div>"
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbrm' data-hrm='" + x.uid + "' aria-label='" + e(t("hb_remove", nm)) + "' title='" + e(t("hb_remove", nm)) + "'>&#xf2ed;</button>" : "") + "</div>";
     }).join("");
     if (S.hStudio && b.heroes.length < MAX) h += "<button class='sk-hbcard sk-hbadd' data-hadd><span aria-hidden='true'>+</span><small>" + e(t("add_hero")) + "</small></button>";
