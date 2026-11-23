@@ -34,11 +34,13 @@ La dernière tuile déplacée, ou en Coop le dernier jeton tiré et la tuile qu'
 
 **Fenêtre « tuile + cartes »** : les cartes défilent au doigt, ou seules quand une gemme approche du bord. Emmener une gemme vers le haut ou le bas, hors de la fenêtre, la ferme.
 
+Dans la fenêtre « Gemmes sur », la tuile et ses cartes montrent leurs gemmes de la même façon, en languette centrée en haut. Sur la piste des tours, plusieurs pions de PV sur un même nombre se rangent en corolle autour de lui, plus petits.
+
 **Zoom** : la tuile en grand, ses sorts à gauche, ses équipements et tuiles portées à droite. Le cœur des points de vie est sur la tuile, au-dessus de la flamme, avec + et − ; le + en pastille au coin bas-droit ajoute des cartes, la corbeille d'une carte la retire. Glisser vers le haut ou le bas sur la tuile passe à la tuile voisine. Le × ou un appui à côté ferme le zoom.
 
 ### Aventure et Coop
 
-L'interrupteur **Aventure / Coop** est dans la barre des onglets.
+L'interrupteur **Aventure / Coop** est dans la barre des onglets, en mode studio ; hors studio, seule la pastille du mode en cours y reste.
 
 - **Aventure** : l'Overlord joue avec ses gemmes.
 - **Coop** (solo ou coopératif) : les jetons non tirés sont dans la zone verte ; un appui y tire un jeton au hasard, qui se pose ensuite sur Mouvement, Défense, Relance ou Fatigue. Dans les zones verte et rouge, les gemmes sont à gauche et les jetons à droite, chacun du côté de son nombre. Un double appui sur la Fatigue range les jetons tirés et les gemmes dépensées ; quand le dernier jeton a été tiré, ils redeviennent tous disponibles.
@@ -52,7 +54,7 @@ Le bouton Studio (crayon) prépare ou corrige la partie :
 - les tuiles se glissent tout de suite, sans appui long ;
 - les − et + de la Récupération (1 à 8, puis X), du nombre de héros, des points de vie de départ ;
 - la couleur du socle des tuiles qui en ont plusieurs ;
-- les cartes des tuiles (sorts, équipements, tuiles portées) et le texte des tuiles Événement.
+- les cartes des tuiles (sorts, équipements, tuiles portées) et le texte des tuiles Événement : la pastille + au coin bas-droit d'une tuile en ajoute, sans passer par le zoom ; dans la fenêtre « Gemmes sur », la corbeille d'une carte la retire.
 
 ### Outils
 
