@@ -726,7 +726,8 @@ S.manualPiece = function(which, cell) {
 };
 
 // Points de vie fixés à la main (pastille sur la piste, ou − / + du zoom) : tout le groupe de PV partagés suit.
-// 0 = toutes les unités sont mortes ; remonter au-dessus de 0 réactive la tuile. La tuile ne change pas de place.
+// En partie : 0 = toutes les unités sont mortes ; remonter au-dessus de 0 réactive la tuile. La tuile ne change pas de place.
+// En studio, les PV se règlent sans toucher à l'état de la tuile (la mort se donne par le menu de la tuile).
 S.manualSetHp = function(uid, v) {
     var s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
     v = Math.max(0, Math.min(40, v));
@@ -735,6 +736,7 @@ S.manualSetHp = function(uid, v) {
     S.snapshot();
     group.forEach(function(g) { g.lp = v; if (!g.lpMax || v > g.lpMax) g.lpMax = Math.max(v, g.lpMax || 0) || null; });
     S.log(t("log_hp", name, cur, v));
+    if (S.studio) { commit(); return; }
     if (v == 0) group.forEach(function(g) { if (!g.dead) S.killSlot(g); });
     else if (group.some(function(g) { return g.dead; })) { group.forEach(function(g) { g.dead = false; }); S.log(t("log_reinforce", name)); }
     commit();
