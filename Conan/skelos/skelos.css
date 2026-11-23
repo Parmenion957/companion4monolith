@@ -2058,3 +2058,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Carte de scénario : les héros préparés par le scénario */
 .sk-sheroes { margin: 2px 0 0; font-size: .85em; color: var(--body-color); opacity: .85; }
 .sk-sheroes i { font-family: "Font Awesome 5 Free"; font-weight: 900; color: var(--main-color); margin-right: 3px; }
+/* Compagnie : fiches au centre, cartes sur le côté extérieur */
+.sk-hbsolo[data-side='left'] { justify-content: flex-end; }
+.sk-hbsolo[data-side='right'] { justify-content: flex-start; }

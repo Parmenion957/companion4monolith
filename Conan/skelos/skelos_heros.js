@@ -187,7 +187,8 @@ var addCardCode = function() { return "<button class='sk-hbcadd' data-hcards tit
 // Héros seul : la fiche reste la fiche, et les cartes sont les plus lisibles possible. Selon la place et le nombre de cartes,
 // on retient la meilleure disposition : des deux côtés (sorts à gauche, objets à droite), d'un seul côté, ou dessous.
 var GAP = 8;
-var layouts = function(W, H, kL, kR) {
+// oneSide : seulement les cartes d'un seul côté (vue compagnie).
+var layouts = function(W, H, kL, kR, oneSide) {
     var k = kL + kR, Smax = Math.min(W, H * 1.75), out = [];
     if (!k) return [{lay: "none", sw: Smax, cw: 0}];
     // Une carte ne dépasse pas la moitié de la hauteur de la fiche : deux cartes pour une hauteur de fiche.
@@ -200,10 +201,10 @@ var layouts = function(W, H, kL, kR) {
             return {cw: cw, sw: Math.min(H * 1.75, W - cols * (cw + GAP) - GAP)};
         };
         var a = fit(Math.ceil(kL / r) + Math.ceil(kR / r)), b = fit(Math.ceil(k / r));
-        out.push({lay: "sides", rows: r, cw: a.cw, sw: a.sw});
+        if (!oneSide) out.push({lay: "sides", rows: r, cw: a.cw, sw: a.sw});
         out.push({lay: "right", rows: r, cw: b.cw, sw: b.sw});
     });
-    [1, 2].forEach(function(r) {
+    if (!oneSide) [1, 2].forEach(function(r) {
         for (var f = 1; f >= .5; f -= .05) {
             var sw = Smax * f, ch = (H - sw / 1.75 - r * GAP) / r, per = Math.ceil(k / r);
             var cw = Math.min(ch * .67, (W - (per - 1) * GAP) / per, cap(sw));
@@ -230,12 +231,23 @@ var layoutSolo = function() {
         var grid = getComputedStyle(comp).display == "grid", n = comp.querySelectorAll(".sk-hbhero, .sk-hbadd").length;
         if (grid && n > 2) H = Math.max(120, (H - 14) / 2);
     }
-    all.forEach(function(solo) { layoutOne(solo, H); });
+    // Compagnie en grille : les fiches au centre, toutes les cartes d'un héros sur son côté libre (extérieur).
+    all.forEach(function(solo) {
+        var side = null;
+        if (comp) {
+            var cell = solo.closest(".sk-hbhero"), i = [].indexOf.call(comp.children, cell);
+            side = getComputedStyle(comp).display == "grid" && i % 2 == 0 ? "left" : "right";
+        }
+        layoutOne(solo, H, side);
+    });
 };
-var layoutOne = function(solo, H) {
+var layoutOne = function(solo, H, side) {
     var W = solo.clientWidth, cards = [].slice.call(solo.querySelectorAll(".sk-hbcardc, .sk-hbcadd"));
     var isL = function(c) { return c.dataset.kind == "sp"; };
-    var kL = cards.filter(isL).length, best = layouts(W, H, kL, cards.length - kL)[0];
+    var kL = cards.filter(isL).length, opts = layouts(W, H, kL, cards.length - kL);
+    if (side) opts = layouts(W, H, 0, cards.length, true).concat(opts);
+    var best = opts[0];
+    solo.dataset.side = side && best.lay == "right" ? side : "";
     var sheet = solo.querySelector(".sk-hbsheet");
     solo.querySelectorAll(".sk-hbcol").forEach(function(c) { c.remove(); });
     solo.dataset.lay = best.lay;
@@ -249,7 +261,7 @@ var layoutOne = function(solo, H) {
     if (best.lay == "sides") {
         if (kL) solo.insertBefore(col("left", cards.filter(isL), best.rows), sheet);
         if (cards.length - kL) solo.appendChild(col("right", cards.filter(function(c) { return !isL(c); }), best.rows));
-    } else if (best.lay == "right") solo.appendChild(col("right", cards, best.rows));
+    } else if (best.lay == "right") { if (solo.dataset.side == "left") solo.insertBefore(col("left", cards, best.rows), sheet); else solo.appendChild(col("right", cards, best.rows)); }
     else if (best.lay == "below") solo.appendChild(col("below", cards));
 };
 var resizeT = null;
