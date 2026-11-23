@@ -2060,3 +2060,12 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* « + » des cartes d'un héros : celui de la campagne, à la largeur des cartes */
 .sk-hbsolo .sk-hbcadd { flex: 0 0 auto; width: var(--cw, 104px); min-width: 0; font-size: clamp(9px, calc(var(--cw, 104px) / 8), 13px); padding: 4px; }
 .sk-hbsolo .sk-hbcadd span { font-size: clamp(18px, calc(var(--cw, 104px) / 3), 36px); }
+/* Amélioration de campagne parmi les cartes d'un héros : texte à la taille de la carte */
+.sk-hbcardc .sk-upcard { width: 100%; box-sizing: border-box; overflow: hidden; gap: 4cqw; }
+.sk-hbcardc .sk-upcard b { font-size: 12cqw; line-height: 1.1; }
+.sk-hbcardc .sk-upcard span { font-size: 9cqw; line-height: 1.2; }
+.sk-hczcard .sk-upcard { width: 100%; box-sizing: border-box; }
+.sk-hczcard { container-type: inline-size; }
+.sk-hczcard .sk-upcard { gap: 4cqw; padding: 9cqw 8cqw; }
+.sk-hczcard .sk-upcard b { font-size: 11cqw; line-height: 1.1; }
+.sk-hczcard .sk-upcard span { font-size: 7cqw; line-height: 1.3; }

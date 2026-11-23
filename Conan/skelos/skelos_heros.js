@@ -175,9 +175,14 @@ var boardCode = function(h, open) {
 };
 // Cartes du héros (équipements, sorts), sous la fiche ; chacune reçoit des gemmes. En studio, une poubelle la retire.
 // add : en studio dans la vue d'ensemble, une carte fantôme « + » ouvre le choix des cartes de ce héros.
+// Face d'une carte : celle du Compagnon (équipement, sort, tuile) ou la carte d'amélioration de la campagne.
+var faceOf = function(c, name) {
+    if (c.kind == "up") return S.itemFace({kind: "up", ref: c.ref, name: name});
+    return S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
+};
 var cardCode = function(h, c, i) {
         var n = c.gems || 0, r = c.red || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
-        var face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
+        var face = faceOf(c, name);
         return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' data-kind='" + c.kind + "' data-hcard='" + i + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
             + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, r, h.uid + z, CARD_SZ) + badge(n, r)
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
@@ -487,7 +492,7 @@ var removeHero = function(uid) {
 };
 // Studio : cartes du héros, choisies comme celles des tuiles (équipements et sorts).
 var addCards = function(uid) {
-    S.openItemPicker({title: t("add_cards"), kind: "eq", kinds: ["eq", "sp", "tile"], tiles: true, tilesLast: true,
+    S.openItemPicker({title: t("add_cards"), kind: "eq", kinds: ["eq", "sp", "up", "tile"], tiles: true, tilesLast: true,
         onClose: function() { S.renderHeroes(); },
         onAdd: function(sel) {
             var h = byUid(uid); if (!h || !sel.length) { S.renderHeroes(); return; }
@@ -526,7 +531,7 @@ var gemPill = function(n, r) {
 };
 var cardZoom = function(uid, i) {
     var h = byUid(uid), c = h && cardsOf(h)[i]; if (!c) return;
-    var name = S.itemName(c.kind, c.ref), face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
+    var name = S.itemName(c.kind, c.ref), face = faceOf(c, name);
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-hcz" + (c.kind == "ti" ? " tile" : "") + "' role='dialog' aria-modal='true' aria-label='" + e(name) + "'>"
         + "<div class='sk-hczcard'>" + (c.kind == "ti" ? face : "<span class='sk-cardscale'>" + face + "</span>") + gemPill(c.gems || 0, c.red || 0) + "</div>"
@@ -842,7 +847,7 @@ S.playScenario = function(sc) {
 
 // ---------- Campagne ----------
 // En campagne, les héros sont ceux de la compagnie, seuls : les héros vivants, avec les cartes qu'ils portent
-// (équipements, sorts, tuiles ; les améliorations n'ont pas de carte). Un scénario de campagne n'a pas de volet Héros :
+// (équipements, sorts, améliorations, tuiles). Un scénario de campagne n'a pas de volet Héros :
 // il n'est ni copié depuis un scénario existant, ni fusionné. Chaque fiche garde le lien vers son héros (hid) et chaque
 // carte vers son objet de la cave (iuid), pour le retour vers la compagnie.
 S.campaignHeroBoards = function(c) {
@@ -850,7 +855,7 @@ S.campaignHeroBoards = function(c) {
         var ref = S.heroRef(hh); if (!ref) return null;
         var h = newHero(ref, hh.name); h.hid = hh.id;
         (c.cache || []).forEach(function(it) {
-            if (it.kind == "up" || !S.heldBy(it, hh.id)) return;
+            if (!S.heldBy(it, hh.id)) return;
             h.cards.push({kind: it.kind, ref: it.ref, gems: 0, iuid: it.uid});
         });
         cardsOf(h);
