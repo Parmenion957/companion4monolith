@@ -2037,3 +2037,12 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hgpips i.r { color: #e3242b; }
 .sk-hczx { position: absolute; right: 4px; top: 2px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--body-color); font-size: 24px; line-height: 1; cursor: pointer; }
 .sk-hczx:focus-visible { outline: 2px solid var(--highlight-color); }
+
+/* Encombrement (fiche du héros) : compétence perdue grisée, seuil de mouvement atteint entouré, mouvement réduit, poids porté. */
+.sk-hsheetscale .sheet.herosheet div.skillline div.skill.sk-hoff { filter: grayscale(1); opacity: .38; }
+.sk-hsheetscale .sheet.herosheet div.skillline div.sk-hon { border-radius: 50%; box-shadow: 0 0 0 .35cqw #e3242b; background: rgba(227,36,43,.15); }
+.sk-hsheetscale .sheet.herosheet div.base div.dice.sk-hmov { color: #e3242b; text-shadow: 0 0 .5cqw rgba(0,0,0,.6); }
+.sk-hsheetscale .sheet.herosheet div.skillline div.encumbrance { overflow: visible; }
+.sk-hencw { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); min-width: 3.4cqw; padding: .2cqw .7cqw; border-radius: 999px;
+    background: rgba(18,18,18,.85); color: #fff; font: 700 2.2cqw/1.2 system-ui, sans-serif; text-align: center; pointer-events: auto; cursor: help; white-space: nowrap; }
+.sk-hencw.over { background: #b3261e; box-shadow: 0 0 0 .3cqw #fff; }

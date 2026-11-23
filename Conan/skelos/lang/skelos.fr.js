@@ -596,12 +596,16 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'hb_log_cards': "{0} reçoit : {1}",
     'hb_log_card_rm': "{0} perd la carte {1}",
     'hb_help_title': "Plateau des héros",
-    'hb_help_items': "La fiche du héros est son plateau. Glissez une gemme d'une zone à l'autre : Vie, cases d'action, Fatigue, Blessures, cartes.|Appui long sur une zone : les gemmes s'ajoutent à la main une à une ; glissez-les, ou lâchez puis touchez la zone où les poser.|Double appui sur la Fatigue : les gemmes des cases d'action et des cartes reviennent en Fatigue.|Double appui sur la Vie : même retour, puis la récupération choisie passe de la Fatigue à la Vie.|La gemme rouge choisit la récupération : soleil 2, 3, 4 (actif) ou lune 5, 6, 7 (inactif).|Une case d'action au-delà de son chiffre rouge est signalée, sans blocage.|Mode studio : choisir les héros, prendre des gemmes au bol ou y en reposer, ajouter ou retirer des cartes.|Gemmes rouges (gemme de scénario) : prises au bol rouge en studio, comptées à part (après « / », en rouge). Leur zone de retour est celle où le studio les a posées (Vie, case, carte…) : l'entretien et la récupération les y ramènent. Les déplacer à nouveau en studio change cette zone.|Glissez une carte sur un autre héros pour la lui donner ; double appui sur une carte : elle s'ouvre en grand.",
+    'hb_help_items': "La fiche du héros est son plateau. Glissez une gemme d'une zone à l'autre : Vie, cases d'action, Fatigue, Blessures, cartes.|Appui long sur une zone : les gemmes s'ajoutent à la main une à une ; glissez-les, ou lâchez puis touchez la zone où les poser.|Double appui sur la Fatigue : les gemmes des cases d'action et des cartes reviennent en Fatigue.|Double appui sur la Vie : même retour, puis la récupération choisie passe de la Fatigue à la Vie.|La gemme rouge choisit la récupération : soleil 2, 3, 4 (actif) ou lune 5, 6, 7 (inactif).|Une case d'action au-delà de son chiffre rouge est signalée, sans blocage.|Mode studio : choisir les héros, prendre des gemmes au bol ou y en reposer, ajouter ou retirer des cartes.|Gemmes rouges (gemme de scénario) : prises au bol rouge en studio, comptées à part (après « / », en rouge). Leur zone de retour est celle où le studio les a posées (Vie, case, carte…) : l'entretien et la récupération les y ramènent. Les déplacer à nouveau en studio change cette zone.|Glissez une carte sur un autre héros pour la lui donner ; double appui sur une carte : elle s'ouvre en grand.|Encombrement : le poids des objets s'affiche sur le pictogramme de poids de la fiche. Une compétence est grisée dès que le poids atteint son chiffre ; le premier et le second seuil de mouvement retirent 1 puis 2 au mouvement ; au-delà du maximum, le poids passe en rouge. Rien n'est bloqué.",
     'hb_red_n': "{0} rouge(s)",
     'hb_bowl_blue': "Gemmes bleues",
     'hb_bowl_red': "Gemmes rouges",
     'hb_reserve_red_hint': "Bol de gemmes rouges (gemme de scénario) : comptées à part, le joueur les gère.",
     'hb_card_hint': "{0} — glissez la carte sur un autre héros pour la lui donner",
     'hb_log_card_move': "{0} passe de {1} à {2}",
-    'hb_mark_hint': "Glissez la gemme rouge sur la récupération choisie"
+    'hb_mark_hint': "Glissez la gemme rouge sur la récupération choisie",
+    'hb_enc_title': "Encombrement : {0} / {1}",
+    'hb_enc_mov': "mouvement {0}",
+    'hb_enc_over_short': "maximum dépassé",
+    'hb_enc_over': "{0} porte {1} : au-delà de son maximum ({2})"
 });

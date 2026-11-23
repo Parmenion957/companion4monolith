@@ -93,6 +93,40 @@ var autoOn = function(k) { return !S.hStudio && S.auto(k); };
 var gemBlue = function() { return S.asset("resources/img/gem_blue.webp"); };
 var gemRed = function() { return S.asset("resources/img/gem_red.webp"); };
 
+// ---------- Encombrement ----------
+// Poids porté : la somme des objets du héros (cartes d'équipement ; sorts et tuiles ne pèsent rien).
+// Seuils de la fiche (encyclopédie : [maximum, −1 au mouvement, −2 au mouvement]) ; une compétence est perdue dès que
+// l'encombrement atteint son chiffre. Rien n'est bloqué : la fiche le montre, et un dépassement du maximum est signalé.
+var cardWeight = function(c) {
+    if (c.kind != "eq") return 0;
+    var q = ((typeof Encyclopedia != "undefined" && Encyclopedia.equipments && Encyclopedia.equipments.list) || []).filter(function(x) { return x.id == c.ref; })[0];
+    return q && q.encumbrance ? +q.encumbrance || 0 : 0;
+};
+var encOf = function(h) {
+    var d = heroData(h.ref), en = (d && d.encumbrance) || [], w = cardsOf(h).reduce(function(a, c) { return a + cardWeight(c); }, 0);
+    var max = +en[0] || 0, m1 = +en[1] || 0, m2 = +en[2] || 0;
+    return {w: w, max: max, mov: m2 && w >= m2 ? -2 : m1 && w >= m1 ? -1 : 0, over: !!(max && w > max)};
+};
+// La fiche du Compagnon, annotée : compétences perdues grisées, seuil de mouvement atteint entouré, mouvement réduit,
+// poids porté sur le pictogramme de l'encombrement (en rouge au-delà du maximum).
+var encSheet = function(code, h) {
+    var en = encOf(h), d = heroData(h.ref), sk = (d && d.skills) || [], i = 0;
+    code = code.replace(/<div class="skill">/g, function(m) { var x = sk[i++]; return x && x.exertion && en.w >= +x.exertion ? '<div class="skill sk-hoff">' : m; });
+    code = code.replace(/<div class="encumbrance">(\d+)<\/div>/, function(m, n) {
+        var tip = t("hb_enc_title", en.w, n) + (en.mov ? " — " + t("hb_enc_mov", en.mov) : "") + (en.over ? " — " + t("hb_enc_over_short") : "");
+        return '<div class="encumbrance' + (en.over ? ' sk-hover' : '') + '">' + n
+            + '<b class="sk-hencw' + (en.over ? ' over' : '') + '" title="' + e(tip) + '" aria-label="' + e(tip) + '">' + en.w + '</b></div>';
+    });
+    if (en.mov) {
+        code = code.replace('<div class="encumbrance_movement-' + (-en.mov) + '">', '<div class="encumbrance_movement-' + (-en.mov) + ' sk-hon">');
+        code = code.replace(/(<div class="base movement">[\s\S]*?<div class="dice">)(\d+)(<\/div>)/, function(m, a, n, b) {
+            return a.replace('<div class="dice">', '<div class="dice sk-hmov">') + Math.max(0, +n + en.mov) + b;
+        });
+    }
+    return code;
+};
+var encWarn = function(h) { var en = encOf(h); if (en.over) warn(t("hb_enc_over", heroName(h), en.w, en.max)); };
+
 // ---------- Dessin ----------
 // Pendant une animation, une bande (Fatigue, Vie) garde son ancien nombre jusqu'à l'arrivée des gemmes.
 var holds = {};
@@ -116,6 +150,7 @@ var BAND_SZ = [[4, 3.4], [6, 2.8], [9, 2.2], [99, 1.7]], ACT_SZ = [[1, 3.3], [2,
 // open : la vue d'ensemble, où un appui sur le buste du héros (hors zones de jeu) ouvre sa fiche en grand.
 var boardCode = function(h, open) {
     var full = S.heroSheetFull(h.ref), name = heroName(h), z = "";
+    if (full) full = encSheet(full, h);
     Object.keys(BANDS).forEach(function(k) {
         var n = shown(h, k), r = count(h, k, true);
         z += "<div class='sk-hz sk-hzband sk-hz-" + k + (n || r ? "" : " empty") + "' data-hz='" + k + "' style='" + box(BANDS[k]) + "' role='group' aria-label='" + e(zoneName(h, k) + " : " + ariaN(n, r)) + "'"
@@ -429,6 +464,7 @@ var addCards = function(uid) {
             var h = byUid(uid); if (!h || !sel.length) { S.renderHeroes(); return; }
             snap();
             sel.forEach(function(x) { cardsOf(h).push({kind: x.kind, ref: x.ref, gems: 0}); });
+            encWarn(h);
             commit(t("hb_log_cards", heroName(h), sel.map(function(x) { return S.itemName(x.kind, x.ref); }).join(", ")));
         }});
 };
@@ -449,6 +485,7 @@ S.heroMoveCard = function(fromUid, i, toUid) {
     // La zone de retour des rouges posées sur la carte suit la carte.
     var hk = "c:" + c.id, hn = a.redHome && a.redHome[hk];
     if (hn) { delete a.redHome[hk]; b.redHome = b.redHome || redSnap(b); b.redHome[hk] = hn; }
+    encWarn(b);
     commit(t("hb_log_card_move", S.itemName(c.kind, c.ref), heroName(a), heroName(b)));
 };
 
