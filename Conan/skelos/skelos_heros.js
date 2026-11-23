@@ -190,23 +190,33 @@ var GAP = 8;
 var layouts = function(W, H, kL, kR) {
     var k = kL + kR, Smax = Math.min(W, H * 1.75), out = [];
     if (!k) return [{lay: "none", sw: Smax, cw: 0}];
+    // Une carte ne dépasse pas la moitié de la hauteur de la fiche : deux cartes pour une hauteur de fiche.
+    var cap = function(sw) { return Math.max(0, (sw / 1.75 - GAP) / 2 * .67); };
     [1, 2, 3, 4].forEach(function(r) {
-        var ch = (H - (r - 1) * GAP) / r, cw = ch * .67;
-        var side = function(cols) { return Math.min(H * 1.75, W - cols * (cw + GAP) - GAP); };
-        out.push({lay: "sides", rows: r, cw: cw, sw: side(Math.ceil(kL / r) + Math.ceil(kR / r))});
-        out.push({lay: "right", rows: r, cw: cw, sw: side(Math.ceil(k / r))});
+        var ch = (H - (r - 1) * GAP) / r;
+        var fit = function(cols) {
+            var cw = ch * .67, sw = 0;
+            for (var n = 0; n < 4; n++) { sw = Math.min(H * 1.75, W - cols * (cw + GAP) - GAP); cw = Math.min(ch * .67, cap(sw)); }
+            return {cw: cw, sw: Math.min(H * 1.75, W - cols * (cw + GAP) - GAP)};
+        };
+        var a = fit(Math.ceil(kL / r) + Math.ceil(kR / r)), b = fit(Math.ceil(k / r));
+        out.push({lay: "sides", rows: r, cw: a.cw, sw: a.sw});
+        out.push({lay: "right", rows: r, cw: b.cw, sw: b.sw});
     });
     [1, 2].forEach(function(r) {
         for (var f = 1; f >= .5; f -= .05) {
             var sw = Smax * f, ch = (H - sw / 1.75 - r * GAP) / r, per = Math.ceil(k / r);
-            var cw = Math.min(ch * .67, (W - (per - 1) * GAP) / per);
+            var cw = Math.min(ch * .67, (W - (per - 1) * GAP) / per, cap(sw));
             if (cw > 0) out.push({lay: "below", rows: r, cw: cw, sw: sw});
         }
     });
     // La fiche garde au moins 70 % de sa taille possible ; parmi ces dispositions, les cartes les plus grandes, puis la plus grande fiche.
     var ok = out.filter(function(x) { return x.sw >= Smax * .7 && x.cw > 0; });
     if (!ok.length) ok = out.filter(function(x) { return x.cw > 0; }).sort(function(a, b) { return b.sw - a.sw; }).slice(0, 1);
-    ok.sort(function(a, b) { return Math.round(b.cw) - Math.round(a.cw) || b.sw - a.sw; });
+    // Les cartes les plus grandes, à 10 % près ; à cartes presque égales, la plus grande fiche.
+    var top = Math.max.apply(null, ok.map(function(x) { return x.cw; }));
+    ok = ok.filter(function(x) { return x.cw >= top * .9; });
+    ok.sort(function(a, b) { return Math.round(b.sw) - Math.round(a.sw) || b.cw - a.cw; });
     return ok;
 };
 // Le héros seul occupe toute la hauteur utile ; dans la compagnie, chaque héros a sa case de la grille (deux rangées dès
@@ -244,7 +254,7 @@ var layoutOne = function(solo, H) {
 };
 var resizeT = null;
 window.addEventListener("resize", function() { clearTimeout(resizeT); resizeT = setTimeout(function() { if (S.screen == "heroes") layoutSolo(); }, 120); });
-// Studio : le bol de gemmes (photo du livre) à gauche, le tas de cartes à droite.
+// Studio : le bol de gemmes (photo du livre) à gauche ; le « + » parmi les cartes de chaque héros ajoute des cartes.
 // Deux bols : gemmes bleues, et gemmes rouges (photo d'origine du livre).
 var bowlCode = function() {
     var one = function(red) {
@@ -253,10 +263,6 @@ var bowlCode = function() {
             + "<img class='sk-mbowlimg' src='skelos/img/fond/" + (red ? "bol_gemmes.webp" : "bol_gemmes_bleues.webp") + "' alt='' draggable='false'><span class='sk-hbobj'>" + e(nm) + "</span></div>";
     };
     return "<div class='sk-hbside'>" + one(false) + one(true) + "</div>";
-};
-var pileCode = function() {
-    return "<div class='sk-hbside'><button class='sk-hbpile' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'>"
-        + "<span class='sk-hbstack'><i></i><i></i><i></i><i class='top'></i><b>+</b></span><span class='sk-hbobj'>" + e(t("hb_cards")) + "</span></button></div>";
 };
 var companyCode = function() {
     var b = S.heroBoards(), h = "";
@@ -280,7 +286,7 @@ S.renderHeroes = function() {
     var inner = cur
         ? "<div class='sk-hbzoom' data-huid='" + cur.uid + "'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>"
             + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero sk-hbsolo' data-huid='" + cur.uid + "'><div class='sk-hbsheet'>" + boardCode(cur, false) + "</div>"
-            + cardsOf(cur).map(function(c, i) { return cardCode(cur, c, i); }).join("") + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
+            + cardsOf(cur).map(function(c, i) { return cardCode(cur, c, i); }).join("") + (S.hStudio ? addCardCode() : "") + "</div></div></div>"
         : companyCode();
     // Le redessin ne fait pas remonter l'écran : on garde la position de défilement (page, écran, compagnie sur téléphone).
     var keep = [], el = S.root;
@@ -789,6 +795,42 @@ S.scenarioCardCode = function(sc) {
     if (!l || !l.length) return h;
     var names = l.map(function(x) { return heroName(x); }).join(", ");
     return h.replace("<p class='sk-sinfo'>", "<p class='sk-sheroes' title='" + e(t("hb_sc_heroes_title")) + "'><i aria-hidden='true'>&#xf0c0;</i> " + e(names) + "</p><p class='sk-sinfo'>");
+};
+
+// ---------- Lancement d'un scénario ----------
+// « Jouer » charge le livre et, si le scénario prépare ses héros, leurs fiches ; puis on choisit la vue à ouvrir.
+// Les fiches en cours sont remplacées (confirmation, comme pour une partie du livre en cours).
+S.loadScenarioHeroes = function(list, title) {
+    S._hb = {heroes: cleanHeroes(list), cur: null, log: []};
+    undo.length = 0; S.hStudio = false; dropHand();
+    hlog(t("hb_log_scenario", title || t("untitled")));
+    save();
+};
+S.chooseView = function(onPick) {
+    var cur = S.partView();
+    S.dialog("<h2>" + e(t("view_pick_title")) + "</h2><p class='sk-help'>" + e(t("view_pick_text")) + "</p><div class='sk-viewpick'>"
+        + [["overlord", "view_overlord", "&#xf02d;"], ["heroes", "view_heroes", "&#xf0c0;"]].map(function(m) {
+            return "<button class='sk-btn" + (m[0] == cur ? " sk-primary" : "") + "' data-vpick='" + m[0] + "'><i aria-hidden='true'>" + m[2] + "</i> " + e(t(m[1])) + "</button>";
+        }).join("") + "</div><div class='sk-actions'><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
+        function(ev, close) { var b = ev.target.closest("[data-vpick]"); if (b) { close(); onPick(b.dataset.vpick); } });
+};
+var basePlay = S.playScenario;
+S.playScenario = function(sc) {
+    var l = sc && sc.heroBoards && sc.heroBoards.heroes;
+    if (!l || !l.length) return basePlay.apply(this, arguments);
+    S.chooseView(function(view) {
+        var go = function() {
+            S.clearGame(); S.ctx = null;
+            S.draft = JSON.parse(JSON.stringify(sc));
+            S.studio = false;
+            S.startGame(true);
+            if (S.state) { S.state.scenario.sid = sc.sid; S.save(); }
+            S.loadScenarioHeroes(l, sc.title);
+            S.showPartView(view);
+        };
+        var busy = (S.state && (S.state.river.length || S.state.log.length > 1)) || S.heroBoards().heroes.length;
+        if (busy) S.ask(t("confirm_new_both"), t("confirm_new_yes"), go); else go();
+    });
 };
 
 var baseAll = S.allData;
