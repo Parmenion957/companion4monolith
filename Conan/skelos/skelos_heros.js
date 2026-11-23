@@ -698,7 +698,10 @@ S.partView = function() { return S.prefs().partView == "heroes" ? "heroes" : "ov
 S.showPartView = function(v) {
     var pr = S.prefs(); if (pr.partView != v) { pr.partView = v; S.savePrefs(); }
     dropHand();
-    if (v == "heroes") S.renderHeroes(); else { S.ctx = S.ctx || null; S.renderHome(); }
+    // Le mode studio est commun aux deux vues : on le retrouve en passant de l'une à l'autre.
+    var st = S.screen == "heroes" ? !!S.hStudio : !!S.studio;
+    if (v == "heroes") { S.hStudio = st; S.renderHeroes(); }
+    else { if (!!S.studio != st) { S.studio = st; if (S.closeHp) S.closeHp(); S.selected = null; } S.ctx = S.ctx || null; S.renderHome(); }
 };
 var baseHome = S.renderHome;
 S.renderHome = function() { if (S.partView() == "heroes") { S.renderHeroes(); return; } return baseHome.apply(this, arguments); };
