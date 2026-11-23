@@ -183,11 +183,12 @@ var cardCode = function(h, c, i) {
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
             + "</div>";
 };
-var addCardCode = function() { return "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>"; };
+// Le « + » des cartes : le même que dans la campagne (carte en pointillés, « + » et libellé).
+var addCardCode = function() { return "<button class='sk-tcard sk-tadd sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><span>+</span>" + e(t("add_cards")) + "</button>"; };
 // Héros seul : la fiche reste la fiche, et les cartes sont les plus lisibles possible. Selon la place et le nombre de cartes,
 // on retient la meilleure disposition : des deux côtés (sorts à gauche, objets à droite), d'un seul côté, ou dessous.
 var GAP = 8;
-// oneSide : seulement les cartes d'un seul côté (vue compagnie).
+// oneSide : seulement les cartes d'un seul côté (vue compagnie) ; sinon (héros seul) : sorts à gauche et objets à droite, ou dessous.
 var layouts = function(W, H, kL, kR, oneSide) {
     var k = kL + kR, Smax = Math.min(W, H * 1.75), out = [];
     if (!k) return [{lay: "none", sw: Smax, cw: 0}];
@@ -202,7 +203,7 @@ var layouts = function(W, H, kL, kR, oneSide) {
         };
         var a = fit(Math.ceil(kL / r) + Math.ceil(kR / r)), b = fit(Math.ceil(k / r));
         if (!oneSide) out.push({lay: "sides", rows: r, cw: a.cw, sw: a.sw});
-        out.push({lay: "right", rows: r, cw: b.cw, sw: b.sw});
+        if (oneSide) out.push({lay: "right", rows: r, cw: b.cw, sw: b.sw});
     });
     if (!oneSide) [1, 2].forEach(function(r) {
         for (var f = 1; f >= .5; f -= .05) {
