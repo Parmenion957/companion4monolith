@@ -840,6 +840,64 @@ S.playScenario = function(sc) {
     })();
 };
 
+// ---------- Campagne ----------
+// Au lancement d'un scénario de campagne, les fiches viennent de la compagnie : les héros vivants, avec les cartes qu'ils
+// portent (équipements, sorts, tuiles ; les améliorations n'ont pas de carte). La compagnie prime : du volet Héros du
+// scénario, on garde seulement, pour un héros de la compagnie, ses gemmes rouges, sa récupération et ses cartes en plus.
+// Chaque fiche garde le lien vers son héros (hid) et chaque carte vers son objet de la cave (iuid), pour le retour.
+S.campaignHeroBoards = function(c, setup) {
+    var extra = {}; ((setup && setup.heroBoards && setup.heroBoards.heroes) || []).forEach(function(x) { extra[x.ref] = x; });
+    return (c.heroes || []).filter(function(hh) { return !hh.dead; }).map(function(hh) {
+        var ref = S.heroRef(hh); if (!ref) return null;
+        var h = newHero(ref, hh.name); h.hid = hh.id;
+        (c.cache || []).forEach(function(it) {
+            if (it.kind == "up" || !S.heldBy(it, hh.id)) return;
+            h.cards.push({kind: it.kind, ref: it.ref, gems: 0, iuid: it.uid});
+        });
+        var x = extra[ref];
+        if (x) {
+            if (x.rec) h.rec = x.rec;
+            var have = {}; h.cards.forEach(function(k) { have[k.kind + "|" + k.ref] = (have[k.kind + "|" + k.ref] || 0) + 1; });
+            (x.cards || []).forEach(function(k) {
+                var key = k.kind + "|" + k.ref;
+                if (have[key]) { have[key]--; return; }
+                h.cards.push({kind: k.kind, ref: k.ref, gems: 0, red: k.red || 0, id: k.id, extra: true});
+            });
+            if (x.red) h.red = JSON.parse(JSON.stringify(x.red));
+            // Les rouges posées sur une carte de la compagnie suivent la carte du même nom.
+            h.cards.forEach(function(k) { if (k.extra) return; var src = (x.cards || []).filter(function(y) { return y.kind == k.kind && y.ref == k.ref && y.red; })[0]; if (src && !k.red) k.red = src.red; });
+            cardsOf(h);
+            if (x.redHome) h.redHome = redSnap(h);
+        }
+        return h;
+    }).filter(Boolean);
+};
+var baseCampLaunch = S.launchCampaignScenario;
+S.launchCampaignScenario = function(cid, i) {
+    var c = S.campaign(cid), sc = c && c.scenarios[i]; if (!sc) return;
+    var heroes = S.campaignHeroBoards(c, sc.setup);
+    // Compagnie vide : les héros préparés par le scénario, s'il en a.
+    if (!heroes.length && !(c.heroes || []).filter(function(x) { return !x.dead; }).length) heroes = cleanHeroes(sc.setup && sc.setup.heroBoards && sc.setup.heroBoards.heroes);
+    if (!heroes.length) return baseCampLaunch.apply(this, arguments);
+    var hasBook = !!(sc.setup && ((sc.setup.saved && sc.setup.saved.river) || sc.setup.river || []).length);
+    var go = function() {
+        if (S.editing) S.closeEditor();
+        S.studio = false; S.clearGame();
+        if (hasBook) { S.ctx = {cid: cid, idx: i}; S.draft = JSON.parse(JSON.stringify(sc.setup)); S.startGame(true); }
+        else S.updateCampaign(cid, function(x) {
+            var s2 = x.scenarios[i]; if (!s2) return;
+            s2.status = s2.status == "todo" ? "playing" : s2.status; if (!s2.date) { var d = new Date(); s2.date = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+            S.campLog(x, t("clog_launch", i + 1, s2.title || t("untitled")));
+        });
+        S.loadScenarioHeroes(heroes, sc.title);
+        S.heroBoards().camp = {cid: cid, idx: i};
+        save();
+        S.showPartView(hasBook ? "overlord" : "heroes");
+    };
+    var busy = (S.state && (S.state.river.length || S.state.log.length > 1)) || S.heroBoards().heroes.length;
+    if (busy) S.ask(t("confirm_new_both"), t("confirm_new_yes"), go); else go();
+};
+
 var baseAll = S.allData;
 S.allData = function() { var o = baseAll.apply(S, arguments); o.heroes = S.heroBoards(); return o; };
 var baseRestore = S.restoreData;
