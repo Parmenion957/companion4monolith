@@ -1911,7 +1911,8 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* ---------- Onglet Héros : la fiche du Compagnon sert de plateau ---------- */
 .sk-heroes .sk-hbwrap { padding: 10px 12px 18px; }
 .sk-hb { position: relative; container-type: inline-size; user-select: none; -webkit-user-select: none; }
-.sk-hb.live { touch-action: none; }
+/* Le doigt glisse la page hors des zones ; sur une zone, il emmène les gemmes. */
+.sk-hb.live .sk-hz, .sk-hbcardc, .sk-hbbowl { touch-action: none; }
 .sk-hzones { position: absolute; inset: 0; pointer-events: none; }
 .sk-hb.live .sk-hz, .sk-hb.live .sk-hrec { pointer-events: auto; }
 .sk-hz { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 1.2cqw; }
@@ -1929,14 +1930,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hrec { position: absolute; left: 92.6%; width: 6.4%; height: 5.4%; transform: translateY(-50%); padding: 0; border: 0; border-radius: 50%; background: transparent;
     display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .sk-hrec img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .2cqw .4cqw rgba(0,0,0,.7)); pointer-events: none; }
-.sk-hb:not(.live) .sk-hrec:not(.on) { display: none; }
 .sk-hb.live .sk-hrec:not(.on):hover { box-shadow: 0 0 0 .3cqw rgba(227,36,43,.6); }
 .sk-hrec:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 1px; }
 .sk-hbnone { display: flex; align-items: center; justify-content: center; aspect-ratio: 1.75; border: 1px dashed var(--main-color); color: var(--body-color); }
 /* Compagnie : les fiches en grille ; un appui ouvre le héros. */
 .sk-hbcompany { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: calc((100dvh - 214px) * 1.75 + 14px); margin: 0 auto; }
 .sk-hbcard { position: relative; border-radius: 8px; }
-.sk-hbopen { position: absolute; inset: 0; z-index: 2; border: 0; background: transparent; cursor: zoom-in; border-radius: 8px; }
+/* Le buste du héros (hors zones de jeu) : un appui ouvre sa fiche en grand. */
+.sk-hbopen { position: absolute; left: 0; top: 0; width: 36%; height: 68%; z-index: 2; border: 0; background: transparent; cursor: zoom-in; border-radius: 8px 0 0 0; }
 .sk-hbopen:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 2px; }
 .sk-hbrm { right: -8px; bottom: auto; top: -8px; width: 40px; height: 40px; font-size: 17px; }
 .sk-hbadd { aspect-ratio: 1.75; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px dashed var(--main-color);
@@ -1972,7 +1973,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hbpile:hover .sk-hbstack b, .sk-hbpile:focus-visible .sk-hbstack b { transform: translate(-50%, -50%) scale(1.1); }
 .sk-hbpile:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; border-radius: 8px; }
 .sk-hbcards { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; justify-content: center; }
-.sk-hbcardc { position: relative; flex: 0 0 auto; width: 14cqw; min-width: 110px; container-type: inline-size; border-radius: 6%; cursor: grab; }
+.sk-hbhero { container-type: inline-size; }
+.sk-hbcompany .sk-hbcards { gap: 8px; margin-top: 8px; justify-content: flex-start; }
+.sk-hbcardc { position: relative; flex: 0 0 auto; width: 16cqw; min-width: 64px; container-type: inline-size; border-radius: 6%; cursor: grab; }
 .sk-hbcardc .sk-cardscale { width: 100%; pointer-events: none; }
 .sk-hbcardc > .sk-hzgems { position: absolute; left: 4%; right: 4%; top: 4%; height: 40%; }
 .sk-hbcardc .sk-hzn { font-size: 12px; right: 4px; top: 4px; }
@@ -1983,3 +1986,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     .sk-hbcompany > * { flex: 0 0 92%; scroll-snap-align: center; }
     .sk-hbzoom { width: min(100%, calc((100dvh - 150px) * 1.75)); }
 }
+.sk-hbcadd { flex: 0 0 auto; width: 16cqw; min-width: 64px; aspect-ratio: .67; border-radius: 6%; border: 2px dashed var(--main-color); background: transparent; color: var(--main-color);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+.sk-hbcadd b { font-size: 26px; line-height: 1; }
+.sk-hbcadd small { font-size: 11px; }
+.sk-hbcadd:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hbcompany .sk-hbside { flex-basis: 9cqw; }
