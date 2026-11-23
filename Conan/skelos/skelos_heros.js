@@ -114,7 +114,7 @@ var boardCode = function(h, open) {
 var cardCode = function(h, c, i) {
         var n = c.gems || 0, r = c.red || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
         var face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
-        return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' data-kind='" + c.kind + "' data-card='" + c.kind + ":" + e(c.ref) + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
+        return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' data-kind='" + c.kind + "' data-hcard='" + i + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
             + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, r, h.uid + z, CARD_SZ) + badge(n, r)
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
             + "</div>";
@@ -205,7 +205,7 @@ S.renderHeroes = function() {
     if (b.cur && !cur) b.cur = null;
     S.screen = "heroes";
     var inner = cur
-        ? "<div class='sk-hbzoom'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>"
+        ? "<div class='sk-hbzoom' data-huid='" + cur.uid + "'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>"
             + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero sk-hbsolo' data-huid='" + cur.uid + "'><div class='sk-hbsheet'>" + boardCode(cur, false) + "</div>"
             + cardsOf(cur).map(function(c, i) { return cardCode(cur, c, i); }).join("") + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
         : companyCode();
@@ -310,7 +310,7 @@ var removeHero = function(uid) {
 };
 // Studio : cartes du héros, choisies comme celles des tuiles (équipements et sorts).
 var addCards = function(uid) {
-    S.openItemPicker({title: t("add_cards"), kind: "eq", kinds: ["eq", "sp"],
+    S.openItemPicker({title: t("add_cards"), kind: "eq", kinds: ["eq", "sp", "tile"], tiles: true, tilesLast: true,
         onClose: function() { S.renderHeroes(); },
         onAdd: function(sel) {
             var h = byUid(uid); if (!h || !sel.length) { S.renderHeroes(); return; }
@@ -333,6 +333,24 @@ S.heroMoveCard = function(fromUid, i, toUid) {
     snap();
     cardsOf(a).splice(i, 1); cardsOf(b).push(c);
     commit(t("hb_log_card_move", S.itemName(c.kind, c.ref), heroName(a), heroName(b)));
+};
+
+// Carte en grand (double appui) : la carte seule, ses gemmes dans la languette centrée en haut, comme sur le livre.
+var gemPill = function(n, r) {
+    if (!n && !r) return "";
+    var ic = function(k, cls) { return k <= 6 ? new Array(k + 1).join("<i class='" + cls + "'>&#xf3a5;</i>") : "<i class='" + cls + "'>&#xf3a5;</i><b>" + k + "</b>"; };
+    return "<span class='sk-gpips sk-hgpips' role='img' aria-label='" + e(t("gems_word") + " " + ariaN(n, r)) + "'>" + (n ? ic(n, "b") : "") + (r ? ic(r, "r") : "") + "</span>";
+};
+var cardZoom = function(uid, i) {
+    var h = byUid(uid), c = h && cardsOf(h)[i]; if (!c) return;
+    var name = S.itemName(c.kind, c.ref), face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
+    var ov = S.root.querySelector("#sk-overlay");
+    ov.innerHTML = "<div class='sk-hcz" + (c.kind == "ti" ? " tile" : "") + "' role='dialog' aria-modal='true' aria-label='" + e(name) + "'>"
+        + "<div class='sk-hczcard'>" + (c.kind == "ti" ? face : "<span class='sk-cardscale'>" + face + "</span>") + gemPill(c.gems || 0, c.red || 0) + "</div>"
+        + "<button class='sk-hczx' data-hczx aria-label='" + e(t("close")) + "'>×</button></div>";
+    ov.classList.add("on");
+    ov.onclick = function(ev) { if (ev.target === ov || ev.target.closest("[data-hczx]")) { ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null; } };
+    var x = ov.querySelector("[data-hczx]"); if (x) x.focus();
 };
 
 // ---------- Gestes ----------
@@ -431,7 +449,7 @@ var bind = function(scr) {
         var cd = ev.target.closest(".sk-hbcardc");
         if (cd && !ev.target.closest("button")) {
             var t0 = Date.now();
-            if (last.z == "card" && last.el === cd && t0 - last.at < 400) { last.z = null; S.showCard(cd.dataset.card); }
+            if (last.z == "card" && last.el === cd && t0 - last.at < 400) { last.z = null; cardZoom(uid, +cd.dataset.hcard); }
             else last = {z: "card", el: cd, at: t0};
             return;
         }

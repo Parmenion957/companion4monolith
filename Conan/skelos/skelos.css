@@ -2028,3 +2028,12 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
     .sk-hbzoom .sk-hbback { width: 26px; height: 26px; font-size: 12px; }
 }
 @media (max-width: 600px) { .sk-heroes { --hbH: calc(100dvh - 210px); } }
+/* Carte d'un héros en grand : cadre serré, languette de gemmes (bleues puis rouges) centrée en haut. */
+.sk-hcz { position: relative; width: max-content; margin: 30px auto 0; padding: 30px 14px 14px; border-radius: 14px; background: var(--body-bg-color); box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.sk-hczcard { position: relative; width: min(78vw, calc((100dvh - 120px) * .67), 380px); }
+.sk-hczcard .sk-cardscale, .sk-hczcard .sk-tilebox { width: 100%; }
+.sk-hczcard .sk-gpips { left: 50%; right: auto; top: 0; transform: translate(-50%, -55%); }
+.sk-hgpips i.b { color: #2f86f0; }
+.sk-hgpips i.r { color: #e3242b; }
+.sk-hczx { position: absolute; right: 4px; top: 2px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--body-color); font-size: 24px; line-height: 1; cursor: pointer; }
+.sk-hczx:focus-visible { outline: 2px solid var(--highlight-color); }
