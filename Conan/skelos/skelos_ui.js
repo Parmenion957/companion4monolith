@@ -175,6 +175,7 @@ S.readForm = function() {
 // Toujours visibles (plateau compris, même en plein écran), dessinés comme ceux des autres modules du Compagnon.
 var TABS = [["home", "tab_partie"], ["scenarios", "tab_scenarios"], ["campaigns", "tab_campaigns"]];
 var TAB_OF = {home: "home", game: "home", free: "home", scenarios: "scenarios", campaigns: "campaigns", campaign: "campaigns"};
+S.TABS = TABS; S.TAB_OF = TAB_OF;   // d'autres onglets peuvent s'y ajouter (Héros)
 S.tabsCode = function(active) {
     return "<nav class='sk-tabs' role='tablist' style='--sk-ntabs:" + TABS.length + "'>" + TABS.map(function(x) {
         return "<button role='tab' class='sk-tabbtn" + (x[0] == active ? " on" : "") + "' aria-selected='" + (x[0] == active) + "' data-nav='" + x[0] + "'>" + t(x[1]) + "</button>";
@@ -1523,9 +1524,11 @@ S.companyCode = function(c) {
     return h + "</div>";
 };
 // Sélection multiple des héros, sur le modèle du choix des tuiles : on touche, l'ordre s'affiche, on ajoute la sélection.
-S.openHeroPicker = function(cid) {
-    var c = S.campaign(cid), pr = S.prefs(), sel = [], free = S.companyFree(c);
-    var have = {}; (c.heroes || []).forEach(function(h) { if (!h.dead) have[S.norm(h.name)] = true; });
+// opts (hors campagne) : free (places libres), have (noms déjà présents), onAdd(héros choisis).
+S.openHeroPicker = function(cid, opts) {
+    opts = opts || {};
+    var c = cid ? S.campaign(cid) : null, pr = S.prefs(), sel = [], free = opts.free != null ? opts.free : S.companyFree(c);
+    var have = opts.have || {}; if (!opts.have) (c.heroes || []).forEach(function(h) { if (!h.dead) have[S.norm(h.name)] = true; });
     var ov = S.root.querySelector("#sk-overlay");
     ov.innerHTML = "<div class='sk-dialog sk-pickdlg sk-hpickdlg' role='dialog' aria-modal='true'><div class='sk-dialog-head'><h2>" + e(t("hero_picker_title")) + "</h2>"
         + "<div class='sk-actions sk-pickactions'><button class='sk-btn sk-primary' data-addsel disabled>" + e(t("add_selection", 0)) + "</button>"
@@ -1572,6 +1575,7 @@ S.openHeroPicker = function(cid) {
         var un = ev.target.closest("[data-unsel]"); if (un) { sel.splice(+un.dataset.unsel, 1); status(); return; }
         if (ev.target.closest("[data-addsel]")) {
             var picked = sel.map(function(r) { return byRef[r]; });
+            if (opts.onAdd) { close(); opts.onAdd(picked); return; }
             S.updateCampaign(cid, function(x) {
                 x.heroes = x.heroes || [];
                 picked.forEach(function(k) {

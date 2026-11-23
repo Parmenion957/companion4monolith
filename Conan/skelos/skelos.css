@@ -1907,3 +1907,55 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-czoom-c .sk-tiface [data-skill] { pointer-events: auto; cursor: help; }
 /* Fiches de héros (campagne, zoom du héros) : leurs compétences gardent la description au survol et à l'appui long */
 .sk-hsheetscale [data-skill] { pointer-events: auto; cursor: help; }
+
+/* ---------- Onglet Héros : la fiche du Compagnon sert de plateau ---------- */
+.sk-heroes .sk-hbwrap { padding: 10px 12px 18px; }
+.sk-hb { position: relative; container-type: inline-size; user-select: none; -webkit-user-select: none; }
+.sk-hb.live { touch-action: none; }
+.sk-hzones { position: absolute; inset: 0; pointer-events: none; }
+.sk-hb.live .sk-hz, .sk-hb.live .sk-hrec { pointer-events: auto; }
+.sk-hz { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 1.2cqw; }
+.sk-hzgems { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: .3cqw; max-width: 100%; max-height: 100%; }
+.sk-hzgems img { width: 3.6cqw; height: 3.6cqw; object-fit: contain; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); pointer-events: none; }
+.sk-hzband { padding: 2.6cqw 1.4cqw 1cqw; }
+.sk-hz-life { padding-left: 4.2cqw; }
+.sk-hzact .sk-hzgems { max-width: 12cqw; }
+.sk-hzact .sk-hzgems img { width: 3.4cqw; height: 3.4cqw; }
+.sk-hzn { position: absolute; right: .6cqw; top: .6cqw; min-width: 3.4cqw; padding: .2cqw .7cqw; border-radius: 999px; background: rgba(18,18,18,.85); color: #fff;
+    font: 700 2.2cqw/1.2 system-ui, sans-serif; text-align: center; pointer-events: none; }
+.sk-hzn.over, .sk-hzact.over { background-color: rgba(179,38,30,.18); }
+.sk-hzn.over { background: #b3261e; }
+.sk-hzact.over { box-shadow: inset 0 0 0 .45cqw #e3242b; }
+.sk-hb.live .sk-hz { cursor: grab; }
+.sk-hz.sk-mtarget { box-shadow: inset 0 0 0 .45cqw #ff7900; background-color: rgba(255,121,0,.15); }
+.sk-hrec { position: absolute; left: 92.6%; width: 6.4%; height: 5.4%; transform: translateY(-50%); padding: 0; border: 0; border-radius: 50%; background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.sk-hrec img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .2cqw .4cqw rgba(0,0,0,.7)); pointer-events: none; }
+.sk-hb:not(.live) .sk-hrec:not(.on) { display: none; }
+.sk-hb.live .sk-hrec:not(.on):hover { box-shadow: 0 0 0 .3cqw rgba(227,36,43,.6); }
+.sk-hrec:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 1px; }
+.sk-hzstep { position: absolute; left: 50%; bottom: -1cqw; transform: translate(-50%, 50%); display: flex; gap: 1cqw; }
+.sk-hzstep button { width: 5.5cqw; height: 5.5cqw; min-width: 32px; min-height: 32px; border-radius: 50%; border: 2px solid #fff; background: var(--highlight-color); color: #fff;
+    font: 700 22px/1 system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.sk-hbnone { display: flex; align-items: center; justify-content: center; aspect-ratio: 1.75; border: 1px dashed var(--main-color); color: var(--body-color); }
+/* Compagnie : les fiches en grille ; un appui ouvre le héros. */
+.sk-hbcompany { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: calc((100dvh - 214px) * 1.75 + 14px); margin: 0 auto; }
+.sk-hbcard { position: relative; border-radius: 8px; }
+.sk-hbopen { position: absolute; inset: 0; z-index: 2; border: 0; background: transparent; cursor: zoom-in; border-radius: 8px; }
+.sk-hbopen:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hbrm { right: -8px; bottom: auto; top: -8px; width: 40px; height: 40px; font-size: 17px; }
+.sk-hbadd { aspect-ratio: 1.75; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px dashed var(--main-color);
+    background: transparent; color: var(--main-color); cursor: pointer; font-size: 15px; }
+.sk-hbadd span { font-size: 44px; line-height: 1; }
+.sk-hbempty { text-align: center; padding: 40px 16px; color: var(--body-color); }
+/* Héros seul : la fiche à la taille de l'écran, flèche discrète en haut à gauche. */
+.sk-hbzoom { position: relative; width: min(100%, calc((100dvh - 196px) * 1.75)); margin: 0 auto; padding-top: 4px; }
+.sk-hbback { position: absolute; left: -4px; top: -4px; z-index: 3; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--main-color);
+    background: var(--body-bg-color); color: var(--main-color); opacity: .75; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 15px; cursor: pointer; }
+.sk-hbback:hover, .sk-hbback:focus-visible { opacity: 1; }
+.sk-hhand { transform: translate(-50%, -150%); }
+@media (max-width: 600px), (max-height: 500px) and (orientation: landscape) {
+    .sk-hbcompany { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; max-width: none; padding-bottom: 6px; }
+    .sk-hbcompany > * { flex: 0 0 92%; scroll-snap-align: center; }
+    .sk-hbzoom { width: min(100%, calc((100dvh - 150px) * 1.75)); }
+}
