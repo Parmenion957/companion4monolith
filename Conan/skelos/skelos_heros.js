@@ -94,6 +94,9 @@ var gemBlue = function() { return S.asset("resources/img/gem_blue.webp"); };
 var gemRed = function() { return S.asset("resources/img/gem_red.webp"); };
 
 // ---------- Dessin ----------
+// Pendant une animation, une bande (Fatigue, Vie) garde son ancien nombre jusqu'à l'arrivée des gemmes.
+var holds = {};
+var shown = function(h, k) { var v = holds[h.uid + "|" + k]; return v != null ? v : h[k] || 0; };
 var box = function(r) { return "left:" + r[0] + "%;top:" + r[1] + "%;width:" + r[2] + "%;height:" + r[3] + "%"; };
 // Gemmes en tas de trois, comme sur le livre ; le tas rétrécit quand il y en a beaucoup (taille en cqw de la fiche ou de la carte).
 var heap = function(n, r, seed, sizes) {
@@ -114,7 +117,7 @@ var BAND_SZ = [[4, 3.4], [6, 2.8], [9, 2.2], [99, 1.7]], ACT_SZ = [[1, 3.3], [2,
 var boardCode = function(h, open) {
     var full = S.heroSheetFull(h.ref), name = heroName(h), z = "";
     Object.keys(BANDS).forEach(function(k) {
-        var n = h[k] || 0, r = count(h, k, true);
+        var n = shown(h, k), r = count(h, k, true);
         z += "<div class='sk-hz sk-hzband sk-hz-" + k + (n || r ? "" : " empty") + "' data-hz='" + k + "' style='" + box(BANDS[k]) + "' role='group' aria-label='" + e(zoneName(h, k) + " : " + ariaN(n, r)) + "'"
             + " title='" + e(t("hb_" + k + "_hint")) + "'>" + heap(n, r, h.uid + k, BAND_SZ) + badge(n, r) + "</div>";
     });
@@ -234,10 +237,18 @@ S.renderHeroes = function() {
             + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero sk-hbsolo' data-huid='" + cur.uid + "'><div class='sk-hbsheet'>" + boardCode(cur, false) + "</div>"
             + cardsOf(cur).map(function(c, i) { return cardCode(cur, c, i); }).join("") + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
         : companyCode();
+    // Le redessin ne fait pas remonter l'écran : on garde la position de défilement (page, écran, compagnie sur téléphone).
+    var keep = [], el = S.root;
+    for (; el; el = el.parentElement) if (el.scrollTop || el.scrollLeft) keep.push([el, el.scrollTop, el.scrollLeft]);
+    var se = document.scrollingElement; if (se) keep.push([se, se.scrollTop, se.scrollLeft]);
+    var inner0 = S.root.querySelector(".sk-heroes"), sTop = inner0 ? inner0.scrollTop : 0, comp = S.root.querySelector(".sk-hbcompany"), cLeft = comp ? comp.scrollLeft : 0;
     S.mount("<div class='skelos-game sk-screen sk-heroes" + (S.hStudio ? " sk-hstudio" : "") + "'><div class='sk-hbwrap'>" + inner + "</div></div>"
         + "<div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
     bind(S.root.querySelector(".sk-heroes"));
     layoutSolo();
+    keep.forEach(function(k) { k[0].scrollTop = k[1]; k[0].scrollLeft = k[2]; });
+    var in1 = S.root.querySelector(".sk-heroes"); if (in1 && sTop) in1.scrollTop = sTop;
+    var c1 = S.root.querySelector(".sk-hbcompany"); if (c1 && cLeft) c1.scrollLeft = cLeft;
     if (S._htoast && Date.now() < S._htoastUntil) S.toast(S._htoast);
 };
 var warn = function(msg) { S._htoast = msg; S._htoastUntil = Date.now() + 2500; };
@@ -257,6 +268,75 @@ S.heroMoveGems = function(uid, from, to, n, red) {
     if (red && S.hStudio) h.redHome = redSnap(h);
     commit(red ? msg + " (" + t("hb_red_n", n) + ")" : msg);
 };
+// ---------- Animations ----------
+// Les gemmes volent en arc d'une zone à l'autre, comme sur le livre (réglage « Animations », et moins d'animations demandé).
+var calm = function() { return S.prefs().noAnim || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); };
+var zoneEl = function(uid, z) { return S.root && S.root.querySelector(".sk-heroes [data-huid='" + uid + "'] [data-hz='" + z + "']"); };
+var rectZ = function(uid, z) { var el = zoneEl(uid, z); return el ? el.getBoundingClientRect() : null; };
+var fly = function(src, from, to, n, delay) {
+    if (!from || !to || calm() || !document.body.animate || !n) return 0;
+    var k = Math.min(n, 12), size = Math.max(18, Math.min(30, to.width / 6));
+    var j = function(r, f) { return (Math.random() - .5) * r.width * f; };
+    for (var i = 0; i < k; i++) (function(i) {
+        var img = document.createElement("img");
+        img.className = "sk-mfly"; img.src = src; img.alt = "";
+        img.style.width = img.style.height = size + "px";
+        document.body.appendChild(img);
+        var x0 = from.left + from.width / 2 + j(from, .4) - size / 2, y0 = from.top + from.height / 2 + j(from, .2) - size / 2;
+        var x1 = to.left + to.width / 2 + j(to, .5) - size / 2, y1 = to.top + to.height / 2 + j(to, .25) - size / 2;
+        var mx = (x0 + x1) / 2, my = Math.min(y0, y1) - 50 - Math.random() * 40;
+        var at = function(x, y, sc, r) { return "translate(" + x + "px," + y + "px) scale(" + sc + ") rotate(" + r + "deg)"; };
+        var a = img.animate([
+            {transform: at(x0, y0, 1, 0), opacity: 0},
+            {transform: at(x0, y0, 1.15, 0), opacity: 1, offset: .08},
+            {transform: at(mx, my, 1.3, Math.random() * 180 - 90), opacity: 1, offset: .5},
+            {transform: at(x1, y1, 1, Math.random() * 60 - 30), opacity: 1, offset: .92},
+            {transform: at(x1, y1, .9, 0), opacity: 0}
+        ], {duration: 620, delay: delay + i * 45, easing: "ease-in-out", fill: "both"});
+        a.onfinish = a.oncancel = function() { img.remove(); };
+    })(i);
+    return delay + (k - 1) * 45 + 620;
+};
+// Photo de toutes les zones d'un héros avant une action : nombre de bleues, de rouges, et position à l'écran.
+var zonesOf = function(h) { return ["life", "fatigue", "wounds"].concat(ACT_ORDER.map(function(k) { return "act:" + k; }), cardsOf(h).map(function(c, i) { return "card:" + i; })); };
+var shot = function(h) {
+    var o = {}; zonesOf(h).forEach(function(z) { o[z] = {n: count(h, z), r: count(h, z, true), rect: rectZ(h.uid, z)}; });
+    cardsOf(h).forEach(function(c, i) { o["card:" + i].id = c.id; });
+    return o;
+};
+// Les gemmes rouges qui ont bougé : chaque zone qui en a perdu les envoie vers celles qui en ont gagné.
+var flyRed = function(h, before, delay) {
+    var src = [], dst = [], end = 0;
+    zonesOf(h).forEach(function(z) {
+        var b = before[z] ? before[z].r : 0, a = count(h, z, true);
+        if (a > b) dst.push({z: z, k: a - b});
+    });
+    for (var z in before) { var a2 = zonesOf(h).indexOf(z) >= 0 ? count(h, z, true) : 0; if (before[z].r > a2) src.push({rect: before[z].rect, k: before[z].r - a2}); }
+    src.forEach(function(sx) {
+        while (sx.k > 0 && dst.length) {
+            var d = dst[0], m = Math.min(sx.k, d.k);
+            end = Math.max(end, fly(gemRed(), sx.rect, rectZ(h.uid, d.z), m, delay));
+            sx.k -= m; d.k -= m; if (!d.k) dst.shift();
+        }
+    });
+    return end;
+};
+var animGen = 0;
+// Entretien animé : les bleues des cases d'action et des cartes volent vers la Fatigue ; rec > 0 : puis la récupération
+// repart de la Fatigue vers la Vie. La Fatigue et la Vie gardent leur nombre jusqu'à l'arrivée des gemmes.
+var animUpkeep = function(h, before, rec) {
+    var g = ++animGen, d = 0, t1 = 0, fat = rectZ(h.uid, "fatigue"), life = rectZ(h.uid, "life");
+    for (var z in before) if (z != "life" && z != "fatigue" && z != "wounds" && before[z].n) { t1 = Math.max(t1, fly(gemBlue(), before[z].rect, fat, before[z].n, d)); d += 90; }
+    var tr = flyRed(h, before, 0), t2 = rec ? fly(gemBlue(), fat, life, rec, t1 ? t1 + 250 : 0) : 0;
+    if (!t1 && !t2 && !tr) return;
+    var fat1 = before.fatigue.n + (t1 ? Object.keys(before).reduce(function(a, z) { return a + (z != "life" && z != "fatigue" && z != "wounds" ? before[z].n : 0); }, 0) : 0);
+    if (t1) { holds[h.uid + "|fatigue"] = before.fatigue.n; setTimeout(function() { if (g == animGen && rec) { holds[h.uid + "|fatigue"] = fat1; S.renderHeroes(); } }, t1); }
+    if (t2) holds[h.uid + "|life"] = before.life.n;
+    var end = Math.max(t1, t2, tr);
+    S.renderHeroes();
+    setTimeout(function() { if (g != animGen) return; delete holds[h.uid + "|fatigue"]; delete holds[h.uid + "|life"]; if (S.screen == "heroes") S.renderHeroes(); }, end);
+};
+
 // Entretien (double appui sur la Fatigue) : les gemmes des cases d'action et des cartes du héros y retournent ;
 // les Blessures ne bougent pas. Les rouges retournent à leur zone de retour (studio), sinon en Fatigue avec les autres.
 var collect = function(h) {
@@ -269,18 +349,22 @@ var collect = function(h) {
 };
 S.heroCollect = function(uid) {
     var h = byUid(uid); if (!h) return;
+    var before = shot(h);
     snap(); var n = collect(h);
     commit(t("hb_log_collect", heroName(h), n));
+    animUpkeep(h, before, 0);
 };
 // Récupération (double appui sur la Vie) : l'entretien, puis la récupération choisie passe de la Fatigue à la Vie.
 S.heroRecover = function(uid) {
     var h = byUid(uid); if (!h) return;
+    var before = shot(h);
     snap(); collect(h);
     var n = Math.min(h.rec, h.fatigue); h.fatigue -= n; h.life += n;
     // Les gemmes rouges de la Fatigue reviennent aussi dans la Vie, en plus de la récupération.
     if (!h.redHome) { var m = rmap(h); m.life = (m.life || 0) + (m.fatigue || 0); m.fatigue = 0; }
     if (n < h.rec) warn(t("hb_rec_short", h.rec, n));
     commit(t("hb_log_recover", heroName(h), n));
+    animUpkeep(h, before, n);
 };
 S.heroSetRec = function(uid, v) {
     var h = byUid(uid); if (!h || h.rec == v) return;
@@ -511,8 +595,11 @@ var bind = function(scr) {
         if (hand && hand.pinned) {
             if (!zone) return;
             ev.preventDefault();
-            var from = hand.from, fu = hand.uid, n = hand.n, hr = hand.red; dropHand();
-            if (zone.dataset.hz != from || uid != fu) drop(from, fu, zone, n, hr);
+            var from = hand.from, fu = hand.uid, n = hand.n, hr = hand.red, hx = hand.x, hy = hand.y; dropHand();
+            if (zone.dataset.hz != from || uid != fu) {
+                drop(from, fu, zone, n, hr);
+                fly(hr ? gemRed() : gemBlue(), {left: hx - 15, top: hy - 60, width: 30, height: 30}, rectZ(uid || fu, zone.dataset.hz) || zone.getBoundingClientRect(), n, 0);
+            }
             return;
         }
         if (!zone) return;
