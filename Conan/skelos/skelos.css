@@ -2052,3 +2052,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hbsolo .sk-hbcadd { width: var(--cw, 120px); min-width: 0; }
 .sk-hbsolo > .sk-hbcadd { display: none; }
 .sk-hbcompany .sk-hbadd { max-height: calc(var(--hbH) / 2 - 7px); justify-self: center; width: 100%; max-width: calc((var(--hbH) / 2 - 7px) * 1.75); }
+/* Bascule Overlord | Héros de l'onglet Partie */
+.sk-viewsw { margin-right: 4px; }
+@media (max-width: 600px) { .sk-viewsw button { padding: 0 8px; } }

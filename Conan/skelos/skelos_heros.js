@@ -690,14 +690,23 @@ var bind = function(scr) {
 // Un appui hors des zones repose les gemmes en main.
 document.addEventListener("pointerdown", function(ev) { if (hand && hand.pinned && !ev.target.closest(".sk-heroes [data-hz]")) dropHand(); }, true);
 
-// ---------- Onglet, outils, sauvegarde ----------
-S.TABS.push(["heroes", "tab_heroes"]);
-S.TAB_OF.heroes = "heroes";
-var baseNav = S.navClick;
-S.navClick = function(ev) {
-    var n = ev.target.closest("[data-nav]");
-    if (n && n.dataset.nav == "heroes" && !S.editing) { dropHand(); S.renderHeroes(); return; }
-    return baseNav.apply(this, arguments);
+// ---------- Vues de l'onglet Partie, outils, sauvegarde ----------
+// Une partie, c'est le livre de l'Overlord et les fiches des héros : l'onglet Partie a deux vues, et une bascule
+// « Overlord | Héros » dans la barre des onglets passe de l'une à l'autre. La dernière vue est retenue (réglages).
+S.TAB_OF.heroes = "home";
+S.partView = function() { return S.prefs().partView == "heroes" ? "heroes" : "overlord"; };
+S.showPartView = function(v) {
+    var pr = S.prefs(); if (pr.partView != v) { pr.partView = v; S.savePrefs(); }
+    dropHand();
+    if (v == "heroes") S.renderHeroes(); else { S.ctx = S.ctx || null; S.renderHome(); }
+};
+var baseHome = S.renderHome;
+S.renderHome = function() { if (S.partView() == "heroes") { S.renderHeroes(); return; } return baseHome.apply(this, arguments); };
+var viewSwitch = function() {
+    var v = S.screen == "heroes" ? "heroes" : "overlord";
+    return "<div class='sk-modesw sk-viewsw' role='radiogroup' aria-label='" + e(t("view_switch")) + "'>" + [["overlord", "view_overlord"], ["heroes", "view_heroes"]].map(function(m) {
+        return "<button role='radio' aria-checked='" + (v == m[0]) + "' class='" + (v == m[0] ? "on" : "") + "' data-pview='" + m[0] + "'>" + e(t(m[1])) + "</button>";
+    }).join("") + "</div>";
 };
 // Barre des onglets, comme sur l'onglet Partie : l'icône des outils (Annuler, Recommencer, Journal, Aide) et le Studio.
 var basePlace = S.placeTabs;
@@ -727,6 +736,20 @@ S.placeTabs = function() {
             case "journal": S.heroJournal(); break;
             case "help": S.heroHelp(); break;
         }
+    });
+};
+// La bascule se pose à gauche des outils, sur le plateau comme sur les fiches (pas dans l'éditeur de scénario).
+var baseTabs = S.placeTabs;
+S.placeTabs = function() {
+    baseTabs.apply(S, arguments);
+    var nav = S.root && S.root.querySelector(":scope > .sk-tabs"), tools = nav && nav.querySelector(".sk-tabtools");
+    if (!tools || S.editing || (S.screen != "game" && S.screen != "heroes")) return;
+    tools.insertAdjacentHTML("afterbegin", viewSwitch());
+    nav.classList.add("withview");
+    tools.querySelector(".sk-viewsw").addEventListener("click", function(ev) {
+        var b = ev.target.closest("[data-pview]"); if (!b) return;
+        ev.stopPropagation();
+        if ((b.dataset.pview == "heroes") != (S.screen == "heroes")) S.showPartView(b.dataset.pview);
     });
 };
 var baseAll = S.allData;
