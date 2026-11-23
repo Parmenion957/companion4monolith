@@ -691,6 +691,8 @@ html.skelos-full nav.menu { display: none !important; }
 .sk-modesw { display: flex; height: 31px; border: 1px solid var(--main-color); border-radius: 16px; overflow: hidden; }
 .sk-modesw button { border: 0; padding: 0 12px; margin: 0; background: none; color: var(--main-color); font-family: 'Primary'; font-size: calc(var(--primary-size) * .85rem); cursor: pointer; touch-action: manipulation; }
 .sk-modesw button.on { background: var(--main-color); color: var(--body-bg-color); }
+.sk-modesw.sk-modero span { display: flex; align-items: center; padding: 0 12px; font-family: 'Primary'; font-size: calc(var(--primary-size) * .85rem); }
+.sk-modesw.sk-modero span.on { background: var(--main-color); color: var(--body-bg-color); }
 html.skelos-full #skelos > .sk-tabs.withtools { padding-right: 60px; }
 @media (max-width: 600px) {
     #skelos > .sk-tabs.studio { flex-wrap: wrap; }
@@ -1507,6 +1509,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-mhpm { position: absolute; z-index: 4; width: 86%; aspect-ratio: 1; left: calc(30% + var(--k, 0) * 34%); top: 38%; border-radius: 50%; box-sizing: border-box;
     border: .3cqw solid var(--c, #8a8a8a); background: #fff center 20% / cover no-repeat;  /* fond blanc : les illustrations des tuiles sont détourées */ box-shadow: 0 .2cqw .4cqw rgba(0,0,0,.6); cursor: grab; touch-action: none; }
 .sk-mhpm.dead { filter: grayscale(1) brightness(.6); }
+.sk-mhpm.sk-mhpm-ring { width: calc(86% * var(--sz, 1)); left: 50%; top: 50%; margin: calc(-43% * var(--sz, 1)) 0 0 calc(-43% * var(--sz, 1));
+    transform: rotate(var(--a, 0deg)) translateX(calc(var(--r, 1) * 100%)) rotate(calc(-1 * var(--a, 0deg))); }
+.sk-mghost .sk-mhpm.sk-mhpm-ring { margin: 0; transform: none; }
 .sk-mhpm.sk-mdragging { opacity: .3; }
 .sk-mghost .sk-mhpm { width: 100% !important; height: 100% !important; }
 .sk-mtrack { padding-bottom: 3cqw; }
@@ -1706,7 +1711,8 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-gpips.sk-gpips-tile { top: 13%; right: 4%; transform: none; }
 .sk-mgcard .sk-gpips { padding: 3px 8px; gap: 3px; font-size: 14px; right: 6%; }
 .sk-mgcard .sk-gpips i { font-size: 14px; }
-.sk-mgcard .sk-gpips.sk-gpips-tile { top: 12%; }
+.sk-mgcard .sk-gpips, .sk-mgcard .sk-gpips.sk-gpips-tile { left: 50%; right: auto; top: 0; transform: translate(-50%, -55%); }
+.sk-mgcard .sk-mgrm { position: absolute; width: 30px; height: 30px; right: -6px; bottom: -6px; font-size: 13px; z-index: 4; touch-action: manipulation; }
 .sk-mgcards { padding-top: 16px; }
 
 /* Fonds choisis dans les réglages (fond vert, fond rouge, tuile de récupération, pions gemmes) */
@@ -1791,7 +1797,7 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 @media (max-width: 600px) {
     .sk-manual .sk-mph .sk-mrankimg { width: 11cqw; height: 11cqw; }
     .sk-manual .sk-mph { background: none; box-shadow: none; }
-    .sk-modesw button { padding: 0 7px; font-size: calc(var(--primary-size) * .66rem); }
+    .sk-modesw button, .sk-modesw.sk-modero span { padding: 0 7px; font-size: calc(var(--primary-size) * .66rem); }
 }
 
 /* Zoom d'une tuile : la tuile plus grande, ses cartes collées à elle (colonnes à leur taille, centrées) */
@@ -1867,6 +1873,8 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-zoomhp-on .sk-hp b { font-size: 11cqw; }
 
 /* + d'ajout de cartes : pastille au coin bas-droit de la tuile zoomée, comme la corbeille des cartes. */
+.sk-mtile .sk-mzadd.sk-mtadd { position: absolute; right: -2%; bottom: -2%; z-index: 4; width: 22cqw; height: 22cqw; min-width: 22px; min-height: 22px; font-size: 16cqw;
+    pointer-events: auto; touch-action: manipulation; }
 .sk-zoombox .sk-mzadd.sk-mzadd-on { position: absolute; right: -8px; bottom: -8px; z-index: 4; width: 36px; height: 36px; font-size: 24px; touch-action: manipulation; }
 @media (max-width: 600px) { .sk-zoombox .sk-mzadd.sk-mzadd-on { right: -4px; bottom: -4px; width: 30px; height: 30px; font-size: 20px; } }
 

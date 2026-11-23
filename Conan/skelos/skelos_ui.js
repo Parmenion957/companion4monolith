@@ -827,8 +827,8 @@ S.zoomShut = function() {
 };
 // Studio : cartes d'une tuile. Les deux « + » ouvrent le même choix : sorts de l'Overlord, équipements ou tuiles,
 // une ou plusieurs d'un coup. Les sorts se rangent à gauche, les tuiles puis les équipements à droite.
-S.studioAddCards = function(uid, side) {
-    var back = function(pos) { S.zoomTile(uid, {pos: pos}); };
+S.studioAddCards = function(uid, side, opts) {
+    var back = opts && opts.board ? function() { S.renderGame(); } : function(pos) { S.zoomTile(uid, {pos: pos}); };
     var right = function(s) { return S.slotCards(s, "eq").length + S.slotCards(s, "ti").length; };
     S.zoomShut();
     S.openItemPicker({title: t("add_cards"), kind: side == "sp" ? "sp" : "eq", kinds: ["sp", "eq", "tile"], tiles: true,
@@ -843,13 +843,14 @@ S.studioAddCards = function(uid, side) {
             back(onlySp || (side == "sp" && sel.some(function(x) { return x.kind == "sp"; })) ? -S.slotCards(s, "sp").length : right(s));
         }});
 };
-S.studioRemoveCard = function(uid, kind, k) {
+S.studioRemoveCard = function(uid, kind, k, opts) {
     var s = S.slotByUid(uid); if (!s) return;
     var c = S.slotCards(s, kind)[k]; if (!c) return;
     var side = kind == "sp" ? S.slotCards(s, "sp") : S.slotCards(s, "ti").concat(S.slotCards(s, "eq")), at = side.indexOf(c);
     S.snapshot();
     s.cards.splice(s.cards.indexOf(c), 1);
     commit();
+    if (opts && opts.board) return;
     var n = side.length - 1;
     S.zoomTile(uid, {pos: n ? (kind == "sp" ? -Math.min(at + 1, n) : Math.min(at + 1, n)) : 0});
 };
@@ -924,7 +925,7 @@ S.reinforce = function(uid) {
     if (st.energy < cost) { S.toast(t("not_enough", cost, st.energy)); return; }
     S.snapshot();
     st.energy -= cost; st.fatigue += cost;
-    S.hpGroup(s).forEach(function(g) { g.dead = false; if (g.lpMax) g.lp = g.lpMax; });
+    S.hpGroup(s).forEach(function(g) { g.dead = false; });   // le renfort remet la tuile en jeu sans toucher à ses PV
     S.log(t(cost == 1 ? "log_reinforce_cost_1" : "log_reinforce_cost", S.tileName(s), cost));
     S.save(); S.renderGame();
 };

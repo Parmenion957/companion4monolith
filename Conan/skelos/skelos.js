@@ -536,7 +536,7 @@ var Skelos = {
     reinforce: function(uid) {
         var slot = Skelos.slotByUid(uid);
         Skelos.snapshot();
-        Skelos.hpGroup(slot).forEach(function(g) { g.dead = false; if (g.lpMax) g.lp = g.lpMax; });
+        Skelos.hpGroup(slot).forEach(function(g) { g.dead = false; });   // le renfort remet la tuile en jeu sans toucher à ses PV
         Skelos.log(Skelos.t("log_reinforce", Skelos.tileName(slot)));
         Skelos.save(); Skelos.renderGame();
     },

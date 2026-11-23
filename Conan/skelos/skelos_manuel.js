@@ -163,14 +163,21 @@ S.syncHpTrack = function() {
 };
 // Le pion de vie de l'unité, tel que l'encyclopédie le définit (tile.tokens : recadrage de l'image de la tuile, comme
 // le Studio du Compagnon le dessine) ; à défaut, le portrait de la tuile.
-var hpMarkerCode = function(s, k) {
+// Plusieurs pions sur une même case de la piste : en corolle autour du nombre, plus petits quand ils sont nombreux.
+var hpRing = function(k, n) {
+    if (!n || n < 2) return "";
+    var sz = n <= 2 ? .72 : n <= 3 ? .64 : n <= 4 ? .56 : n <= 6 ? .46 : .38, r = .54 / (sz * .86);
+    return ";--sz:" + sz + ";--r:" + Math.round(r * 100) / 100 + ";--a:" + Math.round(k * 360 / n - 90) + "deg";
+};
+var hpMarkerCode = function(s, k, all) {
+    var n = all ? all.length : 1;
     var tile = S.tileOf(s), label = t("man_hpm", S.tileName(s), s.lp || 0), tk = tile && tile.tokens && tile.tokens[0], inner = "", bg = "";
     if (tk && tk.image_location) {
         inner = "<img src='" + S.asset(tk.image || tile.image) + "' alt='' draggable='false' style='left:" + tk.image_location.x + "%;top:" + tk.image_location.y + "%;width:" + (tk.image_zoom || 100)
             + "%;height:auto;transform:translate(-50%,-50%)" + (tk.image_flip ? " scaleX(-1)" : "") + "'>";
     } else bg = ";background-image:url(\"" + S.asset(tile ? tile.image : "") + "\")";
-    return "<span class='sk-mhpm" + (inner ? " tok" : "") + (s.dead ? " dead" : "") + "' data-hpm='" + s.uid + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "' style='--k:" + k
-        + ";--c:" + (SOCLE[s.color] || "#8a8a8a") + bg + "'>" + inner + "</span>";
+    return "<span class='sk-mhpm" + (inner ? " tok" : "") + (s.dead ? " dead" : "") + (n > 1 ? " sk-mhpm-ring" : "") + "' data-hpm='" + s.uid + "' role='img' aria-label='" + e(label) + "' title='" + e(label) + "' style='--k:" + k
+        + ";--c:" + (SOCLE[s.color] || "#8a8a8a") + hpRing(k, n) + bg + "'>" + inner + "</span>";
 };
 
 var trackCode = function() {
@@ -334,7 +341,10 @@ var gemPopCode = function() {
                 : c.kind == "ti" ? (S.realCardCode(c.kind, c.ref) || "")
                 : "<span class='sk-cardscale'>" + (S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>") + "</span>";
             return "<div class='sk-mz sk-mgcard" + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(name + " · " + n) + "' title='" + e(name) + "'>"
-                + "<div class='sk-mgface'>" + face + "</div>" + pipsCode(n, k < 0 ? "sk-gpips-tile" : "") + "</div>";
+                + "<div class='sk-mgface'>" + face + "</div>" + pipsCode(n)
+                // Mode studio : la poubelle retire la carte, comme dans le zoom (jamais sur la tuile elle-même).
+                + (S.studio && c ? "<button class='sk-zoomrm sk-mzrm sk-mgrm' data-mgrm='" + c.kind + ":" + S.slotCards(s, c.kind).indexOf(c) + "' aria-label='" + e(t("remove_card")) + "' title='" + e(t("remove_card")) + "'>&#xf2ed;</button>" : "")
+                + "</div>";
         }).join("") + "</div></div>";
 };
 var placeGemPop = function() {
@@ -356,6 +366,11 @@ var socleCode = function(s) {
     return "<button class='sk-socle' data-msocle='" + s.uid + "' style='--socle:" + SOCLE[c] + "' title='" + e(lbl) + "' aria-label='" + e(lbl) + "'></button>";
 };
 
+// Mode studio : pastille + au coin bas-droit de la tuile, comme dans le zoom, pour lui ajouter des cartes.
+var addCardCode = function(s) {
+    if (!S.studio) return "";
+    return "<button class='sk-mzadd sk-mtadd' data-mtadd='" + s.uid + "' aria-label='" + e(t("add_cards")) + "' title='" + e(t("add_cards")) + "'>+</button>";
+};
 var tilesCode = function() {
     var st = S.state;
     // Sur téléphone, les pions numérotés passent dans la bande, au-dessus de leur case (cachés ailleurs).
@@ -365,7 +380,7 @@ var tilesCode = function() {
         return "<div class='sk-mtile sk-tilebox" + (s.dead ? " dead" : "") + "' style='" + cellPos(i) + "' data-mtile='" + s.uid + "'" + (S.isEvent(s) ? " data-eventuid='" + s.uid + "'" : "")
             + " role='img' aria-label='" + e(S.tileName(s)) + "'>" + S.tileCode(s)
             + (s.dead ? "<span class='sk-deadmark'>" + t("dead") + "</span>" : "")
-            + (s.lpMax && S.hpOnTile() ? S.hpBadge(s) : "") + cardsBadge(s) + tileGemsCode(s) + socleCode(s) + "</div>";
+            + (s.lpMax && S.hpOnTile() ? S.hpBadge(s) : "") + cardsBadge(s) + tileGemsCode(s) + socleCode(s) + addCardCode(s) + "</div>";
     }).join("") + "</div>";
 };
 
@@ -403,13 +418,13 @@ S.renderManual = function() {
     }
     bindTurnMini(root);
     S.placeTabs();
-    // Barre des onglets : bouton Studio et disquette comme sur le plateau automatique (S.placeTabs) ; l'interrupteur
-    // Aventure / Coop reste visible hors du mode studio (le clic est pris en charge par S.placeTabs → S.switchMode).
+    // Barre des onglets : bouton Studio et disquette (S.placeTabs). En studio, l'interrupteur Aventure / Coop ;
+    // hors studio, seulement la pastille du mode en cours, qu'on ne peut pas changer.
     var tools = root.querySelector(":scope > .sk-tabs .sk-tabtools");
-    if (tools && !tools.querySelector(".sk-modesw")) tools.insertAdjacentHTML("afterbegin", "<div class='sk-modesw' role='radiogroup' aria-label='" + e(t("mode_switch")) + "'>" + [["classic", "mode_adventure"], ["solo", "mode_coop"]].map(function(m) {
-        var on = st.mode == m[0];
-        return "<button role='radio' aria-checked='" + on + "' class='" + (on ? "on" : "") + "' data-studio='mode' data-mode='" + m[0] + "'>" + e(t(m[1])) + "</button>";
-    }).join("") + "</div>");
+    if (tools && !tools.querySelector(".sk-modesw")) {
+        var ml = t(st.mode == "solo" ? "mode_coop" : "mode_adventure");
+        tools.insertAdjacentHTML("afterbegin", "<div class='sk-modesw sk-modero' role='status' aria-label='" + e(t("mode_switch") + " : " + ml) + "'><span class='on'>" + e(ml) + "</span></div>");
+    }
     root.querySelector(".sk-manual").classList.toggle("sk-mstudio", !!S.studio);
     S.syncFullscreenButton();
     S.fitDesk();
@@ -711,7 +726,8 @@ S.manualPiece = function(which, cell) {
 };
 
 // Points de vie fixés à la main (pastille sur la piste, ou − / + du zoom) : tout le groupe de PV partagés suit.
-// 0 = toutes les unités sont mortes ; remonter au-dessus de 0 réactive la tuile. La tuile ne change pas de place.
+// En partie : 0 = toutes les unités sont mortes ; remonter au-dessus de 0 réactive la tuile. La tuile ne change pas de place.
+// En studio, les PV se règlent sans toucher à l'état de la tuile (la mort se donne par le menu de la tuile).
 S.manualSetHp = function(uid, v) {
     var s = S.slotByUid(uid); if (!s || S.isEvent(s)) return;
     v = Math.max(0, Math.min(40, v));
@@ -720,6 +736,7 @@ S.manualSetHp = function(uid, v) {
     S.snapshot();
     group.forEach(function(g) { g.lp = v; if (!g.lpMax || v > g.lpMax) g.lpMax = Math.max(v, g.lpMax || 0) || null; });
     S.log(t("log_hp", name, cur, v));
+    if (S.studio) { commit(); return; }
     if (v == 0) group.forEach(function(g) { if (!g.dead) S.killSlot(g); });
     else if (group.some(function(g) { return g.dead; })) { group.forEach(function(g) { g.dead = false; }); S.log(t("log_reinforce", name)); }
     commit();
@@ -882,6 +899,11 @@ var bind = function(board) {
         if (ev.target.closest("[data-mgpclose]")) { closeGemPop(); return; }
         var sc = ev.target.closest("[data-msocle]");
         if (sc) { S.nextSocle(sc.dataset.msocle); return; }
+        // Mode studio, sans passer par le zoom : ajouter des cartes à une tuile, retirer une carte depuis « Gemmes sur ».
+        var ad = ev.target.closest("[data-mtadd]");
+        if (ad) { S.studioAddCards(ad.dataset.mtadd, "eq", {board: true}); return; }
+        var rmc = ev.target.closest("[data-mgrm]");
+        if (rmc && S._mgpop) { var p = rmc.dataset.mgrm.split(":"); S.studioRemoveCard(S._mgpop, p[0], +p[1], {board: true}); return; }
         var tg = ev.target.closest("[data-tgems]");
         if (tg) { S.openGemPop(tg.dataset.tgems); return; }
         // La pastille des cartes sous une tuile ouvre aussi la tuile et ses cartes (pour y poser des gemmes).
