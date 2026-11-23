@@ -1929,8 +1929,11 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hz.sk-mtarget { box-shadow: inset 0 0 0 .45cqw #ff7900; background-color: rgba(255,121,0,.15); }
 .sk-hrec { position: absolute; left: 92.6%; width: 6.4%; height: 5.4%; transform: translateY(-50%); padding: 0; border: 0; border-radius: 50%; background: transparent;
     display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.sk-hrec img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .2cqw .4cqw rgba(0,0,0,.7)); pointer-events: none; }
-.sk-hb.live .sk-hrec:not(.on):hover { box-shadow: 0 0 0 .3cqw rgba(227,36,43,.6); }
+.sk-hrec img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .2cqw .4cqw rgba(0,0,0,.7)); }
+.sk-hrec { cursor: default; }
+.sk-hmark { cursor: grab; touch-action: none; }
+.sk-hrec.sk-mtarget { box-shadow: 0 0 1cqw .3cqw rgba(255,121,0,.9); background: rgba(255,121,0,.25); }
+.sk-hmarkghost { position: fixed; z-index: 100003; pointer-events: none; transform: translate(-50%, -50%); object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
 .sk-hrec:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 1px; }
 .sk-hbnone { display: flex; align-items: center; justify-content: center; aspect-ratio: 1.75; border: 1px dashed var(--main-color); color: var(--body-color); }
 /* Compagnie : les fiches en grille ; un appui ouvre le héros. */
@@ -1992,3 +1995,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hbcadd small { font-size: 11px; }
 .sk-hbcadd:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
 .sk-hbcompany .sk-hbside { flex-basis: 9cqw; }
+/* Gemmes rouges du héros : comptées à part ; bols empilés en studio ; carte glissée vers un autre héros. */
+.sk-hz .sk-hzgems img { pointer-events: auto; }
+.sk-hzr { color: #ff6b61; }
+.sk-hzn.over .sk-hzr { color: #ffd2ce; }
+.sk-hbside .sk-hbbowl + .sk-hbbowl { margin-top: 2.2cqw; }
+.sk-hbcardc { cursor: grab; }
+.sk-hbghost { position: fixed; z-index: 100003; pointer-events: none; transform: translate(-50%, -60%) rotate(-4deg); opacity: .9;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); container-type: inline-size; }
+.sk-hbghost .sk-zoomrm { display: none; }
+.sk-hbdragging { opacity: .35; }
+.sk-hbhero.sk-hbdrop { outline: 3px solid #ff7900; outline-offset: 3px; border-radius: 8px; }

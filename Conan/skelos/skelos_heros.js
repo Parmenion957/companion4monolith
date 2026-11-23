@@ -34,19 +34,25 @@ var heroData = function(ref) { return ((typeof Encyclopedia != "undefined" && En
 var heroName = function(h) { var c = (S.heroCatalog() || []).filter(function(x) { return x.ref == h.ref; })[0]; return c ? c.name : h.name || h.ref; };
 var sat = function(h, k) { var d = heroData(h.ref), f = d && SAT_KEY[k] && d[SAT_KEY[k]]; return f && f.exertion ? +f.exertion : 0; };
 var cardsOf = function(h) { return h.cards || (h.cards = []); };
-// Zones : life, fatigue, wounds, act:<case>, card:<rang>, reserve (le bol du studio, inépuisable).
-var count = function(h, z) {
+// Zones : life, fatigue, wounds, act:<case>, card:<rang>, reserve (les bols du studio, inépuisables).
+// Gemmes rouges (gemme de scénario, par exemple réservée aux objets) : le joueur les gère ; elles se comptent à part
+// (h.red par zone, c.red sur une carte), hors du total bleu. Aucune au départ.
+var rmap = function(h) { return h.red || (h.red = {}); };
+var count = function(h, z, red) {
     if (z == "reserve") return BOWL_MAX;
+    if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; return c ? (red ? c.red : c.gems) || 0 : 0; }
+    if (red) return rmap(h)[z] || 0;
     if (z.indexOf("act:") == 0) return h.act[z.slice(4)] || 0;
-    if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; return c ? c.gems || 0 : 0; }
     return h[z] || 0;
 };
-var put = function(h, z, n) {
+var put = function(h, z, n, red) {
     if (z == "reserve") return;
-    if (z.indexOf("act:") == 0) h.act[z.slice(4)] = n;
-    else if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; if (c) c.gems = n; }
+    if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; if (c) c[red ? "red" : "gems"] = n; }
+    else if (red) rmap(h)[z] = n;
+    else if (z.indexOf("act:") == 0) h.act[z.slice(4)] = n;
     else h[z] = n;
 };
+var redTotal = function(h) { var n = 0, m = rmap(h); for (var k in m) n += m[k] || 0; cardsOf(h).forEach(function(c) { n += c.red || 0; }); return n; };
 var zoneName = function(h, z) {
     if (z.indexOf("act:") == 0) return t("hb_act_" + z.slice(4));
     if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; return c ? S.itemName(c.kind, c.ref) : "?"; }
@@ -65,30 +71,38 @@ var gemRed = function() { return S.asset("resources/img/gem_red.webp"); };
 // ---------- Dessin ----------
 var box = function(r) { return "left:" + r[0] + "%;top:" + r[1] + "%;width:" + r[2] + "%;height:" + r[3] + "%"; };
 // Gemmes en tas de trois, comme sur le livre ; le tas rétrécit quand il y en a beaucoup (taille en cqw de la fiche ou de la carte).
-var heap = function(n, seed, sizes) {
-    if (!n) return "";
-    var g = Math.ceil(n / 3), sz = sizes[sizes.length - 1][1];
+var heap = function(n, r, seed, sizes) {
+    if (!n && !r) return "";
+    var g = Math.ceil(n / 3) + Math.ceil(r / 3), sz = sizes[sizes.length - 1][1];
     for (var i = 0; i < sizes.length; i++) if (g <= sizes[i][0]) { sz = sizes[i][1]; break; }
-    return "<span class='sk-hzgems' style='--g:" + sz + "cqw'>" + S.gemGroupsCode(n, gemBlue(), "sk-mgem", seed) + "</span>";
+    return "<span class='sk-hzgems' style='--g:" + sz + "cqw'>" + S.gemGroupsCode(n, gemBlue(), "sk-mgem", seed)
+        + S.gemGroupsCode(r, gemRed(), "sk-mgem sk-mgem-r", seed + "r") + "</span>";
 };
+// Compteur d'une zone : les bleues, puis « / » et les rouges en rouge ; les rouges seules si elles sont seules.
+var badge = function(n, r, over) {
+    if (!n && !r) return "";
+    return "<b class='sk-hzn" + (over ? " over" : "") + "'>" + (n ? n : "") + (n && r ? " / " : "") + (r ? "<span class='sk-hzr'>" + r + "</span>" : "") + "</b>";
+};
+var ariaN = function(n, r) { return n + (r ? " + " + t("hb_red_n", r) : ""); };
 var BAND_SZ = [[4, 3.4], [6, 2.8], [9, 2.2], [99, 1.7]], ACT_SZ = [[1, 3.3], [2, 2.9], [4, 2.2], [6, 1.8], [99, 1.4]], CARD_SZ = [[2, 15], [4, 11], [99, 8]];
 // open : la vue d'ensemble, où un appui sur le buste du héros (hors zones de jeu) ouvre sa fiche en grand.
 var boardCode = function(h, open) {
     var full = S.heroSheetFull(h.ref), name = heroName(h), z = "";
     Object.keys(BANDS).forEach(function(k) {
-        var n = h[k] || 0;
-        z += "<div class='sk-hz sk-hzband sk-hz-" + k + (n ? "" : " empty") + "' data-hz='" + k + "' style='" + box(BANDS[k]) + "' role='group' aria-label='" + e(zoneName(h, k) + " : " + n) + "'"
-            + " title='" + e(t("hb_" + k + "_hint")) + "'>" + heap(n, h.uid + k, BAND_SZ) + (n ? "<b class='sk-hzn'>" + n + "</b>" : "") + "</div>";
+        var n = h[k] || 0, r = count(h, k, true);
+        z += "<div class='sk-hz sk-hzband sk-hz-" + k + (n || r ? "" : " empty") + "' data-hz='" + k + "' style='" + box(BANDS[k]) + "' role='group' aria-label='" + e(zoneName(h, k) + " : " + ariaN(n, r)) + "'"
+            + " title='" + e(t("hb_" + k + "_hint")) + "'>" + heap(n, r, h.uid + k, BAND_SZ) + badge(n, r) + "</div>";
     });
     ACT_ORDER.forEach(function(k) {
-        var n = h.act[k] || 0, s = sat(h, k), over = s && n > s;
-        z += "<div class='sk-hz sk-hzact" + (n ? "" : " empty") + (over ? " over" : "") + "' data-hz='act:" + k + "' style='" + box(ACTS[k]) + "' role='group' aria-label='"
-            + e(zoneName(h, "act:" + k) + " : " + n + (s ? " / " + s : "")) + "'>" + heap(n, h.uid + k, ACT_SZ)
-            + (over ? "<b class='sk-hzn over'>" + n + "</b>" : "") + "</div>";
+        var n = h.act[k] || 0, r = count(h, "act:" + k, true), s = sat(h, k), over = s && n + r > s;
+        z += "<div class='sk-hz sk-hzact" + (n || r ? "" : " empty") + (over ? " over" : "") + "' data-hz='act:" + k + "' style='" + box(ACTS[k]) + "' role='group' aria-label='"
+            + e(zoneName(h, "act:" + k) + " : " + ariaN(n, r) + (s ? " / " + s : "")) + "'>" + heap(n, r, h.uid + k, ACT_SZ)
+            + (over || r ? badge(n, r, over) : "") + "</div>";
     });
     Object.keys(REC).forEach(function(v) {
-        z += "<button class='sk-hrec" + (h.rec == v ? " on" : "") + "' data-hrec='" + v + "' style='top:" + REC[v] + "%' aria-label='" + e(t("hb_rec", v)) + "' aria-pressed='" + (h.rec == v) + "'"
-            + ">" + (h.rec == v ? "<img src='" + gemRed() + "' alt='' draggable='false'>" : "") + "</button>";
+        // La gemme rouge se glisse d'une case à l'autre ; au clavier, Entrée sur une case l'y pose.
+        z += "<div class='sk-hrec" + (h.rec == v ? " on" : "") + "' data-hrec='" + v + "' style='top:" + REC[v] + "%' role='button' tabindex='0' aria-label='" + e(t("hb_rec", v)) + "' aria-pressed='" + (h.rec == v) + "'>"
+            + (h.rec == v ? "<img class='sk-hmark' data-hmark src='" + gemRed() + "' alt='' draggable='false' title='" + e(t("hb_mark_hint")) + "'>" : "") + "</div>";
     });
     return "<div class='sk-hb live'>"
         + (full ? "<span class='sk-hsheetscale'>" + full + "</span>" : "<span class='sk-hbnone'>" + e(name) + "</span>")
@@ -100,18 +114,23 @@ var boardCode = function(h, open) {
 var cardsCode = function(h, add) {
     var l = cardsOf(h); if (!l.length && !add) return "";
     return "<div class='sk-hbcards'>" + l.map(function(c, i) {
-        var n = c.gems || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
+        var n = c.gems || 0, r = c.red || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
         var face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
-        return "<div class='sk-hz sk-hbcardc" + (n ? "" : " empty") + "' data-hz='" + z + "' role='group' aria-label='" + e(name + " : " + n) + "' title='" + e(name) + "'>"
-            + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, h.uid + z, CARD_SZ) + (n ? "<b class='sk-hzn'>" + n + "</b>" : "")
+        return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
+            + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, r, h.uid + z, CARD_SZ) + badge(n, r)
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
             + "</div>";
     }).join("") + (add ? "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>" : "") + "</div>";
 };
 // Studio : le bol de gemmes (photo du livre) à gauche, le tas de cartes à droite.
+// Deux bols : gemmes bleues, et gemmes rouges (photo d'origine du livre).
 var bowlCode = function() {
-    return "<div class='sk-hbside'><div class='sk-hz sk-hbbowl' data-hz='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("hb_reserve_hint")) + "'>"
-        + "<img class='sk-mbowlimg' src='skelos/img/fond/bol_gemmes_bleues.webp' alt='' draggable='false'><span class='sk-hbobj'>" + e(t("man_reserve")) + "</span></div></div>";
+    var one = function(red) {
+        var nm = t(red ? "hb_bowl_red" : "hb_bowl_blue");
+        return "<div class='sk-hz sk-hbbowl" + (red ? " red" : "") + "' data-hz='reserve'" + (red ? " data-red='1'" : "") + " role='group' aria-label='" + e(nm) + "' title='" + e(t(red ? "hb_reserve_red_hint" : "hb_reserve_hint")) + "'>"
+            + "<img class='sk-mbowlimg' src='skelos/img/fond/" + (red ? "bol_gemmes.webp" : "bol_gemmes_bleues.webp") + "' alt='' draggable='false'><span class='sk-hbobj'>" + e(nm) + "</span></div>";
+    };
+    return "<div class='sk-hbside'>" + one(false) + one(true) + "</div>";
 };
 var pileCode = function() {
     return "<div class='sk-hbside'><button class='sk-hbpile' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'>"
@@ -146,21 +165,23 @@ S.renderHeroes = function() {
 var warn = function(msg) { S._htoast = msg; S._htoastUntil = Date.now() + 2500; };
 
 // ---------- Actions ----------
-S.heroMoveGems = function(uid, from, to, n) {
+S.heroMoveGems = function(uid, from, to, n, red) {
     var h = byUid(uid); if (!h || from == to) return;
-    n = Math.min(n, count(h, from)); if (n <= 0) return;
+    n = Math.min(n, count(h, from, red)); if (n <= 0) return;
     snap();
-    put(h, from, count(h, from) - n); put(h, to, count(h, to) + n);
+    put(h, from, count(h, from, red) - n, red); put(h, to, count(h, to, red) + n, red);
     if (to.indexOf("act:") == 0) {
-        var k = to.slice(4), s = sat(h, k);
-        if (s && h.act[k] > s) warn(t("hb_sat", zoneName(h, to), h.act[k], s));
+        var k = to.slice(4), s = sat(h, k), m = count(h, to) + count(h, to, true);
+        if (s && m > s) warn(t("hb_sat", zoneName(h, to), m, s));
     }
-    commit(from == "reserve" ? t("hb_log_bowl_take", heroName(h), n, zoneName(h, to)) : to == "reserve" ? t("hb_log_bowl_put", heroName(h), n, zoneName(h, from))
-        : t("hb_log_move", heroName(h), n, zoneName(h, from), zoneName(h, to)));
+    var msg = from == "reserve" ? t("hb_log_bowl_take", heroName(h), n, zoneName(h, to)) : to == "reserve" ? t("hb_log_bowl_put", heroName(h), n, zoneName(h, from))
+        : t("hb_log_move", heroName(h), n, zoneName(h, from), zoneName(h, to));
+    commit(red ? msg + " (" + t("hb_red_n", n) + ")" : msg);
 };
 // Entretien (double appui sur la Fatigue) : les gemmes des cases d'action y retournent ; Blessures et cartes ne bougent pas.
 var collect = function(h) {
-    var n = 0; ACT_ORDER.forEach(function(k) { n += h.act[k] || 0; h.act[k] = 0; });
+    var n = 0, m = rmap(h);
+    ACT_ORDER.forEach(function(k) { n += h.act[k] || 0; h.act[k] = 0; m.fatigue = (m.fatigue || 0) + (m["act:" + k] || 0); m["act:" + k] = 0; });
     h.fatigue += n; return n;
 };
 S.heroCollect = function(uid) {
@@ -173,6 +194,8 @@ S.heroRecover = function(uid) {
     var h = byUid(uid); if (!h) return;
     snap(); collect(h);
     var n = Math.min(h.rec, h.fatigue); h.fatigue -= n; h.life += n;
+    // Les gemmes rouges de la Fatigue reviennent aussi dans la Vie, en plus de la récupération.
+    var m = rmap(h); m.life = (m.life || 0) + (m.fatigue || 0); m.fatigue = 0;
     if (n < h.rec) warn(t("hb_rec_short", h.rec, n));
     commit(t("hb_log_recover", heroName(h), n));
 };
@@ -191,9 +214,9 @@ S.heroRestart = function() {
     S.ask(t("hb_restart_q"), t("restart_game"), function() {
         snap();
         S.heroBoards().heroes.forEach(function(h) {
-            var n = total(h);
-            h.life = n; h.fatigue = 0; h.wounds = 0; h.rec = 2;
-            ACT_ORDER.forEach(function(k) { h.act[k] = 0; }); cardsOf(h).forEach(function(c) { c.gems = 0; });
+            var n = total(h), r = redTotal(h);
+            h.life = n; h.fatigue = 0; h.wounds = 0; h.rec = 2; h.red = r ? {life: r} : {};
+            ACT_ORDER.forEach(function(k) { h.act[k] = 0; }); cardsOf(h).forEach(function(c) { c.gems = 0; c.red = 0; });
         });
         commit(t("hb_log_restart"));
     });
@@ -245,8 +268,16 @@ var addCards = function(uid) {
 var removeCard = function(uid, i) {
     var h = byUid(uid), c = h && cardsOf(h)[i]; if (!c) return;
     snap();
-    h.life += c.gems || 0; cardsOf(h).splice(i, 1);
+    h.life += c.gems || 0; rmap(h).life = (rmap(h).life || 0) + (c.red || 0); cardsOf(h).splice(i, 1);
     commit(t("hb_log_card_rm", heroName(h), S.itemName(c.kind, c.ref)));
+};
+
+// Une carte glissée sur un autre héros change de main, avec ses gemmes.
+S.heroMoveCard = function(fromUid, i, toUid) {
+    var a = byUid(fromUid), b = byUid(toUid), c = a && cardsOf(a)[i]; if (!c || !b || a === b) return;
+    snap();
+    cardsOf(a).splice(i, 1); cardsOf(b).push(c);
+    commit(t("hb_log_card_move", S.itemName(c.kind, c.ref), heroName(a), heroName(b)));
 };
 
 // ---------- Gestes ----------
@@ -257,7 +288,7 @@ var showHand = function() {
     var el = document.getElementById("sk-hhand");
     if (!hand || S.screen != "heroes") { if (el) el.remove(); if (S.screen != "heroes") hand = null; return; }
     if (!el) { document.body.insertAdjacentHTML("beforeend", "<div id='sk-hhand' class='sk-mhand sk-hhand' role='status' aria-live='polite'></div>"); el = document.getElementById("sk-hhand"); }
-    el.innerHTML = "<img src='" + gemBlue() + "' alt=''><b>" + hand.n + "</b>";
+    el.innerHTML = "<img src='" + (hand.red ? gemRed() : gemBlue()) + "' alt=''><b>" + hand.n + "</b>";
     el.setAttribute("aria-label", t("man_hand", hand.n));
     el.classList.toggle("pinned", !!hand.pinned);
     el.style.left = hand.x + "px"; el.style.top = hand.y + "px";
@@ -267,11 +298,66 @@ var bump = function() { var el = document.getElementById("sk-hhand"); if (!el) r
 var under = function(x, y) { var el = document.elementFromPoint(x, y); return el && el.closest(".sk-heroes") ? el.closest("[data-hz]") : null; };
 var uidOf = function(el) { var x = el && el.closest("[data-huid]"); return x ? x.dataset.huid : null; };
 // Dépose de gemmes : dans un même héros, ou entre le bol et un héros.
-var drop = function(src, srcUid, to, n) {
+var drop = function(src, srcUid, to, n, red) {
     if (!to) return;
     var z = to.dataset.hz, toUid = uidOf(to);
-    if (src == "reserve") { if (toUid) S.heroMoveGems(toUid, src, z, n); return; }
-    if (z == "reserve" || toUid == srcUid) S.heroMoveGems(srcUid, src, z, n);
+    if (src == "reserve") { if (toUid) S.heroMoveGems(toUid, src, z, n, red); return; }
+    if (z == "reserve" || toUid == srcUid) S.heroMoveGems(srcUid, src, z, n, red);
+};
+// Gemme rouge de récupération : elle suit le doigt et se pose sur la case soleil / lune où on la lâche.
+var markDrag = function(ev, mk) {
+    var uid = uidOf(mk), ghost = null, x0 = ev.clientX, y0 = ev.clientY;
+    var cellAt = function(x, y) { var el = document.elementFromPoint(x, y), c = el && el.closest("[data-hrec]"); return c && uidOf(c) == uid ? c : null; };
+    var on = function(e2) {
+        if (e2.pointerId != ev.pointerId) return;
+        if (!ghost && (Math.abs(e2.clientX - x0) > 4 || Math.abs(e2.clientY - y0) > 4)) {
+            var r = mk.getBoundingClientRect();
+            ghost = mk.cloneNode(true); ghost.className = "sk-hmarkghost"; ghost.style.width = r.width * 1.3 + "px"; ghost.style.height = r.height * 1.3 + "px";
+            document.body.appendChild(ghost); mk.style.opacity = ".3";
+        }
+        if (!ghost) return;
+        ghost.style.left = e2.clientX + "px"; ghost.style.top = e2.clientY + "px";
+        mark(cellAt(e2.clientX, e2.clientY));
+    };
+    var off = function(e2) {
+        if (e2.pointerId != ev.pointerId) return;
+        document.removeEventListener("pointermove", on); document.removeEventListener("pointerup", off); document.removeEventListener("pointercancel", off);
+        mark(null);
+        if (!ghost) return;
+        var c = e2.type == "pointerup" && cellAt(e2.clientX, e2.clientY);
+        ghost.remove(); mk.style.opacity = "";
+        if (c) S.heroSetRec(uid, +c.dataset.hrec);
+    };
+    document.addEventListener("pointermove", on); document.addEventListener("pointerup", off); document.addEventListener("pointercancel", off);
+};
+// Carte glissée : son image suit le doigt ; lâchée sur un autre héros, elle passe chez lui.
+var cardDrag = function(ev, card, uid) {
+    var x0 = ev.clientX, y0 = ev.clientY, ghost = null, i = +card.dataset.hz.slice(5);
+    var heroAt = function(x, y) { var el = document.elementFromPoint(x, y); return el && el.closest(".sk-heroes [data-huid]"); };
+    var on = function(e2) {
+        if (e2.pointerId != ev.pointerId) return;
+        if (!ghost && (Math.abs(e2.clientX - x0) > MOVE || Math.abs(e2.clientY - y0) > MOVE)) {
+            var r = card.getBoundingClientRect();
+            ghost = card.cloneNode(true); ghost.className = "sk-hbghost"; ghost.style.width = r.width + "px";
+            document.body.appendChild(ghost); card.classList.add("sk-hbdragging");
+        }
+        if (!ghost) return;
+        ghost.style.left = e2.clientX + "px"; ghost.style.top = e2.clientY + "px";
+        var hb = heroAt(e2.clientX, e2.clientY);
+        document.querySelectorAll(".sk-heroes .sk-hbdrop").forEach(function(x) { if (x !== hb) x.classList.remove("sk-hbdrop"); });
+        if (hb && hb.dataset.huid != uid) hb.classList.add("sk-hbdrop");
+    };
+    var off = function(e2) {
+        if (e2.pointerId != ev.pointerId) return;
+        document.removeEventListener("pointermove", on); document.removeEventListener("pointerup", off); document.removeEventListener("pointercancel", off);
+        document.querySelectorAll(".sk-heroes .sk-hbdrop").forEach(function(x) { x.classList.remove("sk-hbdrop"); });
+        if (!ghost) return;
+        ghost.style.display = "none";
+        var hb = e2.type == "pointerup" && heroAt(e2.clientX, e2.clientY);
+        ghost.remove(); card.classList.remove("sk-hbdragging");
+        if (hb && hb.dataset.huid != uid) S.heroMoveCard(uid, i, hb.dataset.huid);
+    };
+    document.addEventListener("pointermove", on); document.addEventListener("pointerup", off); document.addEventListener("pointercancel", off);
 };
 var mark = function(el) {
     document.querySelectorAll(".sk-heroes .sk-mtarget").forEach(function(n) { if (n !== el) n.classList.remove("sk-mtarget"); });
@@ -289,7 +375,6 @@ var bind = function(scr) {
         var uid = uidOf(ev.target); if (!uid) return;
         if (ev.target.closest("[data-hcards]")) { addCards(uid); return; }
         var cr = ev.target.closest("[data-hcrm]"); if (cr) { removeCard(uid, +cr.dataset.hcrm); return; }
-        var rc = ev.target.closest("[data-hrec]"); if (rc) { S.heroSetRec(uid, +rc.dataset.hrec); return; }
         // Double appui : sur la Fatigue, l'entretien ; sur la Vie, l'entretien puis la récupération.
         var z = ev.target.closest("[data-hz='life'], [data-hz='fatigue']"); if (!z) return;
         var now = Date.now(), k = z.dataset.hz;
@@ -301,22 +386,33 @@ var bind = function(scr) {
         }
         last = {z: k, uid: uid, at: now};
     });
+    scr.addEventListener("keydown", function(ev) {
+        var rc = ev.target.closest && ev.target.closest("[data-hrec]");
+        if (rc && (ev.key == "Enter" || ev.key == " ")) { ev.preventDefault(); S.heroSetRec(uidOf(rc), +rc.dataset.hrec); }
+    });
     scr.addEventListener("pointerdown", function(ev) {
         if (ev.pointerType == "mouse" && ev.button != 0) return;
+        var mk = ev.target.closest("[data-hmark]"); if (mk) { ev.preventDefault(); markDrag(ev, mk); return; }
         if (ev.target.closest("button")) return;
         var zone = ev.target.closest("[data-hz]"), uid = uidOf(zone), h = uid && byUid(uid), x0 = ev.clientX, y0 = ev.clientY;
         if (hand && hand.pinned) {
             if (!zone) return;
             ev.preventDefault();
-            var from = hand.from, fu = hand.uid, n = hand.n; dropHand();
-            if (zone.dataset.hz != from || uid != fu) drop(from, fu, zone, n);
+            var from = hand.from, fu = hand.uid, n = hand.n, hr = hand.red; dropHand();
+            if (zone.dataset.hz != from || uid != fu) drop(from, fu, zone, n, hr);
             return;
         }
-        if (!zone || (zone.dataset.hz != "reserve" && (!h || count(h, zone.dataset.hz) <= 0))) return;
+        if (!zone) return;
+        var src = zone.dataset.hz, onGem = ev.target.classList && ev.target.classList.contains("sk-mgem");
+        // Sur une carte, hors de ses gemmes : c'est la carte qu'on emmène.
+        if (src.indexOf("card:") == 0 && !onGem) { ev.preventDefault(); cardDrag(ev, zone, uid); return; }
+        // Couleur : celle du bol, ou de la gemme touchée ; une zone qui n'a que des rouges donne une rouge.
+        var red = src == "reserve" ? zone.dataset.red == "1" : onGem ? ev.target.classList.contains("sk-mgem-r") : !count(h, src) && count(h, src, true) > 0;
+        if (src != "reserve" && (!h || count(h, src, red) <= 0)) return;
         ev.preventDefault();
-        var src = zone.dataset.hz, max = src == "reserve" ? BOWL_MAX : count(h, src), g = {moved: false, timer: null, tick: null};
+        var max = count(h || {}, src, red), g = {moved: false, timer: null, tick: null};
         g.timer = setTimeout(function() {
-            hand = {from: src, uid: uid, n: 1, x: x0, y: y0, pinned: false}; showHand(); bump();
+            hand = {from: src, uid: uid, red: red, n: 1, x: x0, y: y0, pinned: false}; showHand(); bump();
             if (navigator.vibrate) navigator.vibrate(15);
             g.tick = setInterval(function() {
                 if (g.moved || !hand || hand.n >= max) { clearInterval(g.tick); return; }
@@ -327,7 +423,7 @@ var bind = function(scr) {
             if (e2.pointerId != ev.pointerId) return;
             if (!g.moved && (Math.abs(e2.clientX - x0) > MOVE || Math.abs(e2.clientY - y0) > MOVE)) {
                 g.moved = true; clearTimeout(g.timer); clearInterval(g.tick);
-                if (!hand) hand = {from: src, uid: uid, n: 1, pinned: false};
+                if (!hand) hand = {from: src, uid: uid, red: red, n: 1, pinned: false};
             }
             if (g.moved && hand) { hand.x = e2.clientX; hand.y = e2.clientY; showHand(); mark(under(e2.clientX, e2.clientY)); }
         };
@@ -338,7 +434,7 @@ var bind = function(scr) {
             if (e2.type == "pointercancel") { dropHand(); return; }
             if (g.moved && hand) {
                 var to = under(e2.clientX, e2.clientY), n = hand.n; dropHand();
-                drop(src, uid, to, n);
+                drop(src, uid, to, n, red);
             } else if (hand) { hand.pinned = true; showHand(); S.toast(t("man_hand_hint")); }
             else if (!hinted && src != "life" && src != "fatigue") { hinted = true; S.toast(t("man_gem_hint")); }
         };

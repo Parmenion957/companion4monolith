@@ -583,5 +583,12 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'hb_log_cards': "{0} receives: {1}",
     'hb_log_card_rm': "{0} loses card {1}",
     'hb_help_title': "Heroes board",
-    'hb_help_items': "The hero sheet is the hero's board. Drag a gem from one zone to another: Life, action boxes, Fatigue, Wounds, cards.|Long press on a zone: gems are added to the hand one by one; drag them, or release then tap the zone to drop them.|Double tap on Fatigue: gems on the action boxes return to Fatigue.|Double tap on Life: same return, then the chosen recovery moves from Fatigue to Life.|The red gem chooses the recovery: sun 2, 3, 4 (active) or moon 5, 6, 7 (inactive).|An action box beyond its red number is flagged, never blocked.|Studio mode: choose heroes, take gems from the bowl or put them back, add or remove cards."
+    'hb_help_items': "The hero sheet is the hero's board. Drag a gem from one zone to another: Life, action boxes, Fatigue, Wounds, cards.|Long press on a zone: gems are added to the hand one by one; drag them, or release then tap the zone to drop them.|Double tap on Fatigue: gems on the action boxes return to Fatigue.|Double tap on Life: same return, then the chosen recovery moves from Fatigue to Life.|The red gem chooses the recovery: sun 2, 3, 4 (active) or moon 5, 6, 7 (inactive).|An action box beyond its red number is flagged, never blocked.|Studio mode: choose heroes, take gems from the bowl or put them back, add or remove cards.|Red gems (scenario gem): taken from the red bowl in studio, counted apart (after “/”, in red). Upkeep and recovery bring them back with the others.|Drag a card onto another hero to give it.",
+    'hb_red_n': "{0} red",
+    'hb_bowl_blue': "Blue gems",
+    'hb_bowl_red': "Red gems",
+    'hb_reserve_red_hint': "Red gem bowl (scenario gem): counted apart, managed by the player.",
+    'hb_card_hint': "{0} — drag the card onto another hero to give it",
+    'hb_log_card_move': "{0} goes from {1} to {2}",
+    'hb_mark_hint': "Drag the red gem onto the chosen recovery"
 });
