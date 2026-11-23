@@ -545,8 +545,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'view_heroes': "Heroes",
     'view_overlord': "Overlord",
     'hb_sc_heroes_title': "Heroes prepared by the scenario",
-    'view_pick_title': "Open the game on…",
-    'view_pick_text': "The scenario's book and heroes are loaded; the Overlord | Heroes switch goes from one to the other.",
     'confirm_new_both': "A game is in progress (book or heroes). Abandon it and start the new one?",
     'hb_log_scenario': "Heroes of scenario “{0}” loaded",
     'view_switch': "Game view",

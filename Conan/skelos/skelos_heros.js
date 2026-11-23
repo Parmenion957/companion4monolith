@@ -798,7 +798,8 @@ S.scenarioCardCode = function(sc) {
 };
 
 // ---------- Lancement d'un scénario ----------
-// « Jouer » charge le livre et, si le scénario prépare ses héros, leurs fiches ; puis on choisit la vue à ouvrir.
+// « Jouer » charge le livre et, si le scénario prépare ses héros, leurs fiches. La partie s'ouvre sur l'Overlord quand le
+// scénario a un livre (des tuiles), sinon sur les héros.
 // Les fiches en cours sont remplacées (confirmation, comme pour une partie du livre en cours).
 S.loadScenarioHeroes = function(list, title) {
     S._hb = {heroes: cleanHeroes(list), cur: null, log: []};
@@ -806,19 +807,12 @@ S.loadScenarioHeroes = function(list, title) {
     hlog(t("hb_log_scenario", title || t("untitled")));
     save();
 };
-S.chooseView = function(onPick) {
-    var cur = S.partView();
-    S.dialog("<h2>" + e(t("view_pick_title")) + "</h2><p class='sk-help'>" + e(t("view_pick_text")) + "</p><div class='sk-viewpick'>"
-        + [["overlord", "view_overlord", "&#xf02d;"], ["heroes", "view_heroes", "&#xf0c0;"]].map(function(m) {
-            return "<button class='sk-btn" + (m[0] == cur ? " sk-primary" : "") + "' data-vpick='" + m[0] + "'><i aria-hidden='true'>" + m[2] + "</i> " + e(t(m[1])) + "</button>";
-        }).join("") + "</div><div class='sk-actions'><button class='sk-btn' data-dclose>" + e(t("cancel")) + "</button></div>",
-        function(ev, close) { var b = ev.target.closest("[data-vpick]"); if (b) { close(); onPick(b.dataset.vpick); } });
-};
 var basePlay = S.playScenario;
 S.playScenario = function(sc) {
     var l = sc && sc.heroBoards && sc.heroBoards.heroes;
     if (!l || !l.length) return basePlay.apply(this, arguments);
-    S.chooseView(function(view) {
+    var river = (sc.saved && sc.saved.river) || sc.river || [], view = river.length ? "overlord" : "heroes";
+    (function() {
         var go = function() {
             S.clearGame(); S.ctx = null;
             S.draft = JSON.parse(JSON.stringify(sc));
@@ -830,7 +824,7 @@ S.playScenario = function(sc) {
         };
         var busy = (S.state && (S.state.river.length || S.state.log.length > 1)) || S.heroBoards().heroes.length;
         if (busy) S.ask(t("confirm_new_both"), t("confirm_new_yes"), go); else go();
-    });
+    })();
 };
 
 var baseAll = S.allData;

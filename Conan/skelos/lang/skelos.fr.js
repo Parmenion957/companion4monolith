@@ -558,8 +558,6 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'view_heroes': "Héros",
     'view_overlord': "Overlord",
     'hb_sc_heroes_title': "Héros préparés par le scénario",
-    'view_pick_title': "Ouvrir la partie sur…",
-    'view_pick_text': "Le livre et les héros du scénario sont chargés ; la bascule Overlord | Héros passe de l'un à l'autre.",
     'confirm_new_both': "Une partie est en cours (livre ou héros). L’abandonner pour commencer la nouvelle ?",
     'hb_log_scenario': "Héros du scénario « {0} » chargés",
     'view_switch': "Vue de la partie",
