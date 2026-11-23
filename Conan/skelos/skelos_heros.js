@@ -111,16 +111,24 @@ var boardCode = function(h, open) {
 };
 // Cartes du héros (équipements, sorts), sous la fiche ; chacune reçoit des gemmes. En studio, une poubelle la retire.
 // add : en studio dans la vue d'ensemble, une carte fantôme « + » ouvre le choix des cartes de ce héros.
-var cardsCode = function(h, add) {
-    var l = cardsOf(h); if (!l.length && !add) return "";
-    return "<div class='sk-hbcards'>" + l.map(function(c, i) {
+var cardCode = function(h, c, i) {
         var n = c.gems || 0, r = c.red || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
         var face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
         return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
             + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, r, h.uid + z, CARD_SZ) + badge(n, r)
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
             + "</div>";
-    }).join("") + (add ? "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>" : "") + "</div>";
+};
+var cardsCode = function(h, add) {
+    var l = cardsOf(h); if (!l.length && !add) return "";
+    return "<div class='sk-hbcards'>" + l.map(function(c, i) { return cardCode(h, c, i); }).join("") + (add ? "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>" : "") + "</div>";
+};
+// Héros seul : les cartes de part et d'autre de la fiche, pour tout avoir sous les yeux (sorts à gauche, objets à droite),
+// en colonnes de trois cartes ; la fiche prend la place qui reste.
+var sideCode = function(h, left) {
+    var l = cardsOf(h).map(function(c, i) { return [c, i]; }).filter(function(x) { return (x[0].kind == "sp") == left; });
+    if (!l.length) return "";
+    return "<div class='sk-hbcol " + (left ? "left" : "right") + "' style='--cols:" + Math.ceil(l.length / 3) + "'>" + l.map(function(x) { return cardCode(h, x[0], x[1]); }).join("") + "</div>";
 };
 // Studio : le bol de gemmes (photo du livre) à gauche, le tas de cartes à droite.
 // Deux bols : gemmes bleues, et gemmes rouges (photo d'origine du livre).
@@ -155,7 +163,7 @@ S.renderHeroes = function() {
     S.screen = "heroes";
     var inner = cur
         ? "<div class='sk-hbzoom'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>"
-            + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero' data-huid='" + cur.uid + "'>" + boardCode(cur, false) + cardsCode(cur) + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
+            + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero sk-hbsolo' data-huid='" + cur.uid + "'>" + sideCode(cur, true) + "<div class='sk-hbsheet'>" + boardCode(cur, false) + "</div>" + sideCode(cur, false) + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
         : companyCode();
     S.mount("<div class='skelos-game sk-screen sk-heroes" + (S.hStudio ? " sk-hstudio" : "") + "'><div class='sk-hbwrap'>" + inner + "</div></div>"
         + "<div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
@@ -178,10 +186,12 @@ S.heroMoveGems = function(uid, from, to, n, red) {
         : t("hb_log_move", heroName(h), n, zoneName(h, from), zoneName(h, to));
     commit(red ? msg + " (" + t("hb_red_n", n) + ")" : msg);
 };
-// Entretien (double appui sur la Fatigue) : les gemmes des cases d'action y retournent ; Blessures et cartes ne bougent pas.
+// Entretien (double appui sur la Fatigue) : les gemmes des cases d'action et des cartes du héros y retournent ;
+// les Blessures ne bougent pas.
 var collect = function(h) {
     var n = 0, m = rmap(h);
     ACT_ORDER.forEach(function(k) { n += h.act[k] || 0; h.act[k] = 0; m.fatigue = (m.fatigue || 0) + (m["act:" + k] || 0); m["act:" + k] = 0; });
+    cardsOf(h).forEach(function(c) { n += c.gems || 0; m.fatigue = (m.fatigue || 0) + (c.red || 0); c.gems = 0; c.red = 0; });
     h.fatigue += n; return n;
 };
 S.heroCollect = function(uid) {
