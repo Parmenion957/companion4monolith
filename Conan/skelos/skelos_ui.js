@@ -925,7 +925,7 @@ S.reinforce = function(uid) {
     if (st.energy < cost) { S.toast(t("not_enough", cost, st.energy)); return; }
     S.snapshot();
     st.energy -= cost; st.fatigue += cost;
-    S.hpGroup(s).forEach(function(g) { g.dead = false; if (g.lpMax) g.lp = g.lpMax; });
+    S.hpGroup(s).forEach(function(g) { g.dead = false; });   // le renfort remet la tuile en jeu sans toucher à ses PV
     S.log(t(cost == 1 ? "log_reinforce_cost_1" : "log_reinforce_cost", S.tileName(s), cost));
     S.save(); S.renderGame();
 };
