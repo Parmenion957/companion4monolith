@@ -1734,7 +1734,7 @@ S.heroFace = function(hh) {
     return "<span class='sk-hface-alt'>" + (img ? "<img src='" + e(img) + "' alt=''>" : "<span class='sk-hsheet-ini'>" + e((hh.name || "?").charAt(0)) + "</span>") + "<b>" + e(hh.name) + "</b></span>";
 };
 
-// Compagnie : la fiche complète de chaque héros, sa pastille de cartes ; double appui pour l'ouvrir, crayon pour la modifier.
+// Compagnie : la fiche complète de chaque héros, sa pastille de cartes ; un appui pour l'ouvrir, crayon pour la modifier.
 S.heroSheetCode = function(c, hh) {
     return "<div class='sk-hcard" + (hh.dead ? " dead" : "") + "' data-hzoom='" + hh.id + "' style='--hc:" + hh.color + "'>"
         + "<div class='sk-hcard-f' role='button' tabindex='0' aria-label='" + e(t("open_hero", hh.name)) + "'>" + S.heroFace(hh) + S.heroBadge(c, hh.id) + "</div>"
@@ -2016,7 +2016,7 @@ S.bindCardDrag = function(ov, move) {
     ov.addEventListener("contextmenu", function(ev) { if (ev.target.closest("[data-tcard]")) ev.preventDefault(); });
 };
 
-// ---------- Écran de campagne : double appui sur une fiche, cave en piste de cartes, bouton Compagnie et cave ----------
+// ---------- Écran de campagne : appui sur une fiche, cave en piste de cartes, bouton Compagnie et cave ----------
 S.caveBlockCode = function(c) {
     var cave = S.cardsOf(c, null);
     return "<div class='sk-blk sk-c8 sk-caveblk'><h3>" + e(t("common_cache")) + "</h3>"
@@ -2043,14 +2043,16 @@ S.renderCampaign = function(cid) {
     };
     return r;
 };
-// Double appui (ou double clic) sur une fiche de héros : son zoom. Écran de campagne et préparation d'un scénario.
+// Un appui (ou un clic) sur une fiche de héros : son zoom, comme pour les cartes de la cache. Écran de campagne et
+// préparation d'un scénario. Après un appui long (description d'une compétence), on n'ouvre pas.
 S.bindHeroZoom = function(root) {
-    var last = {id: null, at: 0};
+    var down = 0;
+    root.addEventListener("pointerdown", function(ev) { if (ev.target.closest && ev.target.closest(".sk-hcard-f")) down = Date.now(); });
     root.addEventListener("click", function(ev) {
         var f = ev.target.closest(".sk-hcard-f"); if (!f || ev.target.closest("[data-cact]")) return;
-        var hid = f.closest("[data-hzoom]").dataset.hzoom, now = Date.now(), cid = S.curCampaign || (S.ctx && S.ctx.cid);
-        if (last.id == hid && now - last.at < 400) { last.id = null; if (cid) S.heroZoom(cid, hid); return; }
-        last = {id: hid, at: now};
+        if (down && Date.now() - down > 450 && ev.target.closest("[data-skill]")) return;
+        var hid = f.closest("[data-hzoom]").dataset.hzoom, cid = S.curCampaign || (S.ctx && S.ctx.cid);
+        if (cid) { S.hideTip && S.hideTip(); S.heroZoom(cid, hid); }
     });
     root.addEventListener("keydown", function(ev) {
         if (ev.key != "Enter") return; var f = ev.target.closest && ev.target.closest(".sk-hcard-f"); if (!f) return;
