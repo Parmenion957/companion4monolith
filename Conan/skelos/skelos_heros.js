@@ -33,7 +33,12 @@ var byUid = function(uid) { return S.heroBoards().heroes.filter(function(h) { re
 var heroData = function(ref) { return ((typeof Encyclopedia != "undefined" && Encyclopedia.heroes && Encyclopedia.heroes.list) || []).filter(function(x) { return x.id == ref; })[0] || null; };
 var heroName = function(h) { var c = (S.heroCatalog() || []).filter(function(x) { return x.ref == h.ref; })[0]; return c ? c.name : h.name || h.ref; };
 var sat = function(h, k) { var d = heroData(h.ref), f = d && SAT_KEY[k] && d[SAT_KEY[k]]; return f && f.exertion ? +f.exertion : 0; };
-var cardsOf = function(h) { return h.cards || (h.cards = []); };
+// Chaque carte a un identifiant (pour la zone de retour des gemmes rouges, qui la suit même si l'ordre change).
+var cardsOf = function(h) {
+    var l = h.cards || (h.cards = []);
+    l.forEach(function(c) { if (!c.id) c.id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); });
+    return l;
+};
 // Zones : life, fatigue, wounds, act:<case>, card:<rang>, reserve (les bols du studio, inépuisables).
 // Gemmes rouges (gemme de scénario, par exemple réservée aux objets) : le joueur les gère ; elles se comptent à part
 // (h.red par zone, c.red sur une carte), hors du total bleu. Aucune au départ.
@@ -51,6 +56,26 @@ var put = function(h, z, n, red) {
     else if (red) rmap(h)[z] = n;
     else if (z.indexOf("act:") == 0) h.act[z.slice(4)] = n;
     else h[z] = n;
+};
+// Zone de retour des gemmes rouges : là où le studio les a posées (h.redHome : zone ou « c:<carte> » → nombre).
+// Chaque déplacement d'une gemme rouge en mode studio la redéfinit ; l'entretien et la récupération y ramènent les rouges.
+var redSnap = function(h) {
+    var o = {}, m = rmap(h);
+    for (var k in m) if (m[k]) o[k] = m[k];
+    cardsOf(h).forEach(function(c) { if (c.red) o["c:" + c.id] = c.red; });
+    return o;
+};
+var redGoHome = function(h) {
+    if (!h.redHome) return false;
+    var cards = {}; cardsOf(h).forEach(function(c) { cards[c.id] = c; c.red = 0; });
+    var m = h.red = {}, lost = 0;
+    for (var k in h.redHome) {
+        var n = h.redHome[k] || 0;
+        if (k.indexOf("c:") == 0) { if (cards[k.slice(2)]) cards[k.slice(2)].red = n; else lost += n; }
+        else m[k] = n;
+    }
+    if (lost) m.life = (m.life || 0) + lost;   // carte disparue : ses rouges reviennent dans la Vie
+    return true;
 };
 var redTotal = function(h) { var n = 0, m = rmap(h); for (var k in m) n += m[k] || 0; cardsOf(h).forEach(function(c) { n += c.red || 0; }); return n; };
 var zoneName = function(h, z) {
@@ -229,15 +254,18 @@ S.heroMoveGems = function(uid, from, to, n, red) {
     }
     var msg = from == "reserve" ? t("hb_log_bowl_take", heroName(h), n, zoneName(h, to)) : to == "reserve" ? t("hb_log_bowl_put", heroName(h), n, zoneName(h, from))
         : t("hb_log_move", heroName(h), n, zoneName(h, from), zoneName(h, to));
+    if (red && S.hStudio) h.redHome = redSnap(h);
     commit(red ? msg + " (" + t("hb_red_n", n) + ")" : msg);
 };
 // Entretien (double appui sur la Fatigue) : les gemmes des cases d'action et des cartes du héros y retournent ;
-// les Blessures ne bougent pas.
+// les Blessures ne bougent pas. Les rouges retournent à leur zone de retour (studio), sinon en Fatigue avec les autres.
 var collect = function(h) {
-    var n = 0, m = rmap(h);
+    var n = 0, m = rmap(h), home = !!h.redHome;
     ACT_ORDER.forEach(function(k) { n += h.act[k] || 0; h.act[k] = 0; m.fatigue = (m.fatigue || 0) + (m["act:" + k] || 0); m["act:" + k] = 0; });
     cardsOf(h).forEach(function(c) { n += c.gems || 0; m.fatigue = (m.fatigue || 0) + (c.red || 0); c.gems = 0; c.red = 0; });
-    h.fatigue += n; return n;
+    h.fatigue += n;
+    if (home) redGoHome(h);
+    return n;
 };
 S.heroCollect = function(uid) {
     var h = byUid(uid); if (!h) return;
@@ -250,7 +278,7 @@ S.heroRecover = function(uid) {
     snap(); collect(h);
     var n = Math.min(h.rec, h.fatigue); h.fatigue -= n; h.life += n;
     // Les gemmes rouges de la Fatigue reviennent aussi dans la Vie, en plus de la récupération.
-    var m = rmap(h); m.life = (m.life || 0) + (m.fatigue || 0); m.fatigue = 0;
+    if (!h.redHome) { var m = rmap(h); m.life = (m.life || 0) + (m.fatigue || 0); m.fatigue = 0; }
     if (n < h.rec) warn(t("hb_rec_short", h.rec, n));
     commit(t("hb_log_recover", heroName(h), n));
 };
@@ -272,6 +300,7 @@ S.heroRestart = function() {
             var n = total(h), r = redTotal(h);
             h.life = n; h.fatigue = 0; h.wounds = 0; h.rec = 2; h.red = r ? {life: r} : {};
             ACT_ORDER.forEach(function(k) { h.act[k] = 0; }); cardsOf(h).forEach(function(c) { c.gems = 0; c.red = 0; });
+            redGoHome(h);
         });
         commit(t("hb_log_restart"));
     });
@@ -324,6 +353,7 @@ var removeCard = function(uid, i) {
     var h = byUid(uid), c = h && cardsOf(h)[i]; if (!c) return;
     snap();
     h.life += c.gems || 0; rmap(h).life = (rmap(h).life || 0) + (c.red || 0); cardsOf(h).splice(i, 1);
+    if (h.redHome) h.redHome = redSnap(h);
     commit(t("hb_log_card_rm", heroName(h), S.itemName(c.kind, c.ref)));
 };
 
@@ -332,6 +362,9 @@ S.heroMoveCard = function(fromUid, i, toUid) {
     var a = byUid(fromUid), b = byUid(toUid), c = a && cardsOf(a)[i]; if (!c || !b || a === b) return;
     snap();
     cardsOf(a).splice(i, 1); cardsOf(b).push(c);
+    // La zone de retour des rouges posées sur la carte suit la carte.
+    var hk = "c:" + c.id, hn = a.redHome && a.redHome[hk];
+    if (hn) { delete a.redHome[hk]; b.redHome = b.redHome || redSnap(b); b.redHome[hk] = hn; }
     commit(t("hb_log_card_move", S.itemName(c.kind, c.ref), heroName(a), heroName(b)));
 };
 
