@@ -2055,3 +2055,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 /* Bascule Overlord | Héros de l'onglet Partie */
 .sk-viewsw { margin-right: 4px; }
 @media (max-width: 600px) { .sk-viewsw button { padding: 0 8px; } }
+/* Carte de scénario : les héros préparés par le scénario */
+.sk-sheroes { margin: 2px 0 0; font-size: .85em; color: var(--body-color); opacity: .85; }
+.sk-sheroes i { font-family: "Font Awesome 5 Free"; font-weight: 900; color: var(--main-color); margin-right: 3px; }

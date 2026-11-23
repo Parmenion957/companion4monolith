@@ -24,7 +24,8 @@ var REC = {2: 12.6, 3: 18.8, 4: 24.7, 5: 40.7, 6: 46.9, 7: 53.0};
 // ---------- Données ----------
 var load = function() { try { var o = JSON.parse(localStorage.getItem(KEY)); if (o && o.heroes) return o; } catch (x) {} return {heroes: [], cur: null, log: []}; };
 S.heroBoards = function() { if (!S._hb) S._hb = load(); return S._hb; };
-var save = function() { try { localStorage.setItem(KEY, JSON.stringify(S.heroBoards())); } catch (x) {} };
+// Dans l'éditeur de scénario, les fiches sont un brouillon du scénario : rien n'est écrit, le scénario est « modifié ».
+var save = function() { if (S.editing) { S.editing.dirty = true; return; } try { localStorage.setItem(KEY, JSON.stringify(S.heroBoards())); } catch (x) {} };
 var undo = [];
 var snap = function() { undo.push(JSON.stringify(S.heroBoards())); if (undo.length > 100) undo.shift(); };
 var hlog = function(msg) { var b = S.heroBoards(); b.log = b.log || []; b.log.unshift({msg: msg, ts: Date.now()}); if (b.log.length > 300) b.log.length = 300; };
@@ -696,11 +697,12 @@ document.addEventListener("pointerdown", function(ev) { if (hand && hand.pinned 
 S.TAB_OF.heroes = "home";
 S.partView = function() { return S.prefs().partView == "heroes" ? "heroes" : "overlord"; };
 S.showPartView = function(v) {
-    var pr = S.prefs(); if (pr.partView != v) { pr.partView = v; S.savePrefs(); }
+    var pr = S.prefs(); if (pr.partView != v && !S.editing) { pr.partView = v; S.savePrefs(); }
     dropHand();
     // Le mode studio est commun aux deux vues : on le retrouve en passant de l'une à l'autre.
     var st = S.screen == "heroes" ? !!S.hStudio : !!S.studio;
     if (v == "heroes") { S.hStudio = st; S.renderHeroes(); }
+    else if (S.editing) S.renderGame();   // éditeur : le livre reste en studio
     else { if (!!S.studio != st) { S.studio = st; if (S.closeHp) S.closeHp(); S.selected = null; } S.ctx = S.ctx || null; S.renderHome(); }
 };
 var baseHome = S.renderHome;
@@ -746,8 +748,10 @@ var baseTabs = S.placeTabs;
 S.placeTabs = function() {
     baseTabs.apply(S, arguments);
     var nav = S.root && S.root.querySelector(":scope > .sk-tabs"), tools = nav && nav.querySelector(".sk-tabtools");
-    if (!tools || S.editing || (S.screen != "game" && S.screen != "heroes")) return;
-    tools.insertAdjacentHTML("afterbegin", viewSwitch());
+    if (!tools || (S.screen != "game" && S.screen != "heroes")) return;
+    tools.insertAdjacentHTML("afterbegin", viewSwitch()
+        + (S.editing && S.screen == "heroes" ? "<button class='sk-tabico' data-hsave title='" + e(t("save_title")) + "' aria-label='" + e(t("save_title")) + "'>&#xf0c7;</button>" : ""));
+    var sv = tools.querySelector("[data-hsave]"); if (sv) sv.addEventListener("click", function(ev) { ev.stopPropagation(); S.openSaveScenario(); });
     nav.classList.add("withview");
     tools.querySelector(".sk-viewsw").addEventListener("click", function(ev) {
         var b = ev.target.closest("[data-pview]"); if (!b) return;
@@ -755,6 +759,38 @@ S.placeTabs = function() {
         if ((b.dataset.pview == "heroes") != (S.screen == "heroes")) S.showPartView(b.dataset.pview);
     });
 };
+// ---------- Volet Héros des scénarios ----------
+// Un scénario peut préparer ses héros (fiches, cartes, gemmes de départ, gemmes rouges) : sc.heroBoards.heroes.
+// Dans l'éditeur, la vue Héros travaille sur ce brouillon ; les fiches de la partie sont mises de côté et reviennent à la sortie.
+var cleanHeroes = function(l) { return JSON.parse(JSON.stringify(l || [])); };
+var baseOpenEd = S.openEditor;
+S.openEditor = function(sc) {
+    if (!S.editing) S._hbBackup = {hb: S.heroBoards(), undo: undo.slice(), studio: S.hStudio};
+    S._hb = {heroes: cleanHeroes(sc && sc.heroBoards && sc.heroBoards.heroes), cur: null, log: []};
+    undo.length = 0; S.hStudio = true; dropHand();
+    return baseOpenEd.apply(this, arguments);
+};
+var baseCloseEd = S.closeEditor;
+S.closeEditor = function() {
+    var b = S._hbBackup;
+    if (b) { S._hb = b.hb; undo.length = 0; [].push.apply(undo, b.undo); S.hStudio = b.studio; S._hbBackup = null; }
+    dropHand();
+    return baseCloseEd.apply(this, arguments);
+};
+var baseFromState = S.scenarioFromState;
+S.scenarioFromState = function() {
+    var d = baseFromState.apply(this, arguments), l = S.heroBoards().heroes;
+    if (l.length) d.heroBoards = {heroes: cleanHeroes(l)}; else delete d.heroBoards;
+    return d;
+};
+var baseCard = S.scenarioCardCode;
+S.scenarioCardCode = function(sc) {
+    var h = baseCard.apply(this, arguments), l = sc.heroBoards && sc.heroBoards.heroes;
+    if (!l || !l.length) return h;
+    var names = l.map(function(x) { return heroName(x); }).join(", ");
+    return h.replace("<p class='sk-sinfo'>", "<p class='sk-sheroes' title='" + e(t("hb_sc_heroes_title")) + "'><i aria-hidden='true'>&#xf0c0;</i> " + e(names) + "</p><p class='sk-sinfo'>");
+};
+
 var baseAll = S.allData;
 S.allData = function() { var o = baseAll.apply(S, arguments); o.heroes = S.heroBoards(); return o; };
 var baseRestore = S.restoreData;

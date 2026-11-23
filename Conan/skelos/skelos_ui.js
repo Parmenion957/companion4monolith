@@ -185,7 +185,7 @@ S.tabsCode = function(active) {
 S.placeTabs = function() {
     if (!S.root) return;
     var old = S.root.querySelector(":scope > .sk-tabs"); if (old) old.remove();
-    var tab = S.screen == "game" && S.editing ? (S.editing.cid ? "campaigns" : "scenarios") : TAB_OF[S.screen]; if (!tab) return;
+    var tab = (S.screen == "game" || S.screen == "heroes") && S.editing ? (S.editing.cid ? "campaigns" : "scenarios") : TAB_OF[S.screen]; if (!tab) return;
     S.root.insertAdjacentHTML("afterbegin", S.tabsCode(tab));
     var scr = S.root.querySelector(".sk-screen, .skelos-game"); if (scr) scr.classList.add("sk-tabbed");
 };
