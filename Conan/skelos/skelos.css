@@ -2006,29 +2006,25 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hbghost .sk-zoomrm { display: none; }
 .sk-hbdragging { opacity: .35; }
 .sk-hbhero.sk-hbdrop { outline: 3px solid #ff7900; outline-offset: 3px; border-radius: 8px; }
-/* Héros seul : tout tient dans l'écran. Les cartes en colonnes de trois de chaque côté (hauteur d'une carte : un tiers
-   de la hauteur disponible), la fiche au milieu dans la place qui reste. */
+/* Héros seul : tout tient dans l'écran. La disposition (côtés, un côté, dessous) et la taille des cartes sont calculées
+   par skelos_heros.js (--cw, largeur de la fiche) selon la place disponible (--hbH : hauteur utile). */
 .sk-heroes { --hbH: calc(100dvh - 226px); }
 .sk-hbzoom, .sk-hstudio .sk-hbzoom { width: 100%; padding-top: 32px; }
 .sk-hbzoom .sk-hbback { left: 0; top: 0; }
-.sk-hbsolo { display: flex; align-items: flex-start; justify-content: center; gap: 10px; container-type: normal; }
-.sk-hbsheet { flex: 1 1 auto; min-width: 0; max-width: calc(var(--hbH) * 1.75); }
-.sk-hbcol { flex: 0 0 auto; display: grid; grid-auto-flow: column; grid-template-rows: repeat(3, auto); gap: 8px; align-content: start; }
-.sk-hbcol .sk-hbcardc { width: calc((var(--hbH) - 16px) / 3 * .67); min-width: 0; }
+.sk-hbsolo { display: flex; align-items: flex-start; justify-content: center; gap: 8px; container-type: normal; }
+.sk-hbsolo[data-lay='below'] { flex-wrap: wrap; }
+.sk-hbsheet { flex: 0 0 auto; min-width: 0; }
+.sk-hbsolo[data-lay='below'] .sk-hbsheet { margin: 0 auto; }
+.sk-hbcol { flex: 0 0 auto; display: grid; grid-auto-flow: column; gap: 8px; align-content: start; }
+.sk-hbcol.left { order: -1; }
+.sk-hbcol.below { flex: 1 0 100%; display: flex; flex-wrap: wrap; justify-content: center; }
+.sk-hbsolo .sk-hbcardc { width: var(--cw, 120px); min-width: 0; }
+.sk-hbsolo > .sk-hbcardc { display: none; }
 .sk-hbcol .sk-hbcrm { width: 30px; height: 30px; font-size: 13px; right: -6px; top: -6px; }
 .sk-hbsolo .sk-hbcardc .sk-hzn { font-size: 11px; }
-/* Téléphone en paysage : la même disposition, à la hauteur de l'écran. */
 @media (max-height: 500px) and (orientation: landscape) {
     .sk-heroes { --hbH: calc(100dvh - 172px); }
     .sk-hbzoom, .sk-hstudio .sk-hbzoom { padding-top: 26px; }
     .sk-hbzoom .sk-hbback { width: 26px; height: 26px; font-size: 12px; }
-    .sk-hbcol { gap: 4px; }
-    .sk-hbcol .sk-hbcardc { width: calc((var(--hbH) - 8px) / 3 * .67); }
 }
-@media (max-width: 600px) {
-    /* Téléphone en portrait : la fiche en entier, les cartes en bandeau défilant dessous. */
-    .sk-hbsolo { flex-wrap: wrap; }
-    .sk-hbsheet { flex: 1 0 100%; order: 0; max-width: none; }
-    .sk-hbcol { order: 1; display: flex; grid-template-rows: none; overflow-x: auto; max-width: 100%; }
-    .sk-hbcol .sk-hbcardc { width: 74px; flex: 0 0 74px; }
-}
+@media (max-width: 600px) { .sk-heroes { --hbH: calc(100dvh - 210px); } }

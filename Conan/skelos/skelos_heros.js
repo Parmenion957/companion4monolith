@@ -114,7 +114,7 @@ var boardCode = function(h, open) {
 var cardCode = function(h, c, i) {
         var n = c.gems || 0, r = c.red || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
         var face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
-        return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
+        return "<div class='sk-hz sk-hbcardc" + (n || r ? "" : " empty") + "' data-hz='" + z + "' data-kind='" + c.kind + "' data-card='" + c.kind + ":" + e(c.ref) + "' role='group' aria-label='" + e(name + " : " + ariaN(n, r)) + "' title='" + e(t("hb_card_hint", name)) + "'>"
             + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, r, h.uid + z, CARD_SZ) + badge(n, r)
             + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
             + "</div>";
@@ -123,13 +123,56 @@ var cardsCode = function(h, add) {
     var l = cardsOf(h); if (!l.length && !add) return "";
     return "<div class='sk-hbcards'>" + l.map(function(c, i) { return cardCode(h, c, i); }).join("") + (add ? "<button class='sk-hbcadd' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'><b>+</b><small>" + e(t("hb_cards")) + "</small></button>" : "") + "</div>";
 };
-// Héros seul : les cartes de part et d'autre de la fiche, pour tout avoir sous les yeux (sorts à gauche, objets à droite),
-// en colonnes de trois cartes ; la fiche prend la place qui reste.
-var sideCode = function(h, left) {
-    var l = cardsOf(h).map(function(c, i) { return [c, i]; }).filter(function(x) { return (x[0].kind == "sp") == left; });
-    if (!l.length) return "";
-    return "<div class='sk-hbcol " + (left ? "left" : "right") + "' style='--cols:" + Math.ceil(l.length / 3) + "'>" + l.map(function(x) { return cardCode(h, x[0], x[1]); }).join("") + "</div>";
+// Héros seul : la fiche reste la fiche, et les cartes sont les plus lisibles possible. Selon la place et le nombre de cartes,
+// on retient la meilleure disposition : des deux côtés (sorts à gauche, objets à droite), d'un seul côté, ou dessous.
+var GAP = 8;
+var layouts = function(W, H, kL, kR) {
+    var k = kL + kR, Smax = Math.min(W, H * 1.75), out = [];
+    if (!k) return [{lay: "none", sw: Smax, cw: 0}];
+    [1, 2, 3, 4].forEach(function(r) {
+        var ch = (H - (r - 1) * GAP) / r, cw = ch * .67;
+        var side = function(cols) { return Math.min(H * 1.75, W - cols * (cw + GAP) - GAP); };
+        out.push({lay: "sides", rows: r, cw: cw, sw: side(Math.ceil(kL / r) + Math.ceil(kR / r))});
+        out.push({lay: "right", rows: r, cw: cw, sw: side(Math.ceil(k / r))});
+    });
+    [1, 2].forEach(function(r) {
+        for (var f = 1; f >= .5; f -= .05) {
+            var sw = Smax * f, ch = (H - sw / 1.75 - r * GAP) / r, per = Math.ceil(k / r);
+            var cw = Math.min(ch * .67, (W - (per - 1) * GAP) / per);
+            if (cw > 0) out.push({lay: "below", rows: r, cw: cw, sw: sw});
+        }
+    });
+    // La fiche garde au moins 70 % de sa taille possible ; parmi ces dispositions, les cartes les plus grandes, puis la plus grande fiche.
+    var ok = out.filter(function(x) { return x.sw >= Smax * .7 && x.cw > 0; });
+    if (!ok.length) ok = out.filter(function(x) { return x.cw > 0; }).sort(function(a, b) { return b.sw - a.sw; }).slice(0, 1);
+    ok.sort(function(a, b) { return Math.round(b.cw) - Math.round(a.cw) || b.sw - a.sw; });
+    return ok;
 };
+var layoutSolo = function() {
+    var solo = S.root && S.root.querySelector(".sk-hbsolo"); if (!solo) return;
+    var probe = document.createElement("div"); probe.style.cssText = "position:absolute;visibility:hidden;height:var(--hbH)"; solo.appendChild(probe);
+    var H = Math.max(160, probe.offsetHeight); probe.remove();
+    var W = solo.clientWidth, cards = [].slice.call(solo.querySelectorAll(".sk-hbcardc"));
+    var isL = function(c) { return c.dataset.kind == "sp"; };
+    var kL = cards.filter(isL).length, best = layouts(W, H, kL, cards.length - kL)[0];
+    var sheet = solo.querySelector(".sk-hbsheet");
+    solo.querySelectorAll(".sk-hbcol").forEach(function(c) { c.remove(); });
+    solo.dataset.lay = best.lay;
+    solo.style.setProperty("--cw", Math.floor(best.cw) + "px");
+    sheet.style.width = Math.floor(best.sw) + "px";
+    var col = function(cls, list, rows) {
+        var d = document.createElement("div"); d.className = "sk-hbcol " + cls;
+        if (rows) d.style.gridTemplateRows = "repeat(" + rows + ", auto)";
+        list.forEach(function(c) { d.appendChild(c); }); return d;
+    };
+    if (best.lay == "sides") {
+        if (kL) solo.insertBefore(col("left", cards.filter(isL), best.rows), sheet);
+        if (cards.length - kL) solo.appendChild(col("right", cards.filter(function(c) { return !isL(c); }), best.rows));
+    } else if (best.lay == "right") solo.appendChild(col("right", cards, best.rows));
+    else if (best.lay == "below") solo.appendChild(col("below", cards));
+};
+var resizeT = null;
+window.addEventListener("resize", function() { clearTimeout(resizeT); resizeT = setTimeout(function() { if (S.screen == "heroes") layoutSolo(); }, 120); });
 // Studio : le bol de gemmes (photo du livre) à gauche, le tas de cartes à droite.
 // Deux bols : gemmes bleues, et gemmes rouges (photo d'origine du livre).
 var bowlCode = function() {
@@ -163,11 +206,13 @@ S.renderHeroes = function() {
     S.screen = "heroes";
     var inner = cur
         ? "<div class='sk-hbzoom'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>"
-            + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero sk-hbsolo' data-huid='" + cur.uid + "'>" + sideCode(cur, true) + "<div class='sk-hbsheet'>" + boardCode(cur, false) + "</div>" + sideCode(cur, false) + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
+            + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain sk-hbhero sk-hbsolo' data-huid='" + cur.uid + "'><div class='sk-hbsheet'>" + boardCode(cur, false) + "</div>"
+            + cardsOf(cur).map(function(c, i) { return cardCode(cur, c, i); }).join("") + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
         : companyCode();
     S.mount("<div class='skelos-game sk-screen sk-heroes" + (S.hStudio ? " sk-hstudio" : "") + "'><div class='sk-hbwrap'>" + inner + "</div></div>"
         + "<div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
     bind(S.root.querySelector(".sk-heroes"));
+    layoutSolo();
     if (S._htoast && Date.now() < S._htoastUntil) S.toast(S._htoast);
 };
 var warn = function(msg) { S._htoast = msg; S._htoastUntil = Date.now() + 2500; };
@@ -383,6 +428,13 @@ var bind = function(scr) {
         var op = ev.target.closest("[data-hopen]"); if (op) { S.heroBoards().cur = op.dataset.hopen; save(); S.renderHeroes(); return; }
         if (ev.target.closest("[data-hback]")) { S.heroBoards().cur = null; save(); dropHand(); S.renderHeroes(); return; }
         var uid = uidOf(ev.target); if (!uid) return;
+        var cd = ev.target.closest(".sk-hbcardc");
+        if (cd && !ev.target.closest("button")) {
+            var t0 = Date.now();
+            if (last.z == "card" && last.el === cd && t0 - last.at < 400) { last.z = null; S.showCard(cd.dataset.card); }
+            else last = {z: "card", el: cd, at: t0};
+            return;
+        }
         if (ev.target.closest("[data-hcards]")) { addCards(uid); return; }
         var cr = ev.target.closest("[data-hcrm]"); if (cr) { removeCard(uid, +cr.dataset.hcrm); return; }
         // Double appui : sur la Fatigue, l'entretien ; sur la Vie, l'entretien puis la récupération.
