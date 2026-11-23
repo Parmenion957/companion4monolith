@@ -2127,6 +2127,7 @@ const urlsToCache = [
 	"skelos/img/fond/fond_rouge.webp",
 	"skelos/img/fond/recuperation.webp",
 	"skelos/img/fond/bol_gemmes.webp",
+	"skelos/img/fond/bol_gemmes_bleues.webp",
 	"skelos/img/fond/gemme_1.webp",
 	"skelos/img/fond/gemme_2.webp",
 	"skelos/img/fond/gemme_3.webp",

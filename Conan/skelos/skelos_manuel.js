@@ -82,6 +82,7 @@ var groupsCode = function(n, src, cls, seed) {
     }
     return h;
 };
+S.gemGroupsCode = groupsCode;   // gemmes en tas de trois, reprises par l'onglet Héros
 
 // ---------- Jetons du mode Coop ----------
 var live = function(uid) { return S.state.removed.indexOf(uid) < 0; };

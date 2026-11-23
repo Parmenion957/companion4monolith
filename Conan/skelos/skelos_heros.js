@@ -1,14 +1,15 @@
 // Livre de Skelos : module de suivi du plateau de l'Overlord pour le Compagnon de Conan.
 // Code sous licence LGPL-3.0, comme le Compagnon. Images et données du jeu : Monolith, avec l'autorisation accordée au Compagnon ;
-// le module reprend celles du Compagnon (Encyclopedia, HeroSheet, gemmes de resources/img).
+// le module reprend celles du Compagnon (Encyclopedia, HeroSheet, CardEquipment, CardSpell, gemmes de resources/img).
 //
 // Onglet Héros : la fiche de chaque héros, telle que le Compagnon la dessine, sert de plateau. Ses zones sont actives :
 // Vie (gemmes disponibles), Fatigue, Blessures, les six cases d'action et la colonne soleil / lune où la gemme rouge
 // choisit la récupération (actif 2, 3, 4 ; inactif 5, 6, 7). Deux vues : la compagnie (toutes les fiches) et un héros seul.
-// Comme pour le livre, rien ne bloque : la saturation d'une case d'action dépassée est seulement signalée.
+// Comme sur le livre de l'onglet Partie : gemmes en tas de trois, menu d'outils, et en mode studio le bol de gemmes à
+// gauche et le tas de cartes à droite. Rien ne bloque : la saturation d'une case d'action dépassée est seulement signalée.
 (function() {
 var S = Skelos, t = function() { return S.t.apply(S, arguments); }, e = function(x) { return S.esc(x); };
-var KEY = Application + "_SkelosHeroes", MAX = 4, LONG = 380, STEP = 260, MOVE = 9;
+var KEY = Application + "_SkelosHeroes", MAX = 4, LONG = 380, STEP = 260, MOVE = 9, BOWL_MAX = 30;
 
 // Zones de la fiche, en pourcentage de la fiche (calque background_layer_3 du Compagnon : 107 % de large, décalé de −3,5 % / −6,1 %).
 var BANDS = {life: [1.1, 69.7, 31.3, 28.2], fatigue: [34.7, 69.7, 30.9, 28.2], wounds: [67.6, 69.7, 31.3, 28.2]};
@@ -32,13 +33,30 @@ var byUid = function(uid) { return S.heroBoards().heroes.filter(function(h) { re
 var heroData = function(ref) { return ((typeof Encyclopedia != "undefined" && Encyclopedia.heroes && Encyclopedia.heroes.list) || []).filter(function(x) { return x.id == ref; })[0] || null; };
 var heroName = function(h) { var c = (S.heroCatalog() || []).filter(function(x) { return x.ref == h.ref; })[0]; return c ? c.name : h.name || h.ref; };
 var sat = function(h, k) { var d = heroData(h.ref), f = d && SAT_KEY[k] && d[SAT_KEY[k]]; return f && f.exertion ? +f.exertion : 0; };
-var count = function(h, z) { return z.indexOf("act:") == 0 ? (h.act[z.slice(4)] || 0) : (h[z] || 0); };
-var put = function(h, z, n) { if (z.indexOf("act:") == 0) h.act[z.slice(4)] = n; else h[z] = n; };
-var zoneName = function(z) { return t(z.indexOf("act:") == 0 ? "hb_act_" + z.slice(4) : "hb_" + z); };
+var cardsOf = function(h) { return h.cards || (h.cards = []); };
+// Zones : life, fatigue, wounds, act:<case>, card:<rang>, reserve (le bol du studio, inépuisable).
+var count = function(h, z) {
+    if (z == "reserve") return BOWL_MAX;
+    if (z.indexOf("act:") == 0) return h.act[z.slice(4)] || 0;
+    if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; return c ? c.gems || 0 : 0; }
+    return h[z] || 0;
+};
+var put = function(h, z, n) {
+    if (z == "reserve") return;
+    if (z.indexOf("act:") == 0) h.act[z.slice(4)] = n;
+    else if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; if (c) c.gems = n; }
+    else h[z] = n;
+};
+var zoneName = function(h, z) {
+    if (z.indexOf("act:") == 0) return t("hb_act_" + z.slice(4));
+    if (z.indexOf("card:") == 0) { var c = cardsOf(h)[+z.slice(5)]; return c ? S.itemName(c.kind, c.ref) : "?"; }
+    return t(z == "reserve" ? "man_reserve" : "hb_" + z);
+};
+var total = function(h) { var n = (h.life || 0) + (h.fatigue || 0) + (h.wounds || 0); ACT_ORDER.forEach(function(k) { n += h.act[k] || 0; }); cardsOf(h).forEach(function(c) { n += c.gems || 0; }); return n; };
 var newHero = function(ref, name) {
     var d = heroData(ref), n = d ? +d.gems || 0 : 0;
-    return {uid: "hb" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref: ref, name: name, total: n, life: n, fatigue: 0, wounds: 0,
-            act: {melee: 0, ranged: 0, defense: 0, move: 0, manip: 0, reroll: 0}, rec: 2};
+    return {uid: "hb" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref: ref, name: name, life: n, fatigue: 0, wounds: 0,
+            act: {melee: 0, ranged: 0, defense: 0, move: 0, manip: 0, reroll: 0}, rec: 2, cards: []};
 };
 var autoOn = function(k) { return !S.hStudio && S.auto(k); };
 var gemBlue = function() { return S.asset("resources/img/gem_blue.webp"); };
@@ -46,34 +64,55 @@ var gemRed = function() { return S.asset("resources/img/gem_red.webp"); };
 
 // ---------- Dessin ----------
 var box = function(r) { return "left:" + r[0] + "%;top:" + r[1] + "%;width:" + r[2] + "%;height:" + r[3] + "%"; };
-var gemsCode = function(n) { var h = ""; for (var i = 0; i < n; i++) h += "<img src='" + gemBlue() + "' alt='' draggable='false'>"; return h; };
-// Case d'action : les gemmes elles-mêmes (six au plus, puis un compteur), la saturation dépassée en rouge.
-var pips = function(n, over) {
+// Gemmes en tas de trois, comme sur le livre ; le tas rétrécit quand il y en a beaucoup (taille en cqw de la fiche ou de la carte).
+var heap = function(n, seed, sizes) {
     if (!n) return "";
-    return "<span class='sk-hzgems'>" + gemsCode(Math.min(n, 6)) + "</span>" + (n > 6 || over ? "<b class='sk-hzn" + (over ? " over" : "") + "'>" + n + "</b>" : "");
+    var g = Math.ceil(n / 3), sz = sizes[sizes.length - 1][1];
+    for (var i = 0; i < sizes.length; i++) if (g <= sizes[i][0]) { sz = sizes[i][1]; break; }
+    return "<span class='sk-hzgems' style='--g:" + sz + "cqw'>" + S.gemGroupsCode(n, gemBlue(), "sk-mgem", seed) + "</span>";
 };
+var BAND_SZ = [[4, 3.4], [6, 2.8], [9, 2.2], [99, 1.7]], ACT_SZ = [[1, 3.3], [2, 2.9], [4, 2.2], [6, 1.8], [99, 1.4]], CARD_SZ = [[2, 15], [4, 11], [99, 8]];
 var boardCode = function(h, live) {
     var full = S.heroSheetFull(h.ref), name = heroName(h), z = "";
     Object.keys(BANDS).forEach(function(k) {
         var n = h[k] || 0;
-        z += "<div class='sk-hz sk-hzband sk-hz-" + k + (n ? "" : " empty") + "' data-hz='" + k + "' style='" + box(BANDS[k]) + "' role='group' aria-label='" + e(zoneName(k) + " : " + n) + "'"
-            + (live ? " title='" + e(t("hb_" + k + "_hint")) + "'" : "") + "><span class='sk-hzgems'>" + gemsCode(n) + "</span>"
-            + (n ? "<b class='sk-hzn'>" + n + "</b>" : "")
-            + (live && S.hStudio && k == "life" ? "<span class='sk-hzstep'><button data-hgems='-1' aria-label='" + e(t("hb_gems_minus")) + "'>−</button><button data-hgems='1' aria-label='" + e(t("hb_gems_plus")) + "'>+</button></span>" : "")
-            + "</div>";
+        z += "<div class='sk-hz sk-hzband sk-hz-" + k + (n ? "" : " empty") + "' data-hz='" + k + "' style='" + box(BANDS[k]) + "' role='group' aria-label='" + e(zoneName(h, k) + " : " + n) + "'"
+            + (live ? " title='" + e(t("hb_" + k + "_hint")) + "'" : "") + ">" + heap(n, h.uid + k, BAND_SZ) + (n ? "<b class='sk-hzn'>" + n + "</b>" : "") + "</div>";
     });
     ACT_ORDER.forEach(function(k) {
         var n = h.act[k] || 0, s = sat(h, k), over = s && n > s;
         z += "<div class='sk-hz sk-hzact" + (n ? "" : " empty") + (over ? " over" : "") + "' data-hz='act:" + k + "' style='" + box(ACTS[k]) + "' role='group' aria-label='"
-            + e(zoneName("act:" + k) + " : " + n + (s ? " / " + s : "")) + "'>" + pips(n, over) + "</div>";
+            + e(zoneName(h, "act:" + k) + " : " + n + (s ? " / " + s : "")) + "'>" + heap(n, h.uid + k, ACT_SZ)
+            + (over ? "<b class='sk-hzn over'>" + n + "</b>" : "") + "</div>";
     });
     Object.keys(REC).forEach(function(v) {
         z += "<button class='sk-hrec" + (h.rec == v ? " on" : "") + "' data-hrec='" + v + "' style='top:" + REC[v] + "%' aria-label='" + e(t("hb_rec", v)) + "' aria-pressed='" + (h.rec == v) + "'"
             + (live ? "" : " tabindex='-1'") + ">" + (h.rec == v ? "<img src='" + gemRed() + "' alt='' draggable='false'>" : "") + "</button>";
     });
-    return "<div class='sk-hb" + (live ? " live" : "") + "' data-huid='" + h.uid + "'>"
+    return "<div class='sk-hb" + (live ? " live" : "") + "'>"
         + (full ? "<span class='sk-hsheetscale'>" + full + "</span>" : "<span class='sk-hbnone'>" + e(name) + "</span>")
         + "<div class='sk-hzones'>" + z + "</div></div>";
+};
+// Cartes du héros (équipements, sorts), sous la fiche ; chacune reçoit des gemmes. En studio, une poubelle la retire.
+var cardsCode = function(h) {
+    var l = cardsOf(h); if (!l.length) return "";
+    return "<div class='sk-hbcards'>" + l.map(function(c, i) {
+        var n = c.gems || 0, name = S.itemName(c.kind, c.ref), z = "card:" + i;
+        var face = S.realCardCode(c.kind, c.ref) || "<span class='sk-upcard sk-k-" + c.kind + "'><b>" + e(name) + "</b></span>";
+        return "<div class='sk-hz sk-hbcardc" + (n ? "" : " empty") + "' data-hz='" + z + "' role='group' aria-label='" + e(name + " : " + n) + "' title='" + e(name) + "'>"
+            + "<span class='sk-cardscale'>" + face + "</span>" + heap(n, h.uid + z, CARD_SZ) + (n ? "<b class='sk-hzn'>" + n + "</b>" : "")
+            + (S.hStudio ? "<button class='sk-zoomrm sk-hbcrm' data-hcrm='" + i + "' aria-label='" + e(t("hb_card_remove", name)) + "' title='" + e(t("hb_card_remove", name)) + "'>&#xf2ed;</button>" : "")
+            + "</div>";
+    }).join("") + "</div>";
+};
+// Studio : le bol de gemmes (photo du livre) à gauche, le tas de cartes à droite.
+var bowlCode = function() {
+    return "<div class='sk-hbside'><div class='sk-hz sk-hbbowl' data-hz='reserve' role='group' aria-label='" + e(t("man_reserve")) + "' title='" + e(t("hb_reserve_hint")) + "'>"
+        + "<img class='sk-mbowlimg' src='skelos/img/fond/bol_gemmes_bleues.webp' alt='' draggable='false'><span class='sk-hbobj'>" + e(t("man_reserve")) + "</span></div></div>";
+};
+var pileCode = function() {
+    return "<div class='sk-hbside'><button class='sk-hbpile' data-hcards title='" + e(t("hb_cards_hint")) + "' aria-label='" + e(t("hb_cards_hint")) + "'>"
+        + "<span class='sk-hbstack'><i></i><i></i><i></i><i class='top'></i><b>+</b></span><span class='sk-hbobj'>" + e(t("hb_cards")) + "</span></button></div>";
 };
 var companyCode = function() {
     var b = S.heroBoards(), h = "";
@@ -92,7 +131,8 @@ S.renderHeroes = function() {
     if (b.cur && !cur) b.cur = null;
     S.screen = "heroes";
     var inner = cur
-        ? "<div class='sk-hbzoom'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>" + boardCode(cur, true) + "</div>"
+        ? "<div class='sk-hbzoom' data-huid='" + cur.uid + "'><button class='sk-hbback' data-hback aria-label='" + e(t("hb_back")) + "' title='" + e(t("hb_back")) + "'>&#xf060;</button>"
+            + "<div class='sk-hbdesk'>" + (S.hStudio ? bowlCode() : "") + "<div class='sk-hbmain'>" + boardCode(cur, true) + cardsCode(cur) + "</div>" + (S.hStudio ? pileCode() : "") + "</div></div>"
         : companyCode();
     S.mount("<div class='skelos-game sk-screen sk-heroes" + (S.hStudio ? " sk-hstudio" : "") + "'><div class='sk-hbwrap'>" + inner + "</div></div>"
         + "<div class='sk-overlay' id='sk-overlay'></div><div class='sk-toast' id='sk-toast' role='status'></div><div class='sk-tip' id='sk-tip' role='tooltip'></div>");
@@ -109,11 +149,12 @@ S.heroMoveGems = function(uid, from, to, n) {
     put(h, from, count(h, from) - n); put(h, to, count(h, to) + n);
     if (to.indexOf("act:") == 0) {
         var k = to.slice(4), s = sat(h, k);
-        if (s && h.act[k] > s) warn(t("hb_sat", zoneName(to), h.act[k], s));
+        if (s && h.act[k] > s) warn(t("hb_sat", zoneName(h, to), h.act[k], s));
     }
-    commit(t("hb_log_move", heroName(h), n, zoneName(from), zoneName(to)));
+    commit(from == "reserve" ? t("hb_log_bowl_take", heroName(h), n, zoneName(h, to)) : to == "reserve" ? t("hb_log_bowl_put", heroName(h), n, zoneName(h, from))
+        : t("hb_log_move", heroName(h), n, zoneName(h, from), zoneName(h, to)));
 };
-// Entretien (double appui sur la Fatigue) : les gemmes des cases d'action y retournent ; les Blessures ne bougent pas.
+// Entretien (double appui sur la Fatigue) : les gemmes des cases d'action y retournent ; Blessures et cartes ne bougent pas.
 var collect = function(h) {
     var n = 0; ACT_ORDER.forEach(function(k) { n += h.act[k] || 0; h.act[k] = 0; });
     h.fatigue += n; return n;
@@ -136,17 +177,36 @@ S.heroSetRec = function(uid, v) {
     snap(); h.rec = +v;
     commit(t("hb_log_rec", heroName(h), v));
 };
-// Studio : nombre total de gemmes du héros (ajoutées à la Vie ou retirées de la Vie).
-S.heroGems = function(uid, d) {
-    var h = byUid(uid); if (!h) return;
-    if (d < 0 && !h.life) { S.toast(t("hb_gems_none")); return; }
-    snap(); h.life += d; h.total = Math.max(0, (h.total || 0) + d);
-    commit(t("hb_log_gems", heroName(h), h.total));
-};
 S.heroUndo = function() {
     if (!undo.length) { S.toast(t("hb_undo_none")); return; }
     var cur = S.heroBoards().cur;
     S._hb = JSON.parse(undo.pop()); S._hb.cur = cur; save(); S.renderHeroes();
+};
+// Recommencer : toutes les gemmes de chaque héros reviennent dans sa Vie, la gemme rouge sur le 2 actif ; cartes et héros restent.
+S.heroRestart = function() {
+    S.ask(t("hb_restart_q"), t("restart_game"), function() {
+        snap();
+        S.heroBoards().heroes.forEach(function(h) {
+            var n = total(h);
+            h.life = n; h.fatigue = 0; h.wounds = 0; h.rec = 2;
+            ACT_ORDER.forEach(function(k) { h.act[k] = 0; }); cardsOf(h).forEach(function(c) { c.gems = 0; });
+        });
+        commit(t("hb_log_restart"));
+    });
+};
+S.heroJournal = function() {
+    var l = S.heroBoards().log || [], h = "<div class='sk-journal'>";
+    if (!l.length) h += "<p>" + e(t("journal_empty")) + "</p>";
+    else h += "<ol class='sk-jlist'>" + l.map(function(x) {
+        var when = x.ts ? new Date(x.ts).toLocaleString(S.locale(), {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
+        return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + e(x.msg) + "</li>";
+    }).join("") + "</ol>";
+    Nav.dialog(e(t("log")), h + "</div>", null, []);
+};
+S.heroHelp = function() {
+    var h = "<div class='sk-journal sk-help-doc'><h1>" + e(t("hb_help_title")) + "</h1><ul>"
+        + t("hb_help_items").split("|").map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul></div>";
+    Nav.dialog(e(t("help")), h, null, []);
 };
 S.toggleHeroStudio = function(on) { S.hStudio = on == null ? !S.hStudio : !!on; S.renderHeroes(); };
 var addHeroes = function() {
@@ -166,6 +226,24 @@ var removeHero = function(uid) {
         commit(t("hb_log_remove", heroName(h)));
     });
 };
+// Studio : cartes du héros, choisies comme celles des tuiles (équipements et sorts).
+var addCards = function(uid) {
+    S.openItemPicker({title: t("add_cards"), kind: "eq", kinds: ["eq", "sp"],
+        onClose: function() { S.renderHeroes(); },
+        onAdd: function(sel) {
+            var h = byUid(uid); if (!h || !sel.length) { S.renderHeroes(); return; }
+            snap();
+            sel.forEach(function(x) { cardsOf(h).push({kind: x.kind, ref: x.ref, gems: 0}); });
+            commit(t("hb_log_cards", heroName(h), sel.map(function(x) { return S.itemName(x.kind, x.ref); }).join(", ")));
+        }});
+};
+// Une carte retirée rend ses gemmes à la Vie.
+var removeCard = function(uid, i) {
+    var h = byUid(uid), c = h && cardsOf(h)[i]; if (!c) return;
+    snap();
+    h.life += c.gems || 0; cardsOf(h).splice(i, 1);
+    commit(t("hb_log_card_rm", heroName(h), S.itemName(c.kind, c.ref)));
+};
 
 // ---------- Gestes ----------
 // Comme sur le livre : glisser emmène une gemme ; appui long, puis glisser ou lâcher, en emmène plusieurs
@@ -173,7 +251,7 @@ var removeHero = function(uid) {
 var hand = null, hinted = false;
 var showHand = function() {
     var el = document.getElementById("sk-hhand");
-    if (!hand || S.screen != "heroes") { if (el) el.remove(); hand = hand && S.screen == "heroes" ? hand : null; return; }
+    if (!hand || S.screen != "heroes") { if (el) el.remove(); if (S.screen != "heroes") hand = null; return; }
     if (!el) { document.body.insertAdjacentHTML("beforeend", "<div id='sk-hhand' class='sk-mhand sk-hhand' role='status' aria-live='polite'></div>"); el = document.getElementById("sk-hhand"); }
     el.innerHTML = "<img src='" + gemBlue() + "' alt=''><b>" + hand.n + "</b>";
     el.setAttribute("aria-label", t("man_hand", hand.n));
@@ -182,7 +260,7 @@ var showHand = function() {
 };
 var dropHand = function() { hand = null; showHand(); };
 var bump = function() { var el = document.getElementById("sk-hhand"); if (!el) return; el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); };
-var under = function(x, y, sel) { var el = document.elementFromPoint(x, y); return el && el.closest(".sk-hb.live") ? el.closest(sel) : null; };
+var under = function(x, y) { var el = document.elementFromPoint(x, y); return el && el.closest(".sk-hbzoom") ? el.closest("[data-hz]") : null; };
 var mark = function(el) {
     document.querySelectorAll(".sk-heroes .sk-mtarget").forEach(function(n) { if (n !== el) n.classList.remove("sk-mtarget"); });
     if (el) el.classList.add("sk-mtarget");
@@ -196,9 +274,10 @@ var bind = function(scr) {
         var rm = ev.target.closest("[data-hrm]"); if (rm) { removeHero(rm.dataset.hrm); return; }
         var op = ev.target.closest("[data-hopen]"); if (op) { S.heroBoards().cur = op.dataset.hopen; save(); S.renderHeroes(); return; }
         if (ev.target.closest("[data-hback]")) { S.heroBoards().cur = null; save(); dropHand(); S.renderHeroes(); return; }
-        var b = ev.target.closest(".sk-hb.live"); if (!b) return;
-        var uid = b.dataset.huid;
-        var gs = ev.target.closest("[data-hgems]"); if (gs) { S.heroGems(uid, +gs.dataset.hgems); return; }
+        var zm = ev.target.closest(".sk-hbzoom"); if (!zm) return;
+        var uid = zm.dataset.huid;
+        if (ev.target.closest("[data-hcards]")) { addCards(uid); return; }
+        var cr = ev.target.closest("[data-hcrm]"); if (cr) { removeCard(uid, +cr.dataset.hcrm); return; }
         var rc = ev.target.closest("[data-hrec]"); if (rc) { S.heroSetRec(uid, +rc.dataset.hrec); return; }
         // Double appui : sur la Fatigue, l'entretien ; sur la Vie, l'entretien puis la récupération.
         var z = ev.target.closest("[data-hz='life'], [data-hz='fatigue']"); if (!z) return;
@@ -213,8 +292,8 @@ var bind = function(scr) {
     });
     scr.addEventListener("pointerdown", function(ev) {
         if (ev.pointerType == "mouse" && ev.button != 0) return;
-        var b = ev.target.closest(".sk-hb.live"); if (!b || ev.target.closest("button")) return;
-        var uid = b.dataset.huid, h = byUid(uid), zone = ev.target.closest("[data-hz]"), x0 = ev.clientX, y0 = ev.clientY;
+        var zm = ev.target.closest(".sk-hbzoom"); if (!zm || ev.target.closest("button")) return;
+        var uid = zm.dataset.huid, h = byUid(uid), zone = ev.target.closest("[data-hz]"), x0 = ev.clientX, y0 = ev.clientY;
         if (!h) return;
         if (hand && hand.pinned) {
             ev.preventDefault();
@@ -239,7 +318,7 @@ var bind = function(scr) {
                 g.moved = true; clearTimeout(g.timer); clearInterval(g.tick);
                 if (!hand) hand = {from: src, n: 1, pinned: false};
             }
-            if (g.moved && hand) { hand.x = e2.clientX; hand.y = e2.clientY; showHand(); mark(under(e2.clientX, e2.clientY, "[data-hz]")); }
+            if (g.moved && hand) { hand.x = e2.clientX; hand.y = e2.clientY; showHand(); mark(under(e2.clientX, e2.clientY)); }
         };
         var off = function(e2) {
             if (e2.pointerId != ev.pointerId) return;
@@ -247,7 +326,7 @@ var bind = function(scr) {
             clearTimeout(g.timer); clearInterval(g.tick); mark(null);
             if (e2.type == "pointercancel") { dropHand(); return; }
             if (g.moved && hand) {
-                var to = under(e2.clientX, e2.clientY, "[data-hz]"), n = hand.n; dropHand();
+                var to = under(e2.clientX, e2.clientY), n = hand.n; dropHand();
                 if (to) S.heroMoveGems(uid, src, to.dataset.hz, n);
             } else if (hand) { hand.pinned = true; showHand(); S.toast(t("man_hand_hint")); }
             else if (!hinted && src != "life" && src != "fatigue") { hinted = true; S.toast(t("man_gem_hint")); }
@@ -255,8 +334,8 @@ var bind = function(scr) {
         document.addEventListener("pointermove", on); document.addEventListener("pointerup", off); document.addEventListener("pointercancel", off);
     });
 };
-// Un appui hors de la fiche repose les gemmes en main.
-document.addEventListener("pointerdown", function(ev) { if (hand && hand.pinned && !ev.target.closest(".sk-hb.live")) dropHand(); }, true);
+// Un appui hors du héros repose les gemmes en main.
+document.addEventListener("pointerdown", function(ev) { if (hand && hand.pinned && !ev.target.closest(".sk-hbzoom")) dropHand(); }, true);
 
 // ---------- Onglet, outils, sauvegarde ----------
 S.TABS.push(["heroes", "tab_heroes"]);
@@ -267,20 +346,34 @@ S.navClick = function(ev) {
     if (n && n.dataset.nav == "heroes" && !S.editing) { dropHand(); S.renderHeroes(); return; }
     return baseNav.apply(this, arguments);
 };
-// Barre des onglets : Annuler et Studio, comme sur le plateau de l'Overlord.
+// Barre des onglets, comme sur l'onglet Partie : l'icône des outils (Annuler, Recommencer, Journal, Aide) et le Studio.
 var basePlace = S.placeTabs;
 S.placeTabs = function() {
     basePlace.apply(S, arguments);
     var nav = S.root && S.root.querySelector(":scope > .sk-tabs");
     if (!nav || S.screen != "heroes") return;
+    var b = function(act, icon, aria, off) {
+        return "<button class='sk-tbtn' data-htool='" + act + "'" + (off ? " disabled" : "") + " title='" + e(t(aria)) + "' aria-label='" + e(t(aria)) + "'>" + icon + "</button>";
+    };
     nav.classList.add("withtools"); nav.classList.toggle("studio", !!S.hStudio);
     nav.insertAdjacentHTML("beforeend", "<div class='sk-tabtools'>"
-        + "<button class='sk-tabico' data-htool='undo' title='" + e(t("undo")) + "' aria-label='" + e(t("undo")) + "'>&#xf0e2;</button>"
-        + "<button class='sk-tabico" + (S.hStudio ? " on" : "") + "' data-htool='studio' aria-pressed='" + !!S.hStudio + "' title='" + e(t("hb_studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>");
+        + "<button class='sk-tabico sk-toolsico" + (S._toolsOpen ? " on" : "") + "' data-htool='tools' aria-expanded='" + !!S._toolsOpen + "' aria-controls='sk-toolbar'"
+        + " title='" + e(t("tools_bar")) + "' aria-label='" + e(t("tools_bar")) + "'>&#xf142;</button>"
+        + "<button class='sk-tabico" + (S.hStudio ? " on" : "") + "' data-htool='studio' aria-pressed='" + !!S.hStudio + "' title='" + e(t("hb_studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>"
+        + "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
+        + b("undo", "&#xf0e2;", "undo", !undo.length) + b("restart", "&#xf2f9;", "restart_game", !S.heroBoards().heroes.length)
+        + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>");
     nav.addEventListener("click", function(ev) {
-        var b = ev.target.closest("[data-htool]"); if (!b) return;
+        var x = ev.target.closest("[data-htool]"); if (!x) return;
         ev.stopPropagation();
-        if (b.dataset.htool == "undo") S.heroUndo(); else S.toggleHeroStudio();
+        switch (x.dataset.htool) {
+            case "tools": S._toolsOpen = !S._toolsOpen; S.syncToolbar(); break;
+            case "studio": S.toggleHeroStudio(); break;
+            case "undo": S.heroUndo(); break;
+            case "restart": S.heroRestart(); break;
+            case "journal": S.heroJournal(); break;
+            case "help": S.heroHelp(); break;
+        }
     });
 };
 var baseAll = S.allData;

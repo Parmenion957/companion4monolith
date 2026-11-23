@@ -1915,12 +1915,10 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hzones { position: absolute; inset: 0; pointer-events: none; }
 .sk-hb.live .sk-hz, .sk-hb.live .sk-hrec { pointer-events: auto; }
 .sk-hz { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 1.2cqw; }
-.sk-hzgems { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: .3cqw; max-width: 100%; max-height: 100%; }
-.sk-hzgems img { width: 3.6cqw; height: 3.6cqw; object-fit: contain; filter: drop-shadow(0 .2cqw .3cqw rgba(0,0,0,.6)); pointer-events: none; }
+.sk-hzgems { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; max-width: 100%; max-height: 100%; pointer-events: none; }
+.sk-hzgems .sk-mg3 { margin: calc(var(--g) * .06); }
 .sk-hzband { padding: 2.6cqw 1.4cqw 1cqw; }
 .sk-hz-life { padding-left: 4.2cqw; }
-.sk-hzact .sk-hzgems { max-width: 12cqw; }
-.sk-hzact .sk-hzgems img { width: 3.4cqw; height: 3.4cqw; }
 .sk-hzn { position: absolute; right: .6cqw; top: .6cqw; min-width: 3.4cqw; padding: .2cqw .7cqw; border-radius: 999px; background: rgba(18,18,18,.85); color: #fff;
     font: 700 2.2cqw/1.2 system-ui, sans-serif; text-align: center; pointer-events: none; }
 .sk-hzn.over, .sk-hzact.over { background-color: rgba(179,38,30,.18); }
@@ -1934,9 +1932,6 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hb:not(.live) .sk-hrec:not(.on) { display: none; }
 .sk-hb.live .sk-hrec:not(.on):hover { box-shadow: 0 0 0 .3cqw rgba(227,36,43,.6); }
 .sk-hrec:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 1px; }
-.sk-hzstep { position: absolute; left: 50%; bottom: -1cqw; transform: translate(-50%, 50%); display: flex; gap: 1cqw; }
-.sk-hzstep button { width: 5.5cqw; height: 5.5cqw; min-width: 32px; min-height: 32px; border-radius: 50%; border: 2px solid #fff; background: var(--highlight-color); color: #fff;
-    font: 700 22px/1 system-ui, sans-serif; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
 .sk-hbnone { display: flex; align-items: center; justify-content: center; aspect-ratio: 1.75; border: 1px dashed var(--main-color); color: var(--body-color); }
 /* Compagnie : les fiches en grille ; un appui ouvre le héros. */
 .sk-hbcompany { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: calc((100dvh - 214px) * 1.75 + 14px); margin: 0 auto; }
@@ -1953,7 +1948,36 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hbback { position: absolute; left: -4px; top: -4px; z-index: 3; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--main-color);
     background: var(--body-bg-color); color: var(--main-color); opacity: .75; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 15px; cursor: pointer; }
 .sk-hbback:hover, .sk-hbback:focus-visible { opacity: 1; }
+.sk-hstudio .sk-hbzoom { width: min(100%, calc((100dvh - 196px) * 1.75 / .74)); }
 .sk-hhand { transform: translate(-50%, -150%); }
+/* Bureau du héros seul : en studio, le bol de gemmes à gauche et le tas de cartes à droite ; les cartes sous la fiche. */
+.sk-hbdesk { display: flex; align-items: flex-start; gap: 1.5%; container-type: inline-size; }
+.sk-hbmain { flex: 1 1 auto; min-width: 0; }
+.sk-hbside { flex: 0 0 11cqw; align-self: flex-start; position: sticky; top: 8px; padding-top: 6cqw; }
+.sk-hbbowl { position: relative; width: 100%; aspect-ratio: 1; cursor: grab; border-radius: 50%; }
+.sk-hbbowl .sk-mbowlimg { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 .6cqw .8cqw rgba(0,0,0,.45)); }
+.sk-hbbowl.sk-mtarget { box-shadow: none; background: none; }
+.sk-hbbowl.sk-mtarget .sk-mbowlimg { filter: drop-shadow(0 0 .5cqw #ff7900) drop-shadow(0 0 .2cqw #ff7900); }
+.sk-hbobj { display: block; margin-top: .6cqw; text-align: center; font-family: 'Primary', serif; font-size: max(11px, 1.3cqw); letter-spacing: .05em; color: var(--body-color); }
+.sk-hbpile { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; color: var(--body-color); }
+.sk-hbstack { position: relative; display: block; width: 72%; margin: 0 auto; aspect-ratio: .67; }
+.sk-hbstack i { position: absolute; inset: 0; border-radius: 7%; border: 1px solid rgba(0,0,0,.35); background: linear-gradient(160deg, #5b3a29, #2e1d14);
+    box-shadow: 0 .3cqw .5cqw rgba(0,0,0,.35); }
+.sk-hbstack i:nth-child(1) { transform: translate(-.9cqw, .9cqw) rotate(-6deg); }
+.sk-hbstack i:nth-child(2) { transform: translate(.6cqw, .5cqw) rotate(4deg); }
+.sk-hbstack i:nth-child(3) { transform: translate(-.3cqw, .2cqw) rotate(-2deg); }
+.sk-hbstack i.top { background: linear-gradient(160deg, #e9d9b5, #b99a62); }
+.sk-hbstack b { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 5cqw; height: 5cqw; border-radius: 50%; background: var(--highlight-color); color: #fff;
+    display: flex; align-items: center; justify-content: center; font: 700 3.4cqw/1 system-ui, sans-serif; box-shadow: 0 .3cqw .6cqw rgba(0,0,0,.45); }
+.sk-hbpile:hover .sk-hbstack b, .sk-hbpile:focus-visible .sk-hbstack b { transform: translate(-50%, -50%) scale(1.1); }
+.sk-hbpile:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; border-radius: 8px; }
+.sk-hbcards { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; justify-content: center; }
+.sk-hbcardc { position: relative; flex: 0 0 auto; width: 14cqw; min-width: 110px; container-type: inline-size; border-radius: 6%; cursor: grab; }
+.sk-hbcardc .sk-cardscale { width: 100%; pointer-events: none; }
+.sk-hbcardc > .sk-hzgems { position: absolute; left: 4%; right: 4%; top: 4%; height: 40%; }
+.sk-hbcardc .sk-hzn { font-size: 12px; right: 4px; top: 4px; }
+.sk-hbcardc.sk-mtarget { box-shadow: 0 0 0 3px #ff7900; }
+.sk-hbcrm { right: -8px; bottom: auto; top: -8px; width: 36px; height: 36px; font-size: 15px; }
 @media (max-width: 600px), (max-height: 500px) and (orientation: landscape) {
     .sk-hbcompany { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; max-width: none; padding-bottom: 6px; }
     .sk-hbcompany > * { flex: 0 0 92%; scroll-snap-align: center; }
