@@ -53,6 +53,7 @@ S.toolbarCode = function() {
     };
     return "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
         + b("undo", "&#xf0e2;", "undo", !S.undoStack.length) + b("restart", "&#xf2f9;", "restart_game") + b("end", "&#xf11e;", "menu_end", !!S.editing)
+        + b("share", "&#xf029;", "share_game", !!S.editing || !S.state)
         + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>";
 };
 S.syncToolbar = function() {
@@ -66,6 +67,7 @@ S.runTool = function(act) {
         case "undo": S.undo(); break;
         case "restart": S.restartGame(); break;
         case "end": S.renderEnd(); break;
+        case "share": S.openShare("game"); break;
         case "journal": S.openJournal(); break;
         case "help": S.openGameHelp(); break;
     }

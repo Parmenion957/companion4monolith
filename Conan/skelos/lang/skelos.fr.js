@@ -613,5 +613,17 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'hb_enc_title': "Encombrement : {0} / {1}",
     'hb_enc_mov': "mouvement {0}",
     'hb_enc_over_short': "maximum dépassé",
-    'hb_enc_over': "{0} porte {1} : au-delà de son maximum ({2})"
+    'hb_enc_over': "{0} porte {1} : au-delà de son maximum ({2})",
+    'share_game': "Partager la partie",
+    'share_what_hero': "Le héros, avec ses cartes et ses gemmes",
+    'share_heroes': "Partager les héros",
+    'share_hero_menu': "Partager ce héros",
+    'share_hero': "Partager {0}",
+    'share_what_game': "Le livre ({0} tuiles) et {1} héros",
+    'share_what_heroes': "{0} héros, avec leurs cartes et leurs gemmes",
+    'share_qr_label': "QR code de partage, {0} image(s)",
+    'share_series': "Les {0} QR codes défilent : gardez l'autre appareil pointé jusqu'à ce qu'il les ait tous.",
+    'share_how': "Sur l'autre appareil : Partie, menu ⋮, Recevoir. La partie en cours de cet appareil-là est remplacée.",
+    'share_nothing': "Aucun héros à partager",
+    'share_unavailable': "Le partage par QR code n'est pas disponible sur cet appareil"
 });

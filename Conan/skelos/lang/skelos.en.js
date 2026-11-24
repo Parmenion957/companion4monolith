@@ -600,5 +600,17 @@ Skelos._i18n = mergeObject(Skelos._i18n || {}, {
     'hb_enc_title': "Encumbrance: {0} / {1}",
     'hb_enc_mov': "movement {0}",
     'hb_enc_over_short': "maximum exceeded",
-    'hb_enc_over': "{0} carries {1}: over their maximum ({2})"
+    'hb_enc_over': "{0} carries {1}: over their maximum ({2})",
+    'share_game': "Share the game",
+    'share_what_hero': "The hero, with their cards and gems",
+    'share_heroes': "Share the heroes",
+    'share_hero_menu': "Share this hero",
+    'share_hero': "Share {0}",
+    'share_what_game': "The book ({0} tiles) and {1} heroes",
+    'share_what_heroes': "{0} heroes, with their cards and gems",
+    'share_qr_label': "Sharing QR code, {0} image(s)",
+    'share_series': "The {0} QR codes cycle: keep the other device pointed until it has them all.",
+    'share_how': "On the other device: Game, ⋮ menu, Receive. That device's current game is replaced.",
+    'share_nothing': "No hero to share",
+    'share_unavailable': "QR code sharing is not available on this device"
 });

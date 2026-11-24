@@ -33,6 +33,8 @@ var commit = function(msg) { if (msg) hlog(msg); save(); S.renderHeroes(); };
 var byUid = function(uid) { return S.heroBoards().heroes.filter(function(h) { return h.uid == uid; })[0] || null; };
 var heroData = function(ref) { return ((typeof Encyclopedia != "undefined" && Encyclopedia.heroes && Encyclopedia.heroes.list) || []).filter(function(x) { return x.id == ref; })[0] || null; };
 var heroName = function(h) { var c = (S.heroCatalog() || []).filter(function(x) { return x.ref == h.ref; })[0]; return c ? c.name : h.name || h.ref; };
+S.heroDisplayName = heroName;
+S.saveHeroBoards = function() { save(); };
 var sat = function(h, k) { var d = heroData(h.ref), f = d && SAT_KEY[k] && d[SAT_KEY[k]]; return f && f.exertion ? +f.exertion : 0; };
 // Chaque carte a un identifiant (pour la zone de retour des gemmes rouges, qui la suit même si l'ordre change).
 var cardsOf = function(h) {
@@ -762,6 +764,7 @@ S.placeTabs = function() {
         + "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
         + b("undo", "&#xf0e2;", "undo", !undo.length) + b("restart", "&#xf2f9;", "restart_game", !S.heroBoards().heroes.length)
         + b("end", "&#xf11e;", "menu_end", !!S.editing || (!S.state && !S.heroBoards().heroes.length))
+        + b("share", "&#xf029;", S.heroBoards().cur ? "share_hero_menu" : "share_heroes", !!S.editing || !S.heroBoards().heroes.length)
         + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>");
     nav.addEventListener("click", function(ev) {
         var x = ev.target.closest("[data-htool]"); if (!x) return;
@@ -772,6 +775,7 @@ S.placeTabs = function() {
             case "undo": S.heroUndo(); break;
             case "restart": S.heroRestart(); break;
             case "end": S.heroEnd(); break;
+            case "share": S.openShare(S.heroBoards().cur ? "hero" : "heroes"); break;
             case "journal": S.heroJournal(); break;
             case "help": S.heroHelp(); break;
         }

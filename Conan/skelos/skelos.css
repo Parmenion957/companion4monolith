@@ -2072,3 +2072,14 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-hczcard .sk-upcard { gap: 4cqw; padding: 9cqw 8cqw; }
 .sk-hczcard .sk-upcard b { font-size: 11cqw; line-height: 1.1; }
 .sk-hczcard .sk-upcard span { font-size: 7cqw; line-height: 1.3; }
+
+/* Partage par QR code : le QR au centre, aussi grand que l'écran le permet ; plusieurs QR défilent (un seul visible). */
+.sk-share { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.sk-qrbox { width: min(78vmin, 460px); aspect-ratio: 1; position: relative; }
+.sk-qr { position: absolute; inset: 0; visibility: hidden; }
+.sk-qr.on { visibility: visible; }
+.sk-qrsvg { width: 100%; height: 100%; display: block; border-radius: 6px; }
+.sk-qrdots { display: flex; align-items: center; gap: 6px; }
+.sk-qrdots i { width: 10px; height: 10px; border-radius: 50%; background: var(--body-color); opacity: .25; }
+.sk-qrdots i.on { opacity: 1; background: var(--main-color); }
+.sk-qrcount { margin-left: 6px; font-variant-numeric: tabular-nums; color: var(--body-color); }
