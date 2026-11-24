@@ -767,6 +767,7 @@ S.placeTabs = function() {
         + b("undo", "&#xf0e2;", "undo", !undo.length) + b("restart", "&#xf2f9;", "restart_game", !S.heroBoards().heroes.length)
         + b("end", "&#xf11e;", "menu_end", !!S.editing || (!S.state && !S.heroBoards().heroes.length))
         + b("share", "&#xf029;", S.heroBoards().cur ? "share_hero_menu" : "share_heroes", !!S.editing || !S.heroBoards().heroes.length)
+        + b("receive", "&#xf030;", "receive_title", !!S.editing)
         + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>");
     nav.addEventListener("click", function(ev) {
         var x = ev.target.closest("[data-htool]"); if (!x) return;
@@ -778,6 +779,7 @@ S.placeTabs = function() {
             case "restart": S.heroRestart(); break;
             case "end": S.heroEnd(); break;
             case "share": S.openShare(S.heroBoards().cur ? "hero" : "heroes"); break;
+            case "receive": S.openReceive(); break;
             case "journal": S.heroJournal(); break;
             case "help": S.heroHelp(); break;
         }

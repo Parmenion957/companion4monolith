@@ -2088,3 +2088,10 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-heroes, .sk-heroes *, .sk-mfly, .sk-hhand, .sk-hhand * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .sk-heroes img, .sk-mfly { -webkit-user-drag: none; }
 .sk-heroes input, .sk-heroes textarea { -webkit-user-select: text; user-select: text; }
+
+/* Recevoir : l'image de la caméra, un cadre de visée, l'avancement de la lecture. */
+.sk-receive { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.sk-camwrap { position: relative; width: min(86vmin, 520px); aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #000; }
+.sk-cam { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sk-camaim { position: absolute; inset: 12%; border: 3px solid var(--highlight-color, #ff7900); border-radius: 12px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.25); pointer-events: none; }
+.sk-recvstate { font-weight: 700; color: var(--body-color); min-height: 1.4em; }
