@@ -241,10 +241,17 @@ var layoutSolo = function() {
     all.forEach(function(solo) {
         var side = null;
         if (comp) {
-            var cell = solo.closest(".sk-hbhero"), i = [].indexOf.call(comp.children, cell);
-            side = getComputedStyle(comp).display == "grid" && i % 2 == 0 ? "left" : "right";
+            // Le côté se lit à l'écran : une case dans la moitié gauche de la grille colle sa fiche au centre par la droite.
+            var cell = solo.closest(".sk-hbhero"), rc = cell.getBoundingClientRect(), rg = comp.getBoundingClientRect();
+            side = getComputedStyle(comp).display == "grid" && rc.left + rc.width / 2 < rg.left + rg.width / 2 ? "left" : "right";
         }
         layoutOne(solo, H, side);
+        // La corbeille (studio) se cale sur le coin de la fiche, pas sur celui de la case (les cartes peuvent être à droite).
+        var cell2 = solo.closest(".sk-hbhero"), rm = cell2 && cell2.querySelector(".sk-hbrm"), sh = solo.querySelector(".sk-hbsheet");
+        if (rm && sh) {
+            var rc = cell2.getBoundingClientRect(), rs = sh.getBoundingClientRect();
+            rm.style.right = Math.round(rc.right - rs.right - 8) + "px"; rm.style.top = Math.round(rs.top - rc.top - 8) + "px";
+        }
     });
 };
 var layoutOne = function(solo, H, side) {
@@ -253,7 +260,8 @@ var layoutOne = function(solo, H, side) {
     var kL = cards.filter(isL).length, opts = layouts(W, H, kL, cards.length - kL);
     if (side) opts = layouts(W, H, 0, cards.length, true).concat(opts);
     var best = opts[0];
-    solo.dataset.side = side && best.lay == "right" ? side : "";
+    // Sans carte, la fiche garde son côté : les fiches de la compagnie restent collées au centre.
+    solo.dataset.side = side && (best.lay == "right" || !cards.length) ? side : "";
     var sheet = solo.querySelector(".sk-hbsheet");
     solo.querySelectorAll(".sk-hbcol").forEach(function(c) { c.remove(); });
     solo.dataset.lay = best.lay;
@@ -753,6 +761,7 @@ S.placeTabs = function() {
         + "<button class='sk-tabico" + (S.hStudio ? " on" : "") + "' data-htool='studio' aria-pressed='" + !!S.hStudio + "' title='" + e(t("hb_studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>"
         + "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
         + b("undo", "&#xf0e2;", "undo", !undo.length) + b("restart", "&#xf2f9;", "restart_game", !S.heroBoards().heroes.length)
+        + b("end", "&#xf11e;", "menu_end", !!S.editing || (!S.state && !S.heroBoards().heroes.length))
         + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>");
     nav.addEventListener("click", function(ev) {
         var x = ev.target.closest("[data-htool]"); if (!x) return;
@@ -762,6 +771,7 @@ S.placeTabs = function() {
             case "studio": S.toggleHeroStudio(); break;
             case "undo": S.heroUndo(); break;
             case "restart": S.heroRestart(); break;
+            case "end": S.heroEnd(); break;
             case "journal": S.heroJournal(); break;
             case "help": S.heroHelp(); break;
         }
@@ -820,7 +830,7 @@ S.scenarioCardCode = function(sc) {
 // scénario a un livre (des tuiles), sinon sur les héros.
 // Les fiches en cours sont remplacées (confirmation, comme pour une partie du livre en cours).
 S.loadScenarioHeroes = function(list, title) {
-    S._hb = {heroes: cleanHeroes(list), cur: null, log: []};
+    S._hb = {heroes: cleanHeroes(list), cur: null, log: [], title: title || ""};
     undo.length = 0; S.hStudio = false; dropHand();
     hlog(t("hb_log_scenario", title || t("untitled")));
     save();
@@ -886,6 +896,34 @@ S.launchCampaignScenario = function(cid, i) {
     };
     var busy = (S.state && (S.state.river.length || S.state.log.length > 1)) || S.heroBoards().heroes.length;
     if (busy) S.ask(t("confirm_new_both"), t("confirm_new_yes"), go); else go();
+};
+
+// Fin de scénario depuis la vue Héros : le même écran que l'Overlord. Sans livre (scénario de héros seuls), une partie
+// minimale porte le titre et le lien de campagne le temps de l'écran ; « Reprendre » revient aux fiches.
+S.heroEnd = function() {
+    if (S.editing) return;
+    var hb = S.heroBoards();
+    if (!S.state) {
+        var camp = hb.camp && S.campaign(hb.camp.cid), sc = camp && camp.scenarios[hb.camp.idx];
+        S.state = {scenario: {title: (sc && sc.title) || hb.title || ""}, turn: null, river: [], log: [], campaign: camp ? {cid: hb.camp.cid, idx: hb.camp.idx} : null, heroesOnly: true};
+    }
+    S._endFromHeroes = true;
+    S.renderEnd();
+};
+var baseEnd = S.renderEnd;
+S.renderEnd = function() {
+    baseEnd.apply(S, arguments);
+    if (!S._endFromHeroes || S.screen != "end") return;
+    var click = S.screenClick;
+    S.screenClick = function(ev) {
+        if (ev.target.closest("[data-end='back']")) {
+            S._endFromHeroes = false; S.endDraft = null;
+            if (S.state && S.state.heroesOnly) S.state = null;
+            S.showPartView("heroes"); return;
+        }
+        if (ev.target.closest("[data-end='save']")) S._endFromHeroes = false;
+        return click.apply(this, arguments);
+    };
 };
 
 var baseAll = S.allData;
