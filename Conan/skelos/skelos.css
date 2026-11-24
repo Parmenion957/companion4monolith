@@ -2096,7 +2096,9 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-camaim { position: absolute; inset: 12%; border: 3px solid var(--highlight-color, #ff7900); border-radius: 12px; box-shadow: 0 0 0 100vmax rgba(0,0,0,.25); pointer-events: none; }
 .sk-recvstate { font-weight: 700; color: var(--body-color); min-height: 1.4em; }
 
-/* Actions Partager et Recevoir dans l'en-tête du Journal. */
-.sk-act-share::before, .sk-act-receive::before { font-family: "Font Awesome 5 Free"; font-weight: 900; }
-.sk-act-share::before { content: "\f029"; }
-.sk-act-receive::before { content: "\f030"; }
+
+/* Bouton Partage du menu ⋮ (flèches haut et bas) et sa fenêtre de choix. */
+.sk-icoexch { display: inline-block; transform: rotate(90deg); }
+.sk-sharechoice { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 12px; }
+.sk-sharechoice .sk-btn { display: flex; align-items: center; gap: 10px; justify-content: flex-start; text-align: left; }
+.sk-xchico { font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 1.2em; width: 1.4em; text-align: center; }

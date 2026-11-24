@@ -475,7 +475,7 @@ S.heroJournal = function() {
         var when = x.ts ? new Date(x.ts).toLocaleString(S.locale(), {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
         return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + e(x.msg) + "</li>";
     }).join("") + "</ol>";
-    Nav.dialog(e(t("log")), h + "</div>", null, S.journalActions());
+    Nav.dialog(e(t("log")), h + "</div>", null, []);
 };
 S.heroHelp = function() {
     var h = "<div class='sk-journal sk-help-doc'><h1>" + e(t("hb_help_title")) + "</h1><ul>"
@@ -770,7 +770,7 @@ S.placeTabs = function() {
         + "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
         + b("undo", "&#xf0e2;", "undo", !undo.length) + b("restart", "&#xf2f9;", "restart_game", !S.heroBoards().heroes.length)
         + b("end", "&#xf11e;", "menu_end", !!S.editing || (!S.state && !S.heroBoards().heroes.length))
-        + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>");
+        + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + b("exchange", "<span class='sk-icoexch'>&#xf362;</span>", "share_menu", !!S.editing) + "</div>");
     nav.addEventListener("click", function(ev) {
         var x = ev.target.closest("[data-htool]"); if (!x) return;
         ev.stopPropagation();
@@ -782,6 +782,7 @@ S.placeTabs = function() {
             case "end": S.heroEnd(); break;
             case "journal": S.heroJournal(); break;
             case "help": S.heroHelp(); break;
+            case "exchange": S.openShareMenu(); break;
         }
     });
 };

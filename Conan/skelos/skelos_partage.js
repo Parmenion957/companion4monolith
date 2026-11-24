@@ -115,20 +115,31 @@ S.openShare = function(ctx) {
     }).catch(function() { S.toast(t("share_unavailable")); });
 };
 
-// Le Journal porte les deux actions dans son en-tête (icônes à droite, comme les fiches de l'encyclopédie) :
+// Un seul bouton (flèches haut et bas), à droite de l'Aide dans le menu ⋮, propose les deux sens :
 // Partager, selon la vue d'où il est ouvert (livre : la partie ; compagnie : les héros ; zoom : ce héros), et Recevoir.
 var shareCtx = function() {
     if (S.screen == "heroes") { var hb = S.heroBoards(); return (hb.heroes || []).length ? (hb.cur ? "hero" : "heroes") : null; }
     return S.state ? "game" : null;
 };
-S.shareHere = function() { var c = shareCtx(); Nav.closeDialog(); if (c) S.openShare(c); };
-S.receiveHere = function() { Nav.closeDialog(); S.openReceive(); };
-S.journalActions = function() {
-    if (S.editing) return [];
-    var c = shareCtx(), l = [];
-    if (c) l.push({fn: "Skelos.shareHere()", icon: "sk-act-share", label: e(c == "game" ? t("share_game") : c == "hero" ? t("share_hero_menu") : t("share_heroes"))});
-    l.push({fn: "Skelos.receiveHere()", icon: "sk-act-receive", label: e(t("receive_title"))});
-    return l;
+S.openShareMenu = function() {
+    if (S.editing) return;
+    var c = shareCtx(), ov = S.root.querySelector("#sk-overlay");
+    var lbl = c == "game" ? t("share_game") : c == "hero" ? shareTitle("hero") : t("share_heroes");
+    ov.innerHTML = "<div class='sk-dialog sk-confirm sk-sharemenu' role='dialog' aria-modal='true' aria-label='" + e(t("share_menu")) + "'><h2>" + e(t("share_menu")) + "</h2>"
+        + "<div class='sk-sharechoice'>"
+        + "<button class='sk-btn sk-primary' data-xch='send'" + (c ? "" : " disabled") + "><span class='sk-xchico' aria-hidden='true'>&#xf029;</span>" + e(lbl) + "</button>"
+        + "<button class='sk-btn' data-xch='receive'><span class='sk-xchico' aria-hidden='true'>&#xf030;</span>" + e(t("receive_title")) + "</button></div>"
+        + "<div class='sk-actions'><button class='sk-btn' data-xch='no'>" + e(t("cancel")) + "</button></div></div>";
+    ov.classList.add("on");
+    ov.onclick = function(ev) {
+        var b = ev.target.closest("[data-xch]");
+        if (!b && ev.target !== ov) return;
+        ov.classList.remove("on"); ov.innerHTML = ""; ov.onclick = null;
+        if (!b) return;
+        if (b.dataset.xch == "send" && c) S.openShare(c);
+        else if (b.dataset.xch == "receive") S.openReceive();
+    };
+    var f = ov.querySelector("[data-xch='send']:not([disabled])") || ov.querySelector("[data-xch='receive']"); if (f) f.focus();
 };
 
 // ---------- Recevoir ----------
