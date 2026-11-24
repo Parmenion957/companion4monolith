@@ -1907,3 +1907,168 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-czoom-c .sk-tiface [data-skill] { pointer-events: auto; cursor: help; }
 /* Fiches de héros (campagne, zoom du héros) : leurs compétences gardent la description au survol et à l'appui long */
 .sk-hsheetscale [data-skill] { pointer-events: auto; cursor: help; }
+
+/* ---------- Onglet Héros : la fiche du Compagnon sert de plateau ---------- */
+.sk-heroes .sk-hbwrap { padding: 10px 12px 18px; }
+.sk-hb { position: relative; container-type: inline-size; user-select: none; -webkit-user-select: none; }
+/* Le doigt glisse la page hors des zones ; sur une zone, il emmène les gemmes. */
+.sk-hb.live .sk-hz, .sk-hbcardc, .sk-hbbowl { touch-action: none; }
+.sk-hzones { position: absolute; inset: 0; pointer-events: none; }
+.sk-hb.live .sk-hz, .sk-hb.live .sk-hrec { pointer-events: auto; }
+.sk-hz { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 1.2cqw; }
+.sk-hzgems { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; max-width: 100%; max-height: 100%; pointer-events: none; }
+.sk-hzgems .sk-mg3 { margin: calc(var(--g) * .06); }
+.sk-hzband { padding: 2.6cqw 1.4cqw 1cqw; }
+.sk-hz-life { padding-left: 4.2cqw; }
+.sk-hzn { position: absolute; right: .6cqw; top: .6cqw; min-width: 3.4cqw; padding: .2cqw .7cqw; border-radius: 999px; background: rgba(18,18,18,.85); color: #fff;
+    font: 700 2.2cqw/1.2 system-ui, sans-serif; text-align: center; pointer-events: none; }
+.sk-hzn.over, .sk-hzact.over { background-color: rgba(179,38,30,.18); }
+.sk-hzn.over { background: #b3261e; }
+.sk-hzact.over { box-shadow: inset 0 0 0 .45cqw #e3242b; }
+.sk-hb.live .sk-hz { cursor: grab; }
+.sk-hz.sk-mtarget { box-shadow: inset 0 0 0 .45cqw #ff7900; background-color: rgba(255,121,0,.15); }
+.sk-hrec { position: absolute; left: 92.6%; width: 6.4%; height: 5.4%; transform: translateY(-50%); padding: 0; border: 0; border-radius: 50%; background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.sk-hrec img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .2cqw .4cqw rgba(0,0,0,.7)); }
+.sk-hrec { cursor: default; }
+.sk-hmark { cursor: grab; touch-action: none; }
+.sk-hrec.sk-mtarget { box-shadow: 0 0 1cqw .3cqw rgba(255,121,0,.9); background: rgba(255,121,0,.25); }
+.sk-hmarkghost { position: fixed; z-index: 100003; pointer-events: none; transform: translate(-50%, -50%); object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+.sk-hrec:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 1px; }
+.sk-hbnone { display: flex; align-items: center; justify-content: center; aspect-ratio: 1.75; border: 1px dashed var(--main-color); color: var(--body-color); }
+/* Compagnie : les fiches en grille ; un appui ouvre le héros. */
+.sk-hbcompany { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: calc((100dvh - 214px) * 1.75 + 14px); margin: 0 auto; }
+.sk-hbcard { position: relative; border-radius: 8px; }
+/* Le buste du héros (hors zones de jeu) : un appui ouvre sa fiche en grand. */
+.sk-hbopen { position: absolute; left: 0; top: 0; width: 36%; height: 68%; z-index: 2; border: 0; background: transparent; cursor: zoom-in; border-radius: 8px 0 0 0; }
+.sk-hbopen:focus-visible { outline: 3px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hbrm { right: -8px; bottom: auto; top: -8px; width: 40px; height: 40px; font-size: 17px; }
+.sk-hbadd { aspect-ratio: 1.75; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 2px dashed var(--main-color);
+    background: transparent; color: var(--main-color); cursor: pointer; font-size: 15px; }
+.sk-hbadd span { font-size: 44px; line-height: 1; }
+.sk-hbempty { text-align: center; padding: 40px 16px; color: var(--body-color); }
+/* Héros seul : la fiche à la taille de l'écran, flèche discrète en haut à gauche. */
+.sk-hbzoom { position: relative; width: min(100%, calc((100dvh - 196px) * 1.75)); margin: 0 auto; padding-top: 4px; }
+.sk-hbback { position: absolute; left: -4px; top: -4px; z-index: 3; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--main-color);
+    background: var(--body-bg-color); color: var(--main-color); opacity: .75; font-family: "Font Awesome 5 Free"; font-weight: 900; font-size: 15px; cursor: pointer; }
+.sk-hbback:hover, .sk-hbback:focus-visible { opacity: 1; }
+.sk-hstudio .sk-hbzoom { width: min(100%, calc((100dvh - 196px) * 1.75 / .74)); }
+.sk-hhand { transform: translate(-50%, -150%); }
+/* Bureau du héros seul : en studio, le bol de gemmes à gauche et le tas de cartes à droite ; les cartes sous la fiche. */
+.sk-hbdesk { display: flex; align-items: flex-start; gap: 1.5%; container-type: inline-size; }
+.sk-hbmain { flex: 1 1 auto; min-width: 0; }
+.sk-hbside { flex: 0 0 11cqw; align-self: flex-start; position: sticky; top: 8px; padding-top: 6cqw; }
+.sk-hbbowl { position: relative; width: 100%; aspect-ratio: 1; cursor: grab; border-radius: 50%; }
+.sk-hbbowl .sk-mbowlimg { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 .6cqw .8cqw rgba(0,0,0,.45)); }
+.sk-hbbowl.sk-mtarget { box-shadow: none; background: none; }
+.sk-hbbowl.sk-mtarget .sk-mbowlimg { filter: drop-shadow(0 0 .5cqw #ff7900) drop-shadow(0 0 .2cqw #ff7900); }
+.sk-hbobj { display: block; margin-top: .6cqw; text-align: center; font-family: 'Primary', serif; font-size: max(11px, 1.3cqw); letter-spacing: .05em; color: var(--body-color); }
+.sk-hbpile { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; color: var(--body-color); }
+.sk-hbstack { position: relative; display: block; width: 72%; margin: 0 auto; aspect-ratio: .67; }
+.sk-hbstack i { position: absolute; inset: 0; border-radius: 7%; border: 1px solid rgba(0,0,0,.35); background: linear-gradient(160deg, #5b3a29, #2e1d14);
+    box-shadow: 0 .3cqw .5cqw rgba(0,0,0,.35); }
+.sk-hbstack i:nth-child(1) { transform: translate(-.9cqw, .9cqw) rotate(-6deg); }
+.sk-hbstack i:nth-child(2) { transform: translate(.6cqw, .5cqw) rotate(4deg); }
+.sk-hbstack i:nth-child(3) { transform: translate(-.3cqw, .2cqw) rotate(-2deg); }
+.sk-hbstack i.top { background: linear-gradient(160deg, #e9d9b5, #b99a62); }
+.sk-hbstack b { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 5cqw; height: 5cqw; border-radius: 50%; background: var(--highlight-color); color: #fff;
+    display: flex; align-items: center; justify-content: center; font: 700 3.4cqw/1 system-ui, sans-serif; box-shadow: 0 .3cqw .6cqw rgba(0,0,0,.45); }
+.sk-hbpile:hover .sk-hbstack b, .sk-hbpile:focus-visible .sk-hbstack b { transform: translate(-50%, -50%) scale(1.1); }
+.sk-hbpile:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; border-radius: 8px; }
+.sk-hbcards { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; justify-content: center; }
+.sk-hbhero { container-type: inline-size; }
+.sk-hbcompany .sk-hbcards { gap: 8px; margin-top: 8px; justify-content: flex-start; }
+.sk-hbcardc { position: relative; flex: 0 0 auto; width: 16cqw; min-width: 64px; container-type: inline-size; border-radius: 6%; cursor: grab; }
+.sk-hbcardc .sk-cardscale { width: 100%; pointer-events: none; }
+.sk-hbcardc > .sk-hzgems { position: absolute; left: 4%; right: 4%; top: 4%; height: 40%; }
+.sk-hbcardc .sk-hzn { font-size: 12px; right: 4px; top: 4px; }
+.sk-hbcardc.sk-mtarget { box-shadow: 0 0 0 3px #ff7900; }
+.sk-hbcrm { right: -8px; bottom: auto; top: -8px; width: 36px; height: 36px; font-size: 15px; }
+@media (max-width: 600px), (max-height: 500px) and (orientation: landscape) {
+    .sk-hbcompany { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; max-width: none; padding-bottom: 6px; }
+    .sk-hbcompany > * { flex: 0 0 92%; scroll-snap-align: center; }
+    .sk-hbzoom { width: min(100%, calc((100dvh - 150px) * 1.75)); }
+}
+.sk-hbcadd:focus-visible { outline: 2px solid var(--highlight-color); outline-offset: 2px; }
+.sk-hbcompany .sk-hbside { flex-basis: 9cqw; }
+/* Gemmes rouges du héros : comptées à part ; bols empilés en studio ; carte glissée vers un autre héros. */
+.sk-hz .sk-hzgems img { pointer-events: auto; }
+.sk-hzr { color: #ff6b61; }
+.sk-hzn.over .sk-hzr { color: #ffd2ce; }
+.sk-hbside .sk-hbbowl + .sk-hbbowl { margin-top: 2.2cqw; }
+.sk-hbcardc { cursor: grab; }
+.sk-hbghost { position: fixed; z-index: 100003; pointer-events: none; transform: translate(-50%, -60%) rotate(-4deg); opacity: .9;
+    filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); container-type: inline-size; }
+.sk-hbghost .sk-zoomrm { display: none; }
+.sk-hbdragging { opacity: .35; }
+.sk-hbhero.sk-hbdrop { outline: 3px solid #ff7900; outline-offset: 3px; border-radius: 8px; }
+/* Héros seul : tout tient dans l'écran. La disposition (côtés, un côté, dessous) et la taille des cartes sont calculées
+   par skelos_heros.js (--cw, largeur de la fiche) selon la place disponible (--hbH : hauteur utile). */
+.sk-heroes { --hbH: calc(100dvh - 226px); }
+.sk-hbzoom, .sk-hstudio .sk-hbzoom { width: 100%; padding-top: 32px; }
+.sk-hbzoom .sk-hbback { left: 0; top: 0; }
+.sk-hbsolo { display: flex; align-items: flex-start; justify-content: center; gap: 8px; container-type: normal; }
+.sk-hbsolo[data-lay='below'] { flex-wrap: wrap; }
+.sk-hbsheet { flex: 0 0 auto; min-width: 0; }
+.sk-hbsolo[data-lay='below'] .sk-hbsheet { margin: 0 auto; }
+.sk-hbcol { flex: 0 0 auto; display: grid; grid-auto-flow: column; gap: 8px; align-content: start; }
+.sk-hbcol.left { order: -1; }
+.sk-hbcol.below { flex: 1 0 100%; display: flex; flex-wrap: wrap; justify-content: center; }
+.sk-hbsolo .sk-hbcardc { width: var(--cw, 120px); min-width: 0; }
+.sk-hbsolo > .sk-hbcardc { display: none; }
+.sk-hbcol .sk-hbcrm { width: 30px; height: 30px; font-size: 13px; right: -6px; top: -6px; }
+.sk-hbsolo .sk-hbcardc .sk-hzn { font-size: 11px; }
+@media (max-height: 500px) and (orientation: landscape) {
+    .sk-heroes { --hbH: calc(100dvh - 172px); }
+    .sk-hbzoom, .sk-hstudio .sk-hbzoom { padding-top: 26px; }
+    .sk-hbzoom .sk-hbback { width: 26px; height: 26px; font-size: 12px; }
+}
+@media (max-width: 600px) { .sk-heroes { --hbH: calc(100dvh - 210px); } }
+/* Carte d'un héros en grand : cadre serré, languette de gemmes (bleues puis rouges) centrée en haut. */
+.sk-hcz { position: relative; width: max-content; margin: 30px auto 0; padding: 30px 14px 14px; border-radius: 14px; background: var(--body-bg-color); box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.sk-hczcard { position: relative; width: min(78vw, calc((100dvh - 120px) * .67), 380px); }
+.sk-hczcard .sk-cardscale, .sk-hczcard .sk-tilebox { width: 100%; }
+.sk-hczcard .sk-gpips { left: 50%; right: auto; top: 0; transform: translate(-50%, -55%); }
+.sk-hgpips i.b { color: #2f86f0; }
+.sk-hgpips i.r { color: #e3242b; }
+.sk-hczx { position: absolute; right: 4px; top: 2px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--body-color); font-size: 24px; line-height: 1; cursor: pointer; }
+.sk-hczx:focus-visible { outline: 2px solid var(--highlight-color); }
+
+/* Encombrement (fiche du héros) : compétence perdue grisée, seuil de mouvement atteint entouré, mouvement réduit, poids porté. */
+.sk-hsheetscale .sheet.herosheet div.skillline div.skill.sk-hoff { filter: grayscale(1); opacity: .38; }
+.sk-hsheetscale .sheet.herosheet div.skillline div.sk-hon::after { content: ""; position: absolute; left: -6%; right: -6%; top: 27%; bottom: 5%;
+    border-radius: 50%; box-shadow: 0 0 0 .35cqw #e3242b; background: rgba(227,36,43,.15); pointer-events: none; }
+.sk-hsheetscale .sheet.herosheet div.base div.dice.sk-hmov { color: #e3242b; text-shadow: 0 0 .5cqw rgba(0,0,0,.6); }
+.sk-hsheetscale .sheet.herosheet div.skillline div.encumbrance { overflow: visible; }
+/* Poids porté : un carré sous le poids maximum, dans la police des chiffres de la fiche, séparé du pictogramme par un filet blanc. */
+.sk-hencw { position: absolute; left: 50%; top: 69%; transform: translateX(-50%); width: 3cqw; height: 3cqw; border-radius: .3cqw;
+    display: flex; align-items: center; justify-content: center; background: rgba(18,18,18,.85); color: #fff;
+    font-family: "Motrg"; font-weight: normal; font-size: 3.3cqw; line-height: 1; text-shadow: none; pointer-events: auto; cursor: help; white-space: nowrap; }
+.sk-hencw.over { background: #b3261e; }
+/* Compagnie : chaque héros dans sa case, cartes placées comme pour le héros seul (côtés, un côté ou dessous) pour que tout tienne à l'écran. */
+.sk-hbcompany { max-width: none; align-items: start; }
+.sk-hbcompany .sk-hbhero { container-type: normal; }
+.sk-hbsolo .sk-hbcadd { width: var(--cw, 120px); min-width: 0; }
+.sk-hbsolo > .sk-hbcadd { display: none; }
+.sk-hbcompany .sk-hbadd { max-height: calc(var(--hbH) / 2 - 7px); justify-self: center; width: 100%; max-width: calc((var(--hbH) / 2 - 7px) * 1.75); }
+/* Bascule Overlord | Héros de l'onglet Partie */
+.sk-viewsw { margin-right: 4px; }
+@media (max-width: 600px) { .sk-viewsw button { padding: 0 8px; } }
+/* Carte de scénario : les héros préparés par le scénario */
+.sk-sheroes { margin: 2px 0 0; font-size: .85em; color: var(--body-color); opacity: .85; }
+.sk-sheroes i { font-family: "Font Awesome 5 Free"; font-weight: 900; color: var(--main-color); margin-right: 3px; }
+/* Compagnie : fiches au centre, cartes sur le côté extérieur */
+.sk-hbsolo[data-side='left'] { justify-content: flex-end; }
+.sk-hbsolo[data-side='right'] { justify-content: flex-start; }
+/* « + » des cartes d'un héros : celui de la campagne, à la largeur des cartes */
+.sk-hbsolo .sk-hbcadd { flex: 0 0 auto; width: var(--cw, 104px); min-width: 0; font-size: clamp(9px, calc(var(--cw, 104px) / 8), 13px); padding: 4px; }
+.sk-hbsolo .sk-hbcadd span { font-size: clamp(18px, calc(var(--cw, 104px) / 3), 36px); }
+/* Amélioration de campagne parmi les cartes d'un héros : texte à la taille de la carte */
+.sk-hbcardc .sk-upcard { width: 100%; box-sizing: border-box; overflow: hidden; gap: 4cqw; }
+.sk-hbcardc .sk-upcard b { font-size: 12cqw; line-height: 1.1; }
+.sk-hbcardc .sk-upcard span { font-size: 9cqw; line-height: 1.2; }
+.sk-hczcard .sk-upcard { width: 100%; box-sizing: border-box; }
+.sk-hczcard { container-type: inline-size; }
+.sk-hczcard .sk-upcard { gap: 4cqw; padding: 9cqw 8cqw; }
+.sk-hczcard .sk-upcard b { font-size: 11cqw; line-height: 1.1; }
+.sk-hczcard .sk-upcard span { font-size: 7cqw; line-height: 1.3; }

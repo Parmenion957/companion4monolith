@@ -1014,7 +1014,7 @@ S.renderEnd = function(keep) {
     var autoVp = d.result == "loss" ? -1 : Math.min(3, alive);
     if (d.vp == null) d.vp = autoVp;
     var h = head(null, t("end_title"), "<button class='sk-btn' data-end='back'>" + t("resume_game") + "</button>");
-    h += "<div class='sk-blk sk-c8 sk-endform'><p class='sk-help'>" + e((st.scenario.title || t("tab")) + (camp ? " — " + t("in_campaign", camp.name) + ", " + t("scenario_n", st.campaign.idx + 1) : "") + " · " + t("turn") + " " + st.turn) + "</p>";
+    h += "<div class='sk-blk sk-c8 sk-endform'><p class='sk-help'>" + e((st.scenario.title || t("tab")) + (camp ? " — " + t("in_campaign", camp.name) + ", " + t("scenario_n", st.campaign.idx + 1) : "") + (st.turn != null ? " · " + t("turn") + " " + st.turn : "")) + "</p>";
     h += "<span class='sk-fl'>" + t("result") + "</span><div class='sk-seg sk-res'><button data-res='win'" + (d.result == "win" ? " class='sk-on'" : "") + ">" + t("heroes_win") + "</button><button data-res='loss'" + (d.result == "loss" ? " class='sk-on'" : "") + ">" + t("overlord_wins") + "</button></div>";
     if (camp) {
         h += "<label class='sk-fl'>" + t("game_date") + "<input type='date' class='sk-in sk-w' id='sk-ed' value='" + d.date + "'></label>";
@@ -1069,7 +1069,7 @@ S.saveEnd = function() {
             d.fallen.forEach(function(hid) { c.heroes.forEach(function(hh) { if (hh.id == hid) { hh.dead = true; hh.deadAt = link.idx + 1; } }); });
             c.last = d.date;
             var title = (sc && sc.title) || st.scenario.title || "";
-            S.campLog(c, t(d.result == "win" ? "clog_win" : "clog_loss", link.idx + 1, title, st.turn) + " (" + (d.vp > 0 ? "+" : "") + d.vp + " PV)");
+            S.campLog(c, t(d.result == "win" ? "clog_win" : "clog_loss", link.idx + 1, title, st.turn != null ? st.turn : "?") + " (" + (d.vp > 0 ? "+" : "") + d.vp + " PV)");
             if (d.loot.length) S.campLog(c, t("clog_loot", link.idx + 1, d.loot.length));
             d.fallen.forEach(function(hid) { var hh = c.heroes.filter(function(x) { return x.id == hid; })[0]; if (hh) S.campLog(c, t("clog_fallen", link.idx + 1, hh.name)); });
             if (d.notes) S.campLog(c, t("clog_note", link.idx + 1, d.notes));

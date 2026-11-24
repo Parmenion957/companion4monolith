@@ -57,6 +57,7 @@
         "skelos/skelos_ui.js",
         "skelos/skelos_anim.js",
         "skelos/skelos_manuel.js",
+        "skelos/skelos_heros.js",
         "skelos/lang/skelos.LANGUAGE.js",
         "skelos/skelos_companion.js"
     ]
