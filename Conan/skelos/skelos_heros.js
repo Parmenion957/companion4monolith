@@ -482,7 +482,10 @@ S.heroHelp = function() {
         + t("hb_help_items").split("|").map(function(x) { return "<li>" + e(x) + "</li>"; }).join("") + "</ul></div>";
     Nav.dialog(e(t("help")), h, null, []);
 };
-S.toggleHeroStudio = function(on) { S.hStudio = on == null ? !S.hStudio : !!on; S.renderHeroes(); };
+S.toggleHeroStudio = function(on) {
+    if (S.editing && on !== true) return;  // éditeur de scénario : on ne sort pas du mode studio, comme sur le livre
+    S.hStudio = on == null ? !S.hStudio : !!on; S.renderHeroes();
+};
 var addHeroes = function() {
     var b = S.heroBoards(), have = {};
     b.heroes.forEach(function(h) { have[S.norm(heroName(h))] = true; });
@@ -762,7 +765,8 @@ S.placeTabs = function() {
     nav.insertAdjacentHTML("beforeend", "<div class='sk-tabtools'>"
         + "<button class='sk-tabico sk-toolsico" + (S._toolsOpen ? " on" : "") + "' data-htool='tools' aria-expanded='" + !!S._toolsOpen + "' aria-controls='sk-toolbar'"
         + " title='" + e(t("tools_bar")) + "' aria-label='" + e(t("tools_bar")) + "'>&#xf142;</button>"
-        + "<button class='sk-tabico" + (S.hStudio ? " on" : "") + "' data-htool='studio' aria-pressed='" + !!S.hStudio + "' title='" + e(t("hb_studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>"
+        + "<button class='sk-tabico" + (S.hStudio ? " on" : "") + "' data-htool='studio' aria-pressed='" + !!S.hStudio + "'" + (S.editing ? " disabled" : "")
+        + " title='" + e(t(S.editing ? "studio_locked" : "hb_studio_hint")) + "' aria-label='" + e(t("studio")) + "'>&#xf591;</button></div>"
         + "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
         + b("undo", "&#xf0e2;", "undo", !undo.length) + b("restart", "&#xf2f9;", "restart_game", !S.heroBoards().heroes.length)
         + b("end", "&#xf11e;", "menu_end", !!S.editing || (!S.state && !S.heroBoards().heroes.length))
