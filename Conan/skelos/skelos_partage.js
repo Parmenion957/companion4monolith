@@ -115,6 +115,22 @@ S.openShare = function(ctx) {
     }).catch(function() { S.toast(t("share_unavailable")); });
 };
 
+// Le Journal porte les deux actions dans son en-tête (icônes à droite, comme les fiches de l'encyclopédie) :
+// Partager, selon la vue d'où il est ouvert (livre : la partie ; compagnie : les héros ; zoom : ce héros), et Recevoir.
+var shareCtx = function() {
+    if (S.screen == "heroes") { var hb = S.heroBoards(); return (hb.heroes || []).length ? (hb.cur ? "hero" : "heroes") : null; }
+    return S.state ? "game" : null;
+};
+S.shareHere = function() { var c = shareCtx(); Nav.closeDialog(); if (c) S.openShare(c); };
+S.receiveHere = function() { Nav.closeDialog(); S.openReceive(); };
+S.journalActions = function() {
+    if (S.editing) return [];
+    var c = shareCtx(), l = [];
+    if (c) l.push({fn: "Skelos.shareHere()", icon: "sk-act-share", label: e(c == "game" ? t("share_game") : c == "hero" ? t("share_hero_menu") : t("share_heroes"))});
+    l.push({fn: "Skelos.receiveHere()", icon: "sk-act-receive", label: e(t("receive_title"))});
+    return l;
+};
+
 // ---------- Recevoir ----------
 var inflate = function(bytes, z) {
     if (!z) return Promise.resolve(new TextDecoder().decode(bytes));

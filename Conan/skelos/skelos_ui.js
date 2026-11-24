@@ -53,8 +53,6 @@ S.toolbarCode = function() {
     };
     return "<div class='sk-toolbar" + (S._toolsOpen ? " on" : "") + "' id='sk-toolbar' role='toolbar' aria-label='" + e(t("tools_bar")) + "'>"
         + b("undo", "&#xf0e2;", "undo", !S.undoStack.length) + b("restart", "&#xf2f9;", "restart_game") + b("end", "&#xf11e;", "menu_end", !!S.editing)
-        + b("share", "&#xf029;", "share_game", !!S.editing || !S.state)
-        + b("receive", "&#xf030;", "receive_title", !!S.editing)
         + b("journal", "&#xf02d;", "log") + b("help", "&#xf128;", "help") + "</div>";
 };
 S.syncToolbar = function() {
@@ -68,8 +66,6 @@ S.runTool = function(act) {
         case "undo": S.undo(); break;
         case "restart": S.restartGame(); break;
         case "end": S.renderEnd(); break;
-        case "share": S.openShare("game"); break;
-        case "receive": S.openReceive(); break;
         case "journal": S.openJournal(); break;
         case "help": S.openGameHelp(); break;
     }
@@ -875,7 +871,7 @@ S.openJournal = function() {
         var when = l.ts ? new Date(l.ts).toLocaleString(S.locale(), {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "";
         return "<li>" + (when ? "<span class='sk-jtime'>" + e(when) + "</span>" : "") + "<b>" + e(t("journal_turn", l.turn)) + "</b> " + e(l.msg) + "</li>";
     }).join("") + "</ol>";
-    Nav.dialog(e(t("log")), h + "</div>", null, []);
+    Nav.dialog(e(t("log")), h + "</div>", null, S.journalActions ? S.journalActions() : []);
 };
 
 // ---------- Sauvegarde complète, reprise et état de départ ----------
