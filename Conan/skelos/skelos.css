@@ -2083,3 +2083,8 @@ ul.floatingactions.sk-searchbar, .sk-filtveil { display: none; }
 .sk-qrdots i { width: 10px; height: 10px; border-radius: 50%; background: var(--body-color); opacity: .25; }
 .sk-qrdots i.on { opacity: 1; background: var(--main-color); }
 .sk-qrcount { margin-left: 6px; font-variant-numeric: tabular-nums; color: var(--body-color); }
+
+/* Vue Héros : l'appui long prend des gemmes ; ni menu de l'image ni sélection (comme sur le livre). */
+.sk-heroes, .sk-heroes *, .sk-mfly, .sk-hhand, .sk-hhand * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.sk-heroes img, .sk-mfly { -webkit-user-drag: none; }
+.sk-heroes input, .sk-heroes textarea { -webkit-user-select: text; user-select: text; }

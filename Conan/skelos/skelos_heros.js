@@ -637,6 +637,8 @@ var mark = function(el) {
 var last = {z: null, at: 0};
 var bind = function(scr) {
     if (!scr) return;
+    // Appui long : pas de menu de l'image (gemme, fiche, carte) sur iPad / iPhone, comme sur le livre.
+    scr.addEventListener("contextmenu", function(ev) { if (!ev.target.closest("input, textarea")) ev.preventDefault(); });
     scr.addEventListener("click", function(ev) {
         if (ev.target.closest("[data-hstudio]")) { S.toggleHeroStudio(true); return; }
         if (ev.target.closest("[data-hadd]")) { addHeroes(); return; }
