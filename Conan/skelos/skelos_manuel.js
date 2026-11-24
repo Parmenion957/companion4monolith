@@ -123,7 +123,8 @@ var zoneCode = function(z, inner, title, nShown) {
     // Bande 1 : les tas rétrécissent avec leur nombre pour rester dans le cadre de l'icône.
     var groups = Math.ceil((coop() ? count(z) : n) / 3), gs = BAND1.indexOf(z) >= 0 ? " style='--g:calc(" + (groups <= 1 ? 2.4 : groups <= 4 ? 1.65 : groups <= 9 ? 1.05 : .75) + "cqw * var(--gz, 1))'" : "";
     // La Fatigue rappelle son double appui (coop : jetons tirés et gemmes ; sinon : gemmes dépensées).
-    var tip = z == "fatigue" ? label + " — " + t(coop() ? "man_coop_rest_hint" : "man_fatigue_hint") : label;
+    var tip = z == "fatigue" ? label + " — " + t(coop() ? "man_coop_rest_hint" : "man_fatigue_hint")
+        : z == "energy" ? label + " — " + t(coop() ? "man_coop_rest_hint" : "man_rest_hint") : label;
     return "<div class='sk-mz sk-mz-" + z + (n ? "" : " empty") + "' data-zone='" + z + "' role='group' aria-label='" + e(label) + "' title='" + e(tip) + "'" + gs + ">"
         + (inner || "") + (title ? "<span class='sk-mtitle'>" + e(title) + "</span>" : "")
         + "<div class='sk-mgems'>" + content + "</div>"
@@ -266,13 +267,13 @@ var restCode = function() {
     // le − et le + encadrent la gemme, sur la flèche (en mode studio seulement : en jeu, la valeur est fixée).
     if (img) {
         var gem = S.recoveryGem(st.recovery);
-        return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'><div class='sk-mrestcard'>"
+        return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery")) + "'><div class='sk-mrestcard'>"
             + "<img class='sk-mrestimg' src='" + img + "' alt='' draggable='false'>"
             + (gem ? "<img class='sk-mrecgem' src='" + gem + "' alt='' draggable='false'>" : "<span class='sk-mrecnum'>" + recLabel() + "</span>")
             + (S.studio ? "<button class='sk-pstep sk-mrecm' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
             + "<button class='sk-pstep sk-mrecp' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button>" : "") + "</div></div>";
     }
-    return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery") + " — " + t("man_rest_hint")) + "'>"
+    return "<div class='sk-mrest' data-mrest" + aria + " title='" + e(t("recovery")) + "'>"
         + S.token("recover", recLabel())
         + (S.studio ? "<div class='sk-mstep'><button class='sk-pstep' data-mact='recovery' data-n='-1' aria-label='" + e(t("aria_recovery_minus")) + "'>−</button>"
         + "<button class='sk-pstep' data-mact='recovery' data-n='1' aria-label='" + e(t("aria_recovery_plus")) + "'>+</button></div>" : "") + "</div>";
@@ -910,12 +911,12 @@ var bind = function(board) {
         // La pastille des cartes sous une tuile ouvre aussi la tuile et ses cartes (pour y poser des gemmes).
         var cb = ev.target.closest("[data-mtile] .sk-cardsbadge");
         if (cb) { S.openGemPop(cb.closest("[data-mtile]").dataset.mtile); return; }
-        // Double appui sur la tuile de repos : fin de tour des gemmes (dépensées → Fatigue, Récupération → Énergie).
-        if (ev.target.closest("[data-mrest]") && !ev.target.closest("button")) {
+        // Double appui sur la zone verte : fin de tour des gemmes. Aventure : dépensées → Fatigue, puis Récupération → Énergie ;
+        // Coop : jetons tirés et gemmes dépensées rangés en Fatigue (un jeton se tire en le glissant, pas d'un appui).
+        if (ev.target.closest(".sk-manual [data-zone='energy']") && !ev.target.closest("button")) {
             var now = Date.now();
-            // (En coop, plus rien : le double appui qui range les jetons tirés est passé sur la Fatigue.)
-            if (coop() || !S.auto("recover")) return;
-            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; S.manualRest(); }
+            if (!S.auto("recover")) return;
+            if (lastTap.uid == "rest" && now - lastTap.at < 400) { lastTap.uid = null; if (coop()) S.manualCoopClear(); else S.manualRest(); }
             else { lastTap.uid = "rest"; lastTap.at = now; }
             return;
         }
